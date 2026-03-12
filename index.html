@@ -30,9 +30,12 @@ box-shadow:0 2px 5px rgba(0,0,0,0.2);
 
 #proximo{
 font-size:26px;
-color:#d40000;
 font-weight:bold;
 }
+
+.verde{color:green}
+.amarelo{color:#c98a00}
+.vermelho{color:red}
 
 ul{
 padding-left:20px;
@@ -40,17 +43,6 @@ padding-left:20px;
 
 li{
 margin:5px 0;
-font-size:16px;
-}
-
-.origem{
-font-weight:bold;
-color:#006633;
-}
-
-.noturno{
-color:#b36b00;
-font-style:italic;
 }
 
 </style>
@@ -67,20 +59,16 @@ font-style:italic;
 
 <div id="proximo"></div>
 <div id="origem"></div>
-<div id="extra"></div>
 <div id="tempo"></div>
+<div id="posicao"></div>
 
 </div>
 
 <div class="card">
 
-<h2>Rota</h2>
+<h2>Chegada estimada nos pontos</h2>
 
-<p>
-Escola de Música → FaE → FACE → Reitoria → CAD1 → Farmácia →
-Odonto → Educação Física → Ouro Preto →
-Moradia 1 → Moradia 2 → Moradia 3 → retorno UFMG
-</p>
+<ul id="chegadas"></ul>
 
 </div>
 
@@ -102,12 +90,28 @@ height="350"
 style="border:0"
 loading="lazy"
 allowfullscreen
-src="https://www.google.com/maps/dir/Escola+de+Música+UFMG/FaE+UFMG/FACE+UFMG/Reitoria+UFMG/CAD+1+UFMG/Faculdade+de+Farmácia+UFMG/Odontologia+UFMG/Educação+Física+UFMG/Moradia+Universitária+UFMG">
+src="https://maps.google.com/maps?q=UFMG&t=&z=14&output=embed">
 </iframe>
 
 </div>
 
 <script>
+
+const pontos=[
+
+{nome:"Escola de Música",t:0},
+{nome:"FaE",t:3},
+{nome:"FACE",t:5},
+{nome:"Reitoria",t:7},
+{nome:"CAD1",t:9},
+{nome:"Farmácia",t:11},
+{nome:"Odonto",t:13},
+{nome:"Educação Física",t:15},
+{nome:"Moradia 1",t:18},
+{nome:"Moradia 2",t:21},
+{nome:"Moradia 3",t:23}
+
+];
 
 const horarios=[
 
@@ -126,7 +130,6 @@ const horarios=[
 {hora:"17:20",origem:"Moradia"},
 {hora:"17:50",origem:"Escola de Música"},
 {hora:"18:20",origem:"Moradia"},
-
 {hora:"19:00",origem:"Escola de Música",noturno:true},
 {hora:"19:40",origem:"Escola de Música",noturno:true},
 {hora:"21:00",origem:"Escola de Música",noturno:true},
@@ -142,15 +145,15 @@ horarios.forEach(h=>{
 
 let li=document.createElement("li");
 
-let texto=h.hora+" — Saída "+h.origem;
+let txt=h.hora+" — Saída "+h.origem;
 
 if(h.noturno){
 
-texto+=" (passa nas moradias)";
+txt+=" (passa nas moradias)";
 
 }
 
-li.innerText=texto;
+li.innerText=txt;
 
 lista.appendChild(li);
 
@@ -172,24 +175,34 @@ if(min>atualMin){
 
 let falta=min-atualMin;
 
-document.getElementById("proximo").innerText="🚌 "+h.hora;
+let cor="vermelho";
+
+let icon="🔴";
+
+if(falta<8){
+
+cor="verde";
+icon="🟢";
+
+}else if(falta<15){
+
+cor="amarelo";
+icon="🟡";
+
+}
+
+document.getElementById("proximo").innerHTML=
+icon+" "+h.hora;
 
 document.getElementById("origem").innerText=
 "Saída: "+h.origem;
 
-if(h.noturno){
-
-document.getElementById("extra").innerText=
-"Passa nas moradias (17-25 min após saída)";
-
-}else{
-
-document.getElementById("extra").innerText="";
-
-}
+document.getElementById("tempo").className=cor;
 
 document.getElementById("tempo").innerText=
 "Faltam "+falta+" minutos";
+
+mostrarChegadas(min);
 
 return;
 
@@ -197,9 +210,31 @@ return;
 
 }
 
-document.getElementById("proximo").innerText="Sem ônibus hoje";
+}
 
-document.getElementById("tempo").innerText="";
+function mostrarChegadas(saida){
+
+let lista=document.getElementById("chegadas");
+
+lista.innerHTML="";
+
+pontos.forEach(p=>{
+
+let min=saida+p.t;
+
+let h=Math.floor(min/60);
+
+let m=min%60;
+
+if(m<10)m="0"+m;
+
+let li=document.createElement("li");
+
+li.innerText=p.nome+" → "+h+":"+m;
+
+lista.appendChild(li);
+
+});
 
 }
 
@@ -210,4 +245,5 @@ atualizar();
 </script>
 
 </body>
+
 </html>
