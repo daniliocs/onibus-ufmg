@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
 <meta charset="UTF-8">
@@ -28,13 +29,9 @@ box-shadow:0 2px 5px rgba(0,0,0,0.2);
 }
 
 #proximo{
-font-size:24px;
+font-size:26px;
 color:#d40000;
 font-weight:bold;
-}
-
-#tempo{
-font-size:18px;
 }
 
 ul{
@@ -42,16 +39,18 @@ padding-left:20px;
 }
 
 li{
-margin:4px 0;
+margin:5px 0;
+font-size:16px;
 }
 
-button{
-padding:10px;
-background:#006633;
-color:white;
-border:none;
-border-radius:6px;
-font-size:16px;
+.origem{
+font-weight:bold;
+color:#006633;
+}
+
+.noturno{
+color:#b36b00;
+font-style:italic;
 }
 
 </style>
@@ -67,6 +66,8 @@ font-size:16px;
 <h2>Próximo ônibus</h2>
 
 <div id="proximo"></div>
+<div id="origem"></div>
+<div id="extra"></div>
 <div id="tempo"></div>
 
 </div>
@@ -97,50 +98,59 @@ Moradia 1 → Moradia 2 → Moradia 3 → retorno UFMG
 
 <iframe
 width="100%"
-height="300"
+height="350"
 style="border:0"
 loading="lazy"
 allowfullscreen
-src="https://maps.google.com/maps?q=UFMG&t=&z=14&ie=UTF8&iwloc=&output=embed">
+src="https://www.google.com/maps/dir/Escola+de+Música+UFMG/FaE+UFMG/FACE+UFMG/Reitoria+UFMG/CAD+1+UFMG/Faculdade+de+Farmácia+UFMG/Odontologia+UFMG/Educação+Física+UFMG/Moradia+Universitária+UFMG">
 </iframe>
 
 </div>
 
 <script>
 
-const horarios = [
+const horarios=[
 
-"06:45",
-"07:20",
-"07:40",
-"10:00",
-"11:00",
-"11:50",
-"12:15",
-"13:10",
-"13:30",
-"15:00",
-"15:20",
-"17:00",
-"17:20",
-"17:50",
-"18:20",
-"19:00",
-"19:40",
-"21:00",
-"21:35",
-"22:15",
-"22:50"
+{hora:"06:45",origem:"Moradia"},
+{hora:"07:20",origem:"Escola de Música"},
+{hora:"07:40",origem:"Moradia"},
+{hora:"10:00",origem:"Escola de Música"},
+{hora:"11:00",origem:"Moradia"},
+{hora:"11:50",origem:"Escola de Música"},
+{hora:"12:15",origem:"Moradia"},
+{hora:"13:10",origem:"Escola de Música"},
+{hora:"13:30",origem:"Moradia"},
+{hora:"15:00",origem:"Escola de Música"},
+{hora:"15:20",origem:"Moradia"},
+{hora:"17:00",origem:"Escola de Música"},
+{hora:"17:20",origem:"Moradia"},
+{hora:"17:50",origem:"Escola de Música"},
+{hora:"18:20",origem:"Moradia"},
+
+{hora:"19:00",origem:"Escola de Música",noturno:true},
+{hora:"19:40",origem:"Escola de Música",noturno:true},
+{hora:"21:00",origem:"Escola de Música",noturno:true},
+{hora:"21:35",origem:"Escola de Música",noturno:true},
+{hora:"22:15",origem:"Escola de Música",noturno:true},
+{hora:"22:50",origem:"Escola de Música",noturno:true}
 
 ];
 
-const lista = document.getElementById("lista");
+const lista=document.getElementById("lista");
 
 horarios.forEach(h=>{
 
 let li=document.createElement("li");
 
-li.innerText=h;
+let texto=h.hora+" — Saída "+h.origem;
+
+if(h.noturno){
+
+texto+=" (passa nas moradias)";
+
+}
+
+li.innerText=texto;
 
 lista.appendChild(li);
 
@@ -154,7 +164,7 @@ let atualMin=agora.getHours()*60+agora.getMinutes();
 
 for(let h of horarios){
 
-let p=h.split(":");
+let p=h.hora.split(":");
 
 let min=parseInt(p[0])*60+parseInt(p[1]);
 
@@ -162,7 +172,21 @@ if(min>atualMin){
 
 let falta=min-atualMin;
 
-document.getElementById("proximo").innerText="🚌 "+h;
+document.getElementById("proximo").innerText="🚌 "+h.hora;
+
+document.getElementById("origem").innerText=
+"Saída: "+h.origem;
+
+if(h.noturno){
+
+document.getElementById("extra").innerText=
+"Passa nas moradias (17-25 min após saída)";
+
+}else{
+
+document.getElementById("extra").innerText="";
+
+}
 
 document.getElementById("tempo").innerText=
 "Faltam "+falta+" minutos";
