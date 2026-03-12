@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Ônibus Moradias UFMG</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:20px;
+background:#f4f4f4;
+}
+
+h1{
+color:#006633;
+}
+
+.card{
+background:white;
+padding:15px;
+margin:10px 0;
+border-radius:10px;
+box-shadow:0 2px 5px rgba(0,0,0,0.2);
+}
+
+#proximo{
+font-size:24px;
+color:#d40000;
+font-weight:bold;
+}
+
+#tempo{
+font-size:18px;
+}
+
+ul{
+padding-left:20px;
+}
+
+li{
+margin:4px 0;
+}
+
+button{
+padding:10px;
+background:#006633;
+color:white;
+border:none;
+border-radius:6px;
+font-size:16px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>🚌 Ônibus Moradias UFMG</h1>
+
+<div class="card">
+
+<h2>Próximo ônibus</h2>
+
+<div id="proximo"></div>
+<div id="tempo"></div>
+
+</div>
+
+<div class="card">
+
+<h2>Rota</h2>
+
+<p>
+Escola de Música → FaE → FACE → Reitoria → CAD1 → Farmácia →
+Odonto → Educação Física → Ouro Preto →
+Moradia 1 → Moradia 2 → Moradia 3 → retorno UFMG
+</p>
+
+</div>
+
+<div class="card">
+
+<h2>Horários</h2>
+
+<ul id="lista"></ul>
+
+</div>
+
+<div class="card">
+
+<h2>Mapa da rota</h2>
+
+<iframe
+width="100%"
+height="300"
+style="border:0"
+loading="lazy"
+allowfullscreen
+src="https://maps.google.com/maps?q=UFMG&t=&z=14&ie=UTF8&iwloc=&output=embed">
+</iframe>
+
+</div>
+
+<script>
+
+const horarios = [
+
+"06:45",
+"07:20",
+"07:40",
+"10:00",
+"11:00",
+"11:50",
+"12:15",
+"13:10",
+"13:30",
+"15:00",
+"15:20",
+"17:00",
+"17:20",
+"17:50",
+"18:20",
+"19:00",
+"19:40",
+"21:00",
+"21:35",
+"22:15",
+"22:50"
+
+];
+
+const lista = document.getElementById("lista");
+
+horarios.forEach(h=>{
+
+let li=document.createElement("li");
+
+li.innerText=h;
+
+lista.appendChild(li);
+
+});
+
+function atualizar(){
+
+let agora=new Date();
+
+let atualMin=agora.getHours()*60+agora.getMinutes();
+
+for(let h of horarios){
+
+let p=h.split(":");
+
+let min=parseInt(p[0])*60+parseInt(p[1]);
+
+if(min>atualMin){
+
+let falta=min-atualMin;
+
+document.getElementById("proximo").innerText="🚌 "+h;
+
+document.getElementById("tempo").innerText=
+"Faltam "+falta+" minutos";
+
+return;
+
+}
+
+}
+
+document.getElementById("proximo").innerText="Sem ônibus hoje";
+
+document.getElementById("tempo").innerText="";
+
+}
+
+setInterval(atualizar,10000);
+
+atualizar();
+
+</script>
+
+</body>
+</html>
