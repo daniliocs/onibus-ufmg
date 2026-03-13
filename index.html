@@ -101,17 +101,20 @@ src="https://maps.google.com/maps?q=UFMG&t=&z=14&output=embed">
 
 const pontos=[
 
+const pontos=[
+
 {nome:"Escola de Música",t:0},
 {nome:"FaE",t:3},
 {nome:"FACE",t:5},
 {nome:"Reitoria",t:7},
-{nome:"CAD1",t:9},
+{nome:"CAD 1",t:9},
 {nome:"Farmácia",t:11},
 {nome:"Odonto",t:13},
 {nome:"Educação Física",t:15},
-{nome:"Moradia 1",t:18},
-{nome:"Moradia 2",t:21},
-{nome:"Moradia 3",t:23}
+{nome:"Moradia 1",t:21},
+{nome:"Moradia 2 e 3",t:24}
+
+];
 
 ];
 
@@ -132,12 +135,23 @@ const horarios=[
 {hora:"17:20",origem:"Moradia"},
 {hora:"17:50",origem:"Escola de Música"},
 {hora:"18:20",origem:"Moradia"},
-{hora:"19:00",origem:"Escola de Música",noturno:true},
-{hora:"19:40",origem:"Escola de Música",noturno:true},
-{hora:"21:00",origem:"Escola de Música",noturno:true},
-{hora:"21:35",origem:"Escola de Música",noturno:true},
-{hora:"22:15",origem:"Escola de Música",noturno:true},
-{hora:"22:50",origem:"Escola de Música",noturno:true}
+{hora:"19:00",origem:"Escola de Música"},
+{hora:"19:25",origem:"Moradias",passagem:true},
+
+{hora:"19:40",origem:"Escola de Música"},
+{hora:"20:05",origem:"Moradias",passagem:true},
+
+{hora:"21:00",origem:"Escola de Música"},
+{hora:"21:25",origem:"Moradias",passagem:true},
+
+{hora:"21:35",origem:"Escola de Música"},
+{hora:"21:50",origem:"Moradias",passagem:true},
+
+{hora:"22:15",origem:"Escola de Música"},
+{hora:"22:40",origem:"Moradias",passagem:true},
+
+{hora:"22:50",origem:"Escola de Música"},
+{hora:"23:15",origem:"Moradias",passagem:true}
 
 ];
 
@@ -147,11 +161,15 @@ horarios.forEach(h=>{
 
 let li=document.createElement("li");
 
-let txt=h.hora+" — Saída "+h.origem;
+let txt=h.hora+" — ";
 
-if(h.noturno){
+if(h.passagem){
 
-txt+=" (passa nas moradias)";
+txt+="Passando nas moradias";
+
+}else{
+
+txt+="Saída "+h.origem;
 
 }
 
@@ -161,6 +179,7 @@ lista.appendChild(li);
 
 });
 
+  
 function atualizar(){
 
 let agora=new Date();
@@ -217,6 +236,29 @@ mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora);
 
 }
 
+if(!proximo){
+
+let agora=new Date();
+let dia=agora.getDay(); 
+
+let proximoHorario=horarios[0];
+
+let textoDia="Amanhã";
+
+if(dia==6){ 
+textoDia="Segunda";
+}
+
+document.getElementById("proximo").innerHTML=
+"🚌 "+textoDia+" "+proximoHorario.hora;
+
+document.getElementById("origem").innerText=
+"Saída: "+proximoHorario.origem;
+
+document.getElementById("tempo").innerText="";
+
+}
+  
 }
 
 
