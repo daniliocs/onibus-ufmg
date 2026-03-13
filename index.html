@@ -68,6 +68,8 @@ margin:5px 0;
 
 <h2>Chegada estimada nos pontos</h2>
 
+<div id="infoViagem" style="margin-bottom:10px;font-weight:bold;"></div>
+
 <ul id="chegadas"></ul>
 
 </div>
@@ -202,7 +204,7 @@ document.getElementById("tempo").className=cor;
 document.getElementById("tempo").innerText=
 "Faltam "+falta+" minutos";
 
-mostrarChegadas(min);
+mostrarChegadas(min, h.origem, h.hora);
 
 return;
 
@@ -212,11 +214,15 @@ return;
 
 }
 
-function mostrarChegadas(saida){
+function mostrarChegadas(saida, origem, hora){
 
 let lista=document.getElementById("chegadas");
 
 lista.innerHTML="";
+
+document.getElementById("infoViagem").innerHTML =
+"Previsão baseada no ônibus das <b>"+hora+
+"</b> (saída: "+origem+")";
 
 pontos.forEach(p=>{
 
@@ -237,7 +243,6 @@ lista.appendChild(li);
 });
 
 }
-
 setInterval(atualizar,10000);
 
 atualizar();
