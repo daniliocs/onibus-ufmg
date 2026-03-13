@@ -164,55 +164,62 @@ lista.appendChild(li);
 function atualizar(){
 
 let agora=new Date();
-
 let atualMin=agora.getHours()*60+agora.getMinutes();
+
+let proximo=null;
+let ultimo=null;
 
 for(let h of horarios){
 
 let p=h.hora.split(":");
-
 let min=parseInt(p[0])*60+parseInt(p[1]);
 
-if(min>atualMin){
+if(min>atualMin && !proximo){
+proximo={...h,min};
+}
 
-let falta=min-atualMin;
+if(min<=atualMin){
+ultimo={...h,min};
+}
+
+}
+
+if(proximo){
+
+let falta=proximo.min-atualMin;
 
 let cor="vermelho";
-
 let icon="🔴";
 
 if(falta<8){
-
 cor="verde";
 icon="🟢";
-
 }else if(falta<15){
-
 cor="amarelo";
 icon="🟡";
-
 }
 
 document.getElementById("proximo").innerHTML=
-icon+" "+h.hora;
+icon+" "+proximo.hora;
 
 document.getElementById("origem").innerText=
-"Saída: "+h.origem;
+"Próxima saída: "+proximo.origem;
 
 document.getElementById("tempo").className=cor;
-
 document.getElementById("tempo").innerText=
 "Faltam "+falta+" minutos";
 
-mostrarChegadas(min, h.origem, h.hora);
+}
 
-return;
+if(ultimo){
+
+mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora);
 
 }
 
 }
 
-}
+
 
 function mostrarChegadas(saida, origem, hora){
 
