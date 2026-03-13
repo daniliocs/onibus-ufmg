@@ -99,9 +99,8 @@ src="https://maps.google.com/maps?q=UFMG&t=&z=14&output=embed">
 
 <script>
 
-const pontos=[
 
-const pontos=[
+const rotaCampus=[
 
 {nome:"Escola de Música",t:0},
 {nome:"FaE",t:3},
@@ -116,7 +115,20 @@ const pontos=[
 
 ];
 
-];
+const rotaMoradia=[
+
+{nome:"Moradia 1",t:0},
+{nome:"Moradia 2 e 3",t:2},
+{nome:"Educação Física",t:8},
+{nome:"Odonto",t:10},
+{nome:"Farmácia",t:12},
+{nome:"Engenharia",t:14},
+{nome:"RU 1",t:16},
+{nome:"FaE",t:18},
+{nome:"Belas Artes",t:20},
+{nome:"Escola de Música",t:23}
+
+];  
 
 const horarios=[
 
@@ -266,19 +278,28 @@ document.getElementById("tempo").innerText="";
 function mostrarChegadas(saida, origem, hora){
 
 let lista=document.getElementById("chegadas");
-
 lista.innerHTML="";
 
-document.getElementById("infoViagem").innerHTML =
-"Previsão baseada no ônibus das <b>"+hora+
-"</b> (saída: "+origem+")";
+document.getElementById("infoViagem").innerHTML=
+"Previsão baseada no ônibus das "+hora+" (saída: "+origem+")";
 
-pontos.forEach(p=>{
+let rota;
+
+if(origem=="Moradia"){
+
+rota=rotaMoradia;
+
+}else{
+
+rota=rotaCampus;
+
+}
+
+rota.forEach(p=>{
 
 let min=saida+p.t;
 
 let h=Math.floor(min/60);
-
 let m=min%60;
 
 if(m<10)m="0"+m;
@@ -292,6 +313,9 @@ lista.appendChild(li);
 });
 
 }
+
+
+  
 setInterval(atualizar,10000);
 
 atualizar();
