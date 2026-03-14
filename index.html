@@ -3,6 +3,8 @@
 
 <head>
 
+<link rel="manifest" href="./manifest.json">
+  
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
   
@@ -761,5 +763,14 @@ setInterval(atualizar,TEMPO_ATUALIZACAO);
 
 </script>
 
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('App pronto para funcionar offline!'))
+        .catch(err => console.log('Erro no Service Worker:', err));
+    });
+  }
+</script>  
 </body>
 </html>
