@@ -294,6 +294,13 @@ const rotaMoradia=[
 
 ];
 
+const rotaPassagem = [
+  {p: "Moradia 1", t: 0},
+  {p: "Moradia 2 e 3", t: 2},
+  {p: "Unidade Admnistrativa II", t:7},
+  {p: "Rotatória", t: 8},
+  {p: "Ponto final", t: 9} 
+];
 
 /* -----------------------------
 HORÁRIOS
@@ -338,7 +345,7 @@ const horariosSabado = [
   ["11:00", "Moradia"],
   ["12:00", "Escola de Música"],
   ["12:20", "Moradia"],
-  ["13:30", "Escola de Música"]
+  ["13:30", "Escola de Música","passagem"]
 ];
 
 
@@ -423,8 +430,16 @@ function calcularTempoNoPonto(nomeDoPonto) {
   for (let h of horarios) {
     let minSaida = minutos(h[0]);
     let origem = h[1];
-    let rota = origem.includes("Moradia") ? rotaMoradia : rotaCampus;
+    let tipo = h[2]; // Puxa o tipo
     
+    // NOVA LÓGICA DE ESCOLHA:
+    let rota = rotaCampus;
+    if (tipo === "passagem") {
+      rota = rotaPassagem;
+    } else if (origem.includes("Moradia")) {
+      rota = rotaMoradia;
+    }
+  
     // Procura o seu ponto na rota deste ônibus específico
     let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
     
@@ -626,16 +641,21 @@ lista.appendChild(li);
 }
 
 
-function mostrarChegadas(saida,origem,hora){
+function mostrarChegadas(saida, origem, hora, tipo) { // Adicione o 'tipo' aqui
+  let lista = document.getElementById("chegadas");
+  lista.innerHTML = "";
 
-let lista=document.getElementById("chegadas");
-lista.innerHTML="";
+  document.getElementById("infoViagem").innerHTML =
+    "Previsão baseada no ônibus das " + hora + " (saída: " + origem + ")";
 
-document.getElementById("infoViagem").innerHTML=
-"Previsão baseada no ônibus das "+hora+" (saída: "+origem+")";
-
-let rota=(origem.includes("Moradia")) ? rotaMoradia : rotaCampus;
-
+  // NOVA LÓGICA DE ESCOLHA:
+  let rota = rotaCampus;
+  if (tipo === "passagem") {
+    rota = rotaPassagem;
+  } else if (origem.includes("Moradia")) {
+    rota = rotaMoradia;
+  }
+  
 rota.forEach(p=>{
 
 let min=saida+p.t;
@@ -674,11 +694,14 @@ function atualizar(){
   // 1. Tenta achar o próximo ônibus HOJE
   horarios.forEach(h => {
     let min = minutos(h[0]);
+    
     if(min > atualMin && !proximo){
-      proximo = {hora: h[0], origem: h[1], min: min, quando: "hoje"};
+      // Adicionamos o h[2] aqui
+      proximo = {hora: h[0], origem: h[1], min: min, quando: "hoje", tipo: h[2]};
     }
     if(min <= atualMin){
-      ultimo = {hora: h[0], origem: h[1], min: min};
+      // E aqui também
+      ultimo = {hora: h[0], origem: h[1], min: min, tipo: h[2]};
     }
   });
 
@@ -744,11 +767,11 @@ function atualizar(){
 
     // Se o ônibus atual ainda está no meio do caminho...
     if (atualMin <= minutoFimDaViagem) {
-      mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora);
+      mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora, ultimo.tipo);
     } 
     // Se ele já chegou no final, mas ainda tem próximo ônibus hoje...
     else if (proximo && proximo.quando === "hoje") {
-      mostrarChegadas(proximo.min, proximo.origem, proximo.hora);
+      mostrarChegadas(proximo.min, proximo.origem, proximo.hora, ultimo.tipo);
     } 
     // Se ele já terminou e não tem mais nenhum ônibus hoje...
     else {
@@ -758,7 +781,7 @@ function atualizar(){
   } 
   // Se o primeiro ônibus do dia ainda nem saiu...
   else if (proximo && proximo.quando === "hoje") {
-    mostrarChegadas(proximo.min, proximo.origem, proximo.hora);
+    mostrarChegadas(proximo.min, proximo.origem, proximo.hora, ultimo.tipo);
   } else {
     document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens...</li>";
     document.getElementById("infoViagem").innerHTML = "";
@@ -785,7 +808,14 @@ function estimarPosicaoOnibus() {
   // Usamos a variável global 'ultimo' que a função atualizar() gera
   if (!ultimo) return; 
 
-  let rota = ultimo.origem.includes("Moradia") ? rotaMoradia : rotaCampus;
+  
+  let rota = rotaCampus;
+  if (ultimo.tipo === "passagem") {
+    rota = rotaPassagem;
+  } else if (ultimo.origem.includes("Moradia")) {
+    rota = rotaMoradia;
+  }
+  
   let tempoTotal = rota[rota.length - 1].t;
   let minutoFim = ultimo.min + tempoTotal;
 
