@@ -316,37 +316,71 @@ return {ponto:melhor,dist:menor};
 }
 
   
+
+// Variável global para guardar o "vídeo" do GPS
+let gpsWatchId = null;
+
 function usarGPS(){
+  const botao = document.querySelector("button[onclick='usarGPS()']");
+  const visor = document.getElementById("gps");
 
-if(!navigator.geolocation){
+  if(!navigator.geolocation){
+    visor.innerText = "GPS não suportado";
+    return;
+  }
 
-document.getElementById("gps").innerText="GPS não suportado";
-return;
+  // Se o GPS já estiver ligado, o clique serve para desligar
+  if(gpsWatchId !== null){
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+    
+    // Volta o botão ao normal
+    botao.innerHTML = "📍 Usar minha localização";
+    botao.style.background = "#006633";
+    visor.innerHTML = "Atualização do GPS pausada.";
+    return;
+  }
 
+  // Se o GPS estiver desligado, vamos ligar
+  visor.innerText = "Obtendo localização em tempo real...";
+  
+  // Muda a cara do botão para mostrar que está ativo e pode ser cancelado
+  botao.innerHTML = "🛑 Parar rastreio de GPS";
+  botao.style.background = "#cc0000";
+
+  // Inicia o rastreio contínuo
+  gpsWatchId = navigator.geolocation.watchPosition(
+    function(pos){
+      let lat = pos.coords.latitude;
+      let lon = pos.coords.longitude;
+
+      let r = pontoMaisProximo(lat,lon);
+
+      visor.innerHTML =
+        "📍 Ponto mais próximo: <b>"+r.ponto.nome+"</b><br>"+
+        "Distância: "+(r.dist*1000).toFixed(0)+" m<br>"+
+        "<small style='color:green;'>Atualizando em tempo real...</small>";
+    },
+    function(){
+      visor.innerText = "Não foi possível obter a localização";
+      
+      // Se der erro, desliga tudo e volta o botão ao normal
+      navigator.geolocation.clearWatch(gpsWatchId);
+      gpsWatchId = null;
+      botao.innerHTML = "📍 Usar minha localização";
+      botao.style.background = "#006633";
+    },
+    {
+      enableHighAccuracy: true, // Força o celular a usar o GPS mais preciso
+      maximumAge: 0 // Garante que não vai pegar posição velha do cache
+    }
+  );
 }
 
-document.getElementById("gps").innerText="Obtendo localização...";
 
-navigator.geolocation.getCurrentPosition(function(pos){
 
-let lat=pos.coords.latitude;
-let lon=pos.coords.longitude;
 
-let r=pontoMaisProximo(lat,lon);
-
-document.getElementById("gps").innerHTML=
-"📍 Ponto mais próximo: <b>"+r.ponto.nome+"</b><br>"+
-"Distância: "+(r.dist*1000).toFixed(0)+" m";
-
-},
-function(){
-
-document.getElementById("gps").innerText="Não foi possível obter localização";
-
-});
-
-}
-
+  
 
 /* -----------------------------
 HORÁRIOS DO DIA E PRÓXIMOS
@@ -413,7 +447,7 @@ lista.innerHTML="";
 document.getElementById("infoViagem").innerHTML=
 "Previsão baseada no ônibus das "+hora+" (saída: "+origem+")";
 
-let rota=(origem=="Moradia")?rotaMoradia:rotaCampus;
+let rota=(origem.includes("Moradia")) ? rotaMoradia : rotaCampus;
 
 rota.forEach(p=>{
 
@@ -498,14 +532,35 @@ function atualizar(){
     document.getElementById("tempo").innerText = "";
   }
 
-  // 4. Mostra o itinerário do último que saiu (se houver)
-  if(ultimo){
-    mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora);
+ // 4. Mostra o itinerário do ônibus atual ou do próximo
+  if (ultimo) {
+    // Descobre qual rota o último ônibus está fazendo para saber o tempo total
+    let rotaUltimo = (ultimo.origem.includes("Moradia")) ? rotaMoradia : rotaCampus;
+    let tempoTotalViagem = rotaUltimo[rotaUltimo.length - 1].t; 
+    let minutoFimDaViagem = ultimo.min + tempoTotalViagem;
+
+    // Se o ônibus atual ainda está no meio do caminho...
+    if (atualMin <= minutoFimDaViagem) {
+      mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora);
+    } 
+    // Se ele já chegou no final, mas ainda tem próximo ônibus hoje...
+    else if (proximo && proximo.quando === "hoje") {
+      mostrarChegadas(proximo.min, proximo.origem, proximo.hora);
+    } 
+    // Se ele já terminou e não tem mais nenhum ônibus hoje...
+    else {
+      document.getElementById("chegadas").innerHTML = "<li>Viagens encerradas no momento.</li>";
+      document.getElementById("infoViagem").innerHTML = "";
+    }
+  } 
+  // Se o primeiro ônibus do dia ainda nem saiu...
+  else if (proximo && proximo.quando === "hoje") {
+    mostrarChegadas(proximo.min, proximo.origem, proximo.hora);
   } else {
-    document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens de hoje...</li>";
+    document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens...</li>";
     document.getElementById("infoViagem").innerHTML = "";
   }
-}
+} // Fim da função atualizar()
 
 
   
