@@ -37,14 +37,6 @@ font-weight:bold;
 .amarelo{color:#c98a00}
 .vermelho{color:red}
 
-ul{
-padding-left:20px;
-}
-
-li{
-margin:5px 0;
-}
-
 </style>
 
 </head>
@@ -54,55 +46,42 @@ margin:5px 0;
 <h1>🚌 Ônibus Moradias UFMG</h1>
 
 <div class="card">
-
 <h2>Próximo ônibus</h2>
-
 <div id="proximo"></div>
 <div id="origem"></div>
 <div id="tempo"></div>
-<div id="posicao"></div>
-
 </div>
 
 <div class="card">
-
 <h2>Chegada estimada nos pontos</h2>
-
-<div id="infoViagem" style="margin-bottom:10px;font-weight:bold;"></div>
-
+<div id="infoViagem"></div>
 <ul id="chegadas"></ul>
-
 </div>
 
 <div class="card">
-
-<h2>Horários</h2>
-
+<h2>Horários de hoje</h2>
 <ul id="lista"></ul>
-
 </div>
 
 <div class="card">
-
-<h2>Mapa da rota</h2>
-
-<iframe
-src="https://www.google.com/maps/embed?pb=!1m52!1m12!1m3!1d24858.984333921202!2d-43.992902029179845!3d-19.869570466314457!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m37!3e0!4m3!3m2!1d-19.8621065!2d-43.961873399999995!4m5!1s0xa6908ba9d8c1f5%3A0xc91c7585367e1d4c!2sRua%20Doutor%20Fernando%20de%20Melo%20Viana%20280%20-%20Pampulha%2C%20Belo%20Horizonte%20-%20MG!3m2!1d-19.868915899999998!2d-43.960226399999996!4m5!1s0xa690f4db02bc95%3A0x8ac8a99eca71dee9!2sRua%20e%20525%20-%20Pampulha%2C%20Belo%20Horizonte%20-%20MG!3m2!1d-19.86828!2d-43.96365!4m3!3m2!1d-19.870120699999998!2d-43.9686507!4m3!3m2!1d-19.8766085!2d-43.976236!4m5!1s0xa69102561287bb%3A0x193d434fce2893fb!2sMoradia%20Universit%C3%A1ria%20Ouro%20Preto%20I%2C%20Av.%20Fleming%2C%20394%20-%20Ouro%20Preto%2C%20Belo%20Horizonte%20-%20MG%2C%2031310-490!3m2!1d-19.8706939!2d-43.9862414!4m5!1s0xa691dc997cf765%3A0xa0c977a5a5eda594!2sMoradia%20universit%C3%A1ria%20ouro%20preto%20III%20UFMG%2C%20Av.%20Fleming%2C%20926%20-%20Ouro%20Preto%2C%20Belo%20Horizonte%20-%20MG%2C%2031310-490!3m2!1d-19.866180999999997!2d-43.9845383!5e1!3m2!1spt-BR!2sbr!4v1773370128838!5m2!1spt-BR!2sbr"
-width="100%"
-height="350"
-style="border:0;border-radius:10px;"
-allowfullscreen=""
-loading="lazy"
-referrerpolicy="no-referrer-when-downgrade">
-</iframe>
-
+<h2>Ponto mais próximo</h2>
+<div id="gps">Obtendo localização...</div>
 </div>
 
 <script>
 
+/* -----------------------------
+CONFIGURAÇÕES
+----------------------------- */
+
+const TEMPO_ATUALIZACAO=10000;
+
+
+/* -----------------------------
+ROTAS
+----------------------------- */
 
 const rotaCampus=[
-
 {nome:"Escola de Música",t:0},
 {nome:"FaE",t:3},
 {nome:"FACE",t:5},
@@ -113,11 +92,9 @@ const rotaCampus=[
 {nome:"Educação Física",t:15},
 {nome:"Moradia 1",t:21},
 {nome:"Moradia 2 e 3",t:24}
-
 ];
 
 const rotaMoradia=[
-
 {nome:"Moradia 1",t:0},
 {nome:"Moradia 2 e 3",t:2},
 {nome:"Educação Física",t:7},
@@ -130,191 +107,217 @@ const rotaMoradia=[
 {nome:"FaE",t:18},
 {nome:"Belas Artes",t:20},
 {nome:"Escola de Música",t:22}
+];
 
-];  
+
+/* -----------------------------
+HORÁRIOS
+----------------------------- */
 
 const horariosSemana=[
 
-{hora:"06:45",origem:"Moradia"},
-{hora:"07:20",origem:"Escola de Música"},
-{hora:"07:40",origem:"Moradia"},
-{hora:"10:00",origem:"Escola de Música"},
-{hora:"11:00",origem:"Moradia"},
-{hora:"11:50",origem:"Escola de Música"},
-{hora:"12:15",origem:"Moradia"},
-{hora:"13:10",origem:"Escola de Música"},
-{hora:"13:30",origem:"Moradia"},
-{hora:"15:00",origem:"Escola de Música"},
-{hora:"15:20",origem:"Moradia"},
-{hora:"17:00",origem:"Escola de Música"},
-{hora:"17:20",origem:"Moradia"},
-{hora:"17:50",origem:"Escola de Música"},
-{hora:"18:20",origem:"Moradia"},
-{hora:"19:00",origem:"Escola de Música"},
-{hora:"19:25",origem:"Moradias",passagem:true},
-
-{hora:"19:40",origem:"Escola de Música"},
-{hora:"20:05",origem:"Moradias",passagem:true},
-
-{hora:"21:00",origem:"Escola de Música"},
-{hora:"21:25",origem:"Moradias",passagem:true},
-
-{hora:"21:35",origem:"Escola de Música"},
-{hora:"21:50",origem:"Moradias",passagem:true},
-
-{hora:"22:15",origem:"Escola de Música"},
-{hora:"22:40",origem:"Moradias",passagem:true},
-
-{hora:"22:50",origem:"Escola de Música"},
-{hora:"23:15",origem:"Moradias",passagem:true}
+["06:45","Moradia"],
+["07:20","Escola de Música"],
+["07:40","Moradia"],
+["10:00","Escola de Música"],
+["11:00","Moradia"],
+["11:50","Escola de Música"],
+["12:15","Moradia"],
+["13:10","Escola de Música"],
+["13:30","Moradia"],
+["15:00","Escola de Música"],
+["15:20","Moradia"],
+["17:00","Escola de Música"],
+["17:20","Moradia"],
+["17:50","Escola de Música"],
+["18:20","Moradia"],
+["19:00","Escola de Música"],
+["19:25","Moradias","passagem"],
+["19:40","Escola de Música"],
+["20:05","Moradias","passagem"],
+["21:00","Escola de Música"],
+["21:25","Moradias","passagem"],
+["21:35","Escola de Música"],
+["21:50","Moradias","passagem"],
+["22:15","Escola de Música"],
+["22:40","Moradias","passagem"],
+["22:50","Escola de Música"],
+["23:15","Moradias","passagem"]
 
 ];
 
 const horariosSabado=[
+["07:20","Escola de Música"],
+["07:40","Moradia"],
+["10:00","Escola de Música"],
+["11:00","Moradia"],
+["15:00","Escola de Música"],
+["15:20","Moradia"],
+["19:00","Escola de Música"],
+["19:25","Moradias","passagem"]
+];
 
-{hora:"07:40",origem:"Moradia"},
-{hora:"10:00",origem:"Escola de Música"},
-{hora:"11:00",origem:"Moradia"},
-{hora:"12:00",origem:"Escola de Música"},
-{hora:"12:20",origem:"Moradia"},
-{hora:"13:30",origem:"Escola de Música"}
+
+/* -----------------------------
+PONTOS PARA GPS
+----------------------------- */
+
+const pontos=[
+
+{nome:"Escola de Música",lat:-19.8621,lon:-43.9618},
+{nome:"FaE",lat:-19.8682,lon:-43.9636},
+{nome:"FACE",lat:-19.8701,lon:-43.9686},
+{nome:"Reitoria",lat:-19.8766,lon:-43.9762},
+{nome:"Moradia 1",lat:-19.8706,lon:-43.9862},
+{nome:"Moradia 2 e 3",lat:-19.8661,lon:-43.9845}
 
 ];
 
 
-const hoje=new Date().getDay();
+/* -----------------------------
+UTILITÁRIOS
+----------------------------- */
 
-let horarios=[];
+function minutos(hora){
 
-if(hoje>=1 && hoje<=5){
-horarios=horariosSemana;
-}
-else if(hoje==6){
-horarios=horariosSabado;
-}
-else{
-horarios=[];
+let p=hora.split(":");
+return parseInt(p[0])*60+parseInt(p[1]);
+
 }
 
+function formatarTempo(min){
 
-  
+let h=Math.floor(min/60);
+let m=min%60;
 
-const lista=document.getElementById("lista");
+if(h>0){
+
+if(m<10)m="0"+m;
+return "Faltam "+h+":"+m;
+
+}
+
+return "Faltam "+m+" min";
+
+}
+
+function distancia(a,b,c,d){
+
+const R=6371;
+
+let dLat=(c-a)*Math.PI/180;
+let dLon=(d-b)*Math.PI/180;
+
+let x=
+Math.sin(dLat/2)**2+
+Math.cos(a*Math.PI/180)*
+Math.cos(c*Math.PI/180)*
+Math.sin(dLon/2)**2;
+
+let y=2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+
+return R*y;
+
+}
+
+
+/* -----------------------------
+GPS
+----------------------------- */
+
+function pontoMaisProximo(lat,lon){
+
+let menor=999;
+let melhor=null;
+
+pontos.forEach(p=>{
+
+let d=distancia(lat,lon,p.lat,p.lon);
+
+if(d<menor){
+menor=d;
+melhor=p;
+}
+
+});
+
+return {ponto:melhor,dist:menor};
+
+}
+
+function atualizarGPS(){
+
+navigator.geolocation.getCurrentPosition(function(pos){
+
+let lat=pos.coords.latitude;
+let lon=pos.coords.longitude;
+
+let r=pontoMaisProximo(lat,lon);
+
+document.getElementById("gps").innerText=
+"📍 "+r.ponto.nome+" ("+(r.dist*1000).toFixed(0)+" m)";
+
+});
+
+}
+
+
+/* -----------------------------
+HORÁRIOS DO DIA
+----------------------------- */
+
+function horariosHoje(){
+
+let dia=new Date().getDay();
+
+if(dia>=1 && dia<=5) return horariosSemana;
+if(dia==6) return horariosSabado;
+
+return [];
+
+}
+
+
+/* -----------------------------
+INTERFACE
+----------------------------- */
+
+function listarHorarios(){
+
+let lista=document.getElementById("lista");
+lista.innerHTML="";
+
+let horarios=horariosHoje();
 
 if(horarios.length==0){
 
-let li=document.createElement("li");
-li.innerText="🚫 Não há ônibus aos domingos";
-lista.appendChild(li);
+lista.innerHTML="<li>🚫 Não há ônibus hoje</li>";
+return;
 
-}else{
+}
 
 horarios.forEach(h=>{
 
 let li=document.createElement("li");
 
-let txt=h.hora+" — ";
+if(h[2]=="passagem"){
 
-if(h.passagem){
-txt+="Passando nas moradias";
+li.innerText=h[0]+" — Passando nas moradias";
+
 }else{
-txt+="Saída "+h.origem;
+
+li.innerText=h[0]+" — Saída "+h[1];
+
 }
 
-li.innerText=txt;
 lista.appendChild(li);
 
 });
 
 }
 
-  
-  
-function atualizar(){
 
-let agora=new Date();
-let atualMin=agora.getHours()*60+agora.getMinutes();
-
-let proximo=null;
-let ultimo=null;
-
-for(let h of horarios){
-
-let p=h.hora.split(":");
-let min=parseInt(p[0])*60+parseInt(p[1]);
-
-if(min>atualMin && !proximo){
-proximo={...h,min};
-}
-
-if(min<=atualMin){
-ultimo={...h,min};
-}
-
-}
-
-if(proximo){
-
-let falta=proximo.min-atualMin;
-
-let cor="vermelho";
-let icon="🔴";
-
-if(falta<8){
-cor="verde";
-icon="🟢";
-}else if(falta<15){
-cor="amarelo";
-icon="🟡";
-}
-
-document.getElementById("proximo").innerHTML=
-icon+" "+proximo.hora;
-
-document.getElementById("origem").innerText=
-"Próxima saída: "+proximo.origem;
-
-document.getElementById("tempo").className=cor;
-  
-document.getElementById("tempo").innerText=
-formatarTempo(falta);;
-
-}
-
-if(ultimo){
-
-mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora);
-
-}
-
-if(!proximo){
-
-let agora=new Date();
-let dia=agora.getDay(); 
-
-let proximoHorario=horarios[0];
-
-let textoDia="Amanhã";
-
-if(dia==6){ 
-textoDia="Segunda";
-}
-
-document.getElementById("proximo").innerHTML=
-"🚌 "+textoDia+" "+proximoHorario.hora;
-
-document.getElementById("origem").innerText=
-"Saída: "+proximoHorario.origem;
-
-document.getElementById("tempo").innerText="";
-
-}
-  
-}
-
-
-
-function mostrarChegadas(saida, origem, hora){
+function mostrarChegadas(saida,origem,hora){
 
 let lista=document.getElementById("chegadas");
 lista.innerHTML="";
@@ -322,17 +325,7 @@ lista.innerHTML="";
 document.getElementById("infoViagem").innerHTML=
 "Previsão baseada no ônibus das "+hora+" (saída: "+origem+")";
 
-let rota;
-
-if(origem=="Moradia"){
-
-rota=rotaMoradia;
-
-}else{
-
-rota=rotaCampus;
-
-}
+let rota=(origem=="Moradia")?rotaMoradia:rotaCampus;
 
 rota.forEach(p=>{
 
@@ -344,7 +337,6 @@ let m=min%60;
 if(m<10)m="0"+m;
 
 let li=document.createElement("li");
-
 li.innerText=p.nome+" → "+h+":"+m;
 
 lista.appendChild(li);
@@ -354,26 +346,71 @@ lista.appendChild(li);
 }
 
 
-setInterval(atualizar,10000);
+/* -----------------------------
+PRÓXIMO ÔNIBUS
+----------------------------- */
 
+function atualizar(){
 
- function formatarTempo(min){
+let horarios=horariosHoje();
 
-let h=Math.floor(min/60);
-let m=min%60;
+if(horarios.length==0){
 
-if(h>0){
-return "Faltam "+h+"h e "+m+" min";
-}else{
-return "Faltam "+m+" min";
+document.getElementById("proximo").innerHTML="🚫 Sem ônibus hoje";
+return;
+
 }
 
-} 
+let agora=new Date();
+let atualMin=agora.getHours()*60+agora.getMinutes();
 
+let proximo=null;
+let ultimo=null;
+
+horarios.forEach(h=>{
+
+let min=minutos(h[0]);
+
+if(min>atualMin && !proximo){
+proximo={hora:h[0],origem:h[1],min};
+}
+
+if(min<=atualMin){
+ultimo={hora:h[0],origem:h[1],min};
+}
+
+});
+
+if(proximo){
+
+let falta=proximo.min-atualMin;
+
+document.getElementById("proximo").innerHTML="🚌 "+proximo.hora;
+document.getElementById("origem").innerText="Saída: "+proximo.origem;
+document.getElementById("tempo").innerText=formatarTempo(falta);
+
+}
+
+if(ultimo){
+
+mostrarChegadas(ultimo.min,ultimo.origem,ultimo.hora);
+
+}
+
+}
+
+
+/* -----------------------------
+INICIALIZAÇÃO
+----------------------------- */
+
+listarHorarios();
+atualizarGPS();
 atualizar();
+
+setInterval(atualizar,TEMPO_ATUALIZACAO);
 
 </script>
 
 </body>
-
 </html>
