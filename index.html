@@ -133,7 +133,7 @@ const rotaMoradia=[
 
 ];  
 
-const horarios=[
+const horariosSemana=[
 
 {hora:"06:45",origem:"Moradia"},
 {hora:"07:20",origem:"Escola de Música"},
@@ -170,7 +170,44 @@ const horarios=[
 
 ];
 
+const horariosSabado=[
+
+{hora:"07:40",origem:"Moradia"},
+{hora:"10:00",origem:"Escola de Música"},
+{hora:"11:00",origem:"Moradia"},
+{hora:"12:00",origem:"Escola de Música"},
+{hora:"12:20",origem:"Moradia"},
+{hora:"13:30",origem:"Escola de Música",passagem:true}
+
+];
+
+
+const hoje=new Date().getDay();
+
+let horarios=[];
+
+if(hoje>=1 && hoje<=5){
+horarios=horariosSemana;
+}
+else if(hoje==6){
+horarios=horariosSabado;
+}
+else{
+horarios=[];
+}
+
+
+  
+
 const lista=document.getElementById("lista");
+
+if(horarios.length==0){
+
+let li=document.createElement("li");
+li.innerText="🚫 Não há ônibus aos domingos";
+lista.appendChild(li);
+
+}else{
 
 horarios.forEach(h=>{
 
@@ -179,21 +216,19 @@ let li=document.createElement("li");
 let txt=h.hora+" — ";
 
 if(h.passagem){
-
 txt+="Passando nas moradias";
-
 }else{
-
 txt+="Saída "+h.origem;
-
 }
 
 li.innerText=txt;
-
 lista.appendChild(li);
 
 });
 
+}
+
+  
   
 function atualizar(){
 
