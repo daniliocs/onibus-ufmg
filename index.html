@@ -5,13 +5,16 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  
 <title>Ônibus Moradias UFMG</title>
 
   
 
 <style>
-
 
 
   /* Estilo de Linha do Tempo para as paradas */
@@ -121,6 +124,8 @@ margin-bottom:10px;
 </button>
 
 <div id="gps">Clique no botão para detectar sua posição</div>
+
+<div id="mapa" style="height: 300px; width: 100%; margin-top: 15px; border-radius: 8px; display: none; z-index: 1;"></div>  
 
 </div>
 
@@ -289,6 +294,35 @@ return R*c;
 }
 
 
+function calcularTempoNoPonto(nomeDoPonto) {
+  let agora = new Date();
+  let atualMin = agora.getHours() * 60 + agora.getMinutes();
+  let horarios = horariosHoje(); 
+  
+  let menorEspera = null;
+
+  for (let h of horarios) {
+    let minSaida = minutos(h[0]);
+    let origem = h[1];
+    let rota = origem.includes("Moradia") ? rotaMoradia : rotaCampus;
+    
+    // Procura o seu ponto na rota deste ônibus específico
+    let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
+    
+    if (pontoNaRota) {
+      let minChegada = minSaida + pontoNaRota.t;
+      // Se o ônibus ainda não passou por este ponto
+      if (minChegada > atualMin) {
+        let espera = minChegada - atualMin;
+        if (menorEspera === null || espera < menorEspera) {
+          menorEspera = espera;
+        }
+      }
+    }
+  }
+  return menorEspera;
+}  
+
 /* -----------------------------
 GPS
 ----------------------------- */
@@ -318,65 +352,99 @@ return {ponto:melhor,dist:menor};
   
 
 // Variável global para guardar o "vídeo" do GPS
+// Variáveis globais para o mapa
 let gpsWatchId = null;
+let meuMapa = null;
+let marcadorUsuario = null;
 
 function usarGPS(){
   const botao = document.querySelector("button[onclick='usarGPS()']");
   const visor = document.getElementById("gps");
+  const divMapa = document.getElementById("mapa");
 
   if(!navigator.geolocation){
     visor.innerText = "GPS não suportado";
     return;
   }
 
-  // Se o GPS já estiver ligado, o clique serve para desligar
   if(gpsWatchId !== null){
     navigator.geolocation.clearWatch(gpsWatchId);
     gpsWatchId = null;
-    
-    // Volta o botão ao normal
     botao.innerHTML = "📍 Usar minha localização";
     botao.style.background = "#006633";
     visor.innerHTML = "Atualização do GPS pausada.";
+    divMapa.style.display = "none"; // Esconde o mapa
     return;
   }
 
-  // Se o GPS estiver desligado, vamos ligar
-  visor.innerText = "Obtendo localização em tempo real...";
-  
-  // Muda a cara do botão para mostrar que está ativo e pode ser cancelado
-  botao.innerHTML = "🛑 Parar rastreio de GPS";
+  visor.innerText = "Obtendo localização e carregando mapa...";
+  botao.innerHTML = "🛑 Parar localização";
   botao.style.background = "#cc0000";
+  divMapa.style.display = "block"; // Mostra o mapa
 
-  // Inicia o rastreio contínuo
+  // Inicializa o mapa apenas uma vez
+  if(meuMapa === null) {
+    // Foca inicialmente no centro da UFMG
+    meuMapa = L.map('mapa').setView([-19.8690, -43.9664], 14); 
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '© OpenStreetMap'
+    }).addTo(meuMapa);
+
+    // Plota os pontos de ônibus no mapa
+    pontos.forEach(p => {
+      if(p.lat !== null && p.lon !== null){
+        L.marker([p.lat, p.lon])
+         .addTo(meuMapa)
+         .bindPopup("<b>" + p.nome + "</b>");
+      }
+    });
+  }
+
   gpsWatchId = navigator.geolocation.watchPosition(
     function(pos){
       let lat = pos.coords.latitude;
       let lon = pos.coords.longitude;
 
       let r = pontoMaisProximo(lat,lon);
+      let espera = calcularTempoNoPonto(r.ponto.nome);
+      
+      let textoEspera = espera !== null 
+        ? "<br><span style='font-size:18px; color:#006633;'><b>🚌 Próximo ônibus aqui em: " + espera + " min</b></span>" 
+        : "<br><span style='color:red;'>🚫 Sem mais ônibus neste ponto hoje</span>";
 
       visor.innerHTML =
         "📍 Ponto mais próximo: <b>"+r.ponto.nome+"</b><br>"+
-        "Distância: "+(r.dist*1000).toFixed(0)+" m<br>"+
-        "<small style='color:green;'>Atualizando em tempo real...</small>";
+        "Distância a pé: "+(r.dist*1000).toFixed(0)+" m" + 
+        textoEspera;
+
+      // Atualiza o usuário no mapa
+      if(marcadorUsuario === null){
+        marcadorUsuario = L.circleMarker([lat, lon], {
+          color: 'blue', fillColor: '#3388ff', fillOpacity: 0.8, radius: 8
+        }).addTo(meuMapa).bindPopup("Você está aqui").openPopup();
+      } else {
+        marcadorUsuario.setLatLng([lat, lon]);
+      }
+      
+      // Centraliza a visão do mapa entre o usuário e o ponto mais próximo
+      if(r.ponto.lat !== null) {
+        let grupo = new L.featureGroup([marcadorUsuario, L.marker([r.ponto.lat, r.ponto.lon])]);
+        meuMapa.fitBounds(grupo.getBounds(), {padding: [30, 30]});
+      } else {
+        meuMapa.setView([lat, lon], 16);
+      }
     },
     function(){
       visor.innerText = "Não foi possível obter a localização";
-      
-      // Se der erro, desliga tudo e volta o botão ao normal
       navigator.geolocation.clearWatch(gpsWatchId);
       gpsWatchId = null;
       botao.innerHTML = "📍 Usar minha localização";
       botao.style.background = "#006633";
     },
-    {
-      enableHighAccuracy: true, // Força o celular a usar o GPS mais preciso
-      maximumAge: 0 // Garante que não vai pegar posição velha do cache
-    }
+    { enableHighAccuracy: true }
   );
 }
-
 
 
 
