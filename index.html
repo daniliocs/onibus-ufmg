@@ -8,8 +8,49 @@
 
 <title>Ônibus Moradias UFMG</title>
 
+  
+
 <style>
 
+
+
+  /* Estilo de Linha do Tempo para as paradas */
+#chegadas {
+  list-style: none;
+  padding-left: 20px;
+  border-left: 3px solid #006633;
+  margin-left: 10px;
+}
+
+#chegadas li {
+  position: relative;
+  padding-bottom: 15px;
+  font-size: 16px;
+  color: #333;
+}
+
+/* Bolinha marcadora da linha do tempo */
+#chegadas li::before {
+  content: '';
+  position: absolute;
+  left: -28px; /* Ajusta a bolinha para cima da linha */
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border: 3px solid #006633;
+  border-radius: 50%;
+}
+
+/* Tira a linha extra do último item */
+#chegadas li:last-child {
+  padding-bottom: 0;
+}
+
+  
+
+
+  
 body{
 font-family:Arial;
 margin:20px;
