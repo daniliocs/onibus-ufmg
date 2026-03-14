@@ -17,7 +17,61 @@
 <style>
 
 
-  /* Estilo de Linha do Tempo para as paradas */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: #f0f2f5;
+  color: #333;
+}
+
+h1 {
+  color: #006633;
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 25px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border: 1px solid #e1e4e8;
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 18px;
+  color: #444;
+  border-bottom: 2px solid #f0f2f5;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+#proximo {
+  font-size: 32px;
+  font-weight: 700;
+  color: #006633;
+  margin: 10px 0;
+}
+
+#origem {
+  font-size: 16px;
+  color: #666;
+}
+
+#tempo {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e67e22; /* Um tom de laranja/amarelo para destaque */
+  margin-top: 5px;
+}
+
+/* Linha do tempo visual para as chegadas */
 #chegadas {
   list-style: none;
   padding-left: 20px;
@@ -28,61 +82,83 @@
 #chegadas li {
   position: relative;
   padding-bottom: 15px;
-  font-size: 16px;
-  color: #333;
+  font-size: 15px;
+  color: #444;
 }
 
 /* Bolinha marcadora da linha do tempo */
 #chegadas li::before {
   content: '';
   position: absolute;
-  left: -28px; /* Ajusta a bolinha para cima da linha */
+  left: -27px; /* Ajusta a bolinha para cima da linha */
   top: 2px;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   background: white;
   border: 3px solid #006633;
   border-radius: 50%;
 }
 
-/* Tira a linha extra do último item */
 #chegadas li:last-child {
   padding-bottom: 0;
 }
 
+/* Lista de horários do dia */
+#lista {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+#lista li {
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+  color: #555;
+}
+
+#lista li:last-child {
+  border-bottom: none;
+}
+
+/* Botão do GPS */
+button {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: #006633;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.1s;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 6px rgba(0,102,51,0.2);
+}
+
+button:active {
+  transform: scale(0.98); /* Efeito de clique */
+}
+
+#gps {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555;
+}
+
+/* Pequeno ajuste visual pro mapa do Leaflet */
+#mapa {
+  border: 2px solid #e1e4e8;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
   
 
-
   
-body{
-font-family:Arial;
-margin:20px;
-background:#f4f4f4;
-}
-
-h1{
-color:#006633;
-}
-
-.card{
-background:white;
-padding:15px;
-margin:10px 0;
-border-radius:10px;
-box-shadow:0 2px 5px rgba(0,0,0,0.2);
-}
-
-#proximo{
-font-size:26px;
-font-weight:bold;
-}
-
-.verde{color:green}
-.amarelo{color:#c98a00}
-.vermelho{color:red}
-
 </style>
 
+
+
+  
 </head>
 
 <body>
