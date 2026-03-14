@@ -529,14 +529,14 @@ function usarGPS(){
       let espera = calcularTempoNoPonto(r.ponto.nome);
       
       let textoEspera = espera !== null 
-        ? "<br><span style='font-size:18px; color:#006633;'><b>🚌 Próximo ônibus aqui em: " + espera + " min</b></span>" 
-        : "<br><span style='color:red;'>🚫 Sem mais ônibus neste ponto hoje</span>";
+        ? "<br><br>🚌 Próximo ônibus aqui em:<br><span style='font-size:24px; color:#006633; font-weight:bold;'>" + espera + " min</span>" 
+        : "<br><br><span style='font-size:16px; color:red;'>🚫 Sem mais ônibus neste ponto hoje</span>";
 
       visor.innerHTML =
-        "📍 Ponto mais próximo: <b>"+r.ponto.nome+"</b><br>"+
-        "Distância a pé: "+(r.dist*1000).toFixed(0)+" m" + 
+        "📍 Ponto mais próximo: <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m)" + 
         textoEspera;
 
+      
       // Atualiza o usuário no mapa
       if(marcadorUsuario === null){
         marcadorUsuario = L.circleMarker([lat, lon], {
@@ -701,18 +701,22 @@ function atualizar(){
     }
   }
 
-  // 3. Atualiza os textos na tela
+
+ // 3. Atualiza os textos na tela
   if(proximo){
     if(proximo.quando === "hoje"){
       let falta = proximo.min - atualMin;
       document.getElementById("proximo").innerHTML = "🚌 " + proximo.hora;
       document.getElementById("tempo").innerText = formatarTempo(falta);
+      document.getElementById("origem").innerText = "Saída: " + proximo.origem;
     } else {
-      // Se for de outro dia, muda a forma de mostrar
-      document.getElementById("proximo").innerHTML = "🚌 " + proximo.quando + " às " + proximo.hora;
-      document.getElementById("tempo").innerText = "As viagens de hoje já encerraram.";
+      // Ajuste para o visual do Item 1
+      document.getElementById("proximo").innerHTML = 
+        "<span style='font-size: 20px; color: #cc0000;'>⚠️ Último ônibus do dia já saiu</span><br>"+
+        "<span style='font-size: 22px; color: #333; margin-top: 10px; display: block;'>Próximo: " + proximo.quando.toLowerCase() + " " + proximo.hora + "</span>";
+      document.getElementById("origem").innerText = "Saída: " + proximo.origem;
+      document.getElementById("tempo").innerText = ""; // Limpa o tempo
     }
-    document.getElementById("origem").innerText = "Saída: " + proximo.origem;
   } else {
     document.getElementById("proximo").innerHTML = "🚫 Sem previsão de ônibus";
     document.getElementById("origem").innerText = "";
@@ -747,11 +751,90 @@ function atualizar(){
     document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens...</li>";
     document.getElementById("infoViagem").innerHTML = "";
   }
+
+
+estimarPosicaoOnibus();
+  
 } // Fim da função atualizar()
 
 
-  
 
+
+  
+// Variável para guardar o ícone do ônibus no mapa
+let marcadorOnibus = null;
+
+function estimarPosicaoOnibus() {
+  if (meuMapa === null) return; // Só calcula se o mapa estiver aberto
+
+  let agora = new Date();
+  let atualMin = agora.getHours() * 60 + agora.getMinutes();
+  
+  // Usamos a variável global 'ultimo' que a função atualizar() gera
+  if (!ultimo) return; 
+
+  let rota = ultimo.origem.includes("Moradia") ? rotaMoradia : rotaCampus;
+  let tempoTotal = rota[rota.length - 1].t;
+  let minutoFim = ultimo.min + tempoTotal;
+
+  // Se o ônibus já terminou a viagem, remove o ícone
+  if (atualMin > minutoFim) {
+    if (marcadorOnibus) {
+      meuMapa.removeLayer(marcadorOnibus);
+      marcadorOnibus = null;
+    }
+    return;
+  }
+
+  let tempoDecorrido = atualMin - ultimo.min;
+
+  // Encontra entre quais pontos ele está
+  let pontoAnterior = rota[0];
+  let pontoProximo = rota[rota.length - 1];
+
+  for (let i = 0; i < rota.length - 1; i++) {
+    if (tempoDecorrido >= rota[i].t && tempoDecorrido < rota[i+1].t) {
+      pontoAnterior = rota[i];
+      pontoProximo = rota[i+1];
+      break;
+    }
+  }
+
+  // Puxa as coordenadas reais da lista de "pontos"
+  let coordAnt = pontos.find(p => p.nome === pontoAnterior.p);
+  let coordProx = pontos.find(p => p.nome === pontoProximo.p);
+
+  // Só desenha se tivermos as coordenadas dos dois pontos
+  if (coordAnt && coordProx && coordAnt.lat !== null && coordProx.lat !== null) {
+    
+    // Calcula a porcentagem do trajeto entre esses dois pontos
+    let tempoTrecho = pontoProximo.t - pontoAnterior.t;
+    let tempoAndadoTrecho = tempoDecorrido - pontoAnterior.t;
+    let porcentagem = tempoAndadoTrecho / tempoTrecho;
+
+    // Interpola a Latitude e Longitude (Matemática de linha reta)
+    let latAtual = coordAnt.lat + ((coordProx.lat - coordAnt.lat) * porcentagem);
+    let lonAtual = coordAnt.lon + ((coordProx.lon - coordAnt.lon) * porcentagem);
+
+    // Cria ou atualiza o ícone do ônibus
+    if (!marcadorOnibus) {
+      // Cria um ícone personalizado (uma bolinha amarela/laranja)
+      let iconeBus = L.divIcon({
+        html: '🚌',
+        className: '',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      marcadorOnibus = L.marker([latAtual, lonAtual], {icon: iconeBus}).addTo(meuMapa);
+      marcadorOnibus.bindPopup("<b>Ônibus das " + ultimo.hora + "</b><br>Estimativa em tempo real");
+    } else {
+      marcadorOnibus.setLatLng([latAtual, lonAtual]);
+    }
+  }
+}
+
+
+  
 /* -----------------------------
 INICIALIZAÇÃO
 ----------------------------- */
