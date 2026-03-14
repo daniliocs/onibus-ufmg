@@ -370,6 +370,8 @@ const pontos=[
 {nome:"Moradia 2 e 3",lat:-19.8661,lon:-43.9845},
 {nome:"RU 2",lat:-19.869941,lon:-43.966892},
 {nome:"IGC",lat:-19.868652,lon:-43.962783},
+{nome:"Unidade Admnistrativa II",lat:-19.863061,lon:-43.966889},
+{nome:"Rotatória",lat:-19.863364,lon:-43.964325}, 
 {nome:"Engenharia",lat:-19.869706,lon:-43.964092}
 
 ];
@@ -607,37 +609,29 @@ INTERFACE
 ----------------------------- */
 
 function listarHorarios(){
+  let lista=document.getElementById("lista");
+  lista.innerHTML="";
 
-let lista=document.getElementById("lista");
-lista.innerHTML="";
+  let horarios=horariosHoje();
 
-let horarios=horariosHoje();
+  if(horarios.length==0){
+    lista.innerHTML="<li>🚫 Não há ônibus hoje</li>";
+    return;
+  }
 
-if(horarios.length==0){
+  horarios.forEach(h=>{
+    let li=document.createElement("li");
 
-lista.innerHTML="<li>🚫 Não há ônibus hoje</li>";
-return;
+    // NOVA REGRA: Só escreve "Passando nas moradias" se a tag for passagem E a origem for Moradia
+    if(h[2] === "passagem" && h[1].includes("Moradia")){
+      li.innerText = h[0] + " — Passando nas moradias";
+    } else {
+      // Caso contrário, usa o texto padrão (ex: Saída Escola de Música)
+      li.innerText = h[0] + " — Saída " + h[1];
+    }
 
-}
-
-horarios.forEach(h=>{
-
-let li=document.createElement("li");
-
-if(h[2]=="passagem"){
-
-li.innerText=h[0]+" — Passando nas moradias";
-
-}else{
-
-li.innerText=h[0]+" — Saída "+h[1];
-
-}
-
-lista.appendChild(li);
-
-});
-
+    lista.appendChild(li);
+  });
 }
 
 
