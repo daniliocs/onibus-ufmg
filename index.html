@@ -349,18 +349,20 @@ document.getElementById("gps").innerText="Não foi possível obter localização
 
 
 /* -----------------------------
-HORÁRIOS DO DIA
+HORÁRIOS DO DIA E PRÓXIMOS
 ----------------------------- */
 
+// Nova função: descobre a lista de horários de qualquer dia da semana (0 = Domingo, 6 = Sábado)
+function obterHorarios(dia){
+  if(dia >= 1 && dia <= 5) return horariosSemana;
+  if(dia == 6) return horariosSabado;
+  return [];
+}
+
+// Mantemos essa função para não quebrar a sua lista de "Horários de Hoje" na tela
 function horariosHoje(){
-
-let dia=new Date().getDay();
-
-if(dia>=1 && dia<=5) return horariosSemana;
-if(dia==6) return horariosSabado;
-
-return [];
-
+  let dia = new Date().getDay();
+  return obterHorarios(dia);
 }
 
 
@@ -436,55 +438,77 @@ lista.appendChild(li);
 PRÓXIMO ÔNIBUS
 ----------------------------- */
 
+  
 function atualizar(){
+  let agora = new Date();
+  let diaAtual = agora.getDay();
+  let atualMin = agora.getHours() * 60 + agora.getMinutes();
 
-let horarios=horariosHoje();
+  // Puxa os horários de hoje
+  let horarios = obterHorarios(diaAtual);
 
-if(horarios.length==0){
+  let proximo = null;
+  let ultimo = null;
 
-document.getElementById("proximo").innerHTML="🚫 Sem ônibus hoje";
-return;
+  // 1. Tenta achar o próximo ônibus HOJE
+  horarios.forEach(h => {
+    let min = minutos(h[0]);
+    if(min > atualMin && !proximo){
+      proximo = {hora: h[0], origem: h[1], min: min, quando: "hoje"};
+    }
+    if(min <= atualMin){
+      ultimo = {hora: h[0], origem: h[1], min: min};
+    }
+  });
 
+  // 2. Se não achou hoje, procura nos próximos dias
+  if(!proximo){
+    let diasNomes = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+    let proximoDia = (diaAtual + 1) % 7;
+    
+    // Procura até 7 dias para frente
+    for(let i = 1; i <= 7; i++){
+      let horariosFuturos = obterHorarios(proximoDia);
+      
+      if(horariosFuturos.length > 0){
+        let h = horariosFuturos[0]; // Pega o primeiro ônibus desse dia futuro
+        let textoDia = (i === 1) ? "Amanhã" : diasNomes[proximoDia];
+        proximo = {hora: h[0], origem: h[1], quando: textoDia};
+        break; // Achou o ônibus, para de procurar
+      }
+      proximoDia = (proximoDia + 1) % 7; // Pula pro próximo dia
+    }
+  }
+
+  // 3. Atualiza os textos na tela
+  if(proximo){
+    if(proximo.quando === "hoje"){
+      let falta = proximo.min - atualMin;
+      document.getElementById("proximo").innerHTML = "🚌 " + proximo.hora;
+      document.getElementById("tempo").innerText = formatarTempo(falta);
+    } else {
+      // Se for de outro dia, muda a forma de mostrar
+      document.getElementById("proximo").innerHTML = "🚌 " + proximo.quando + " às " + proximo.hora;
+      document.getElementById("tempo").innerText = "As viagens de hoje já encerraram.";
+    }
+    document.getElementById("origem").innerText = "Saída: " + proximo.origem;
+  } else {
+    document.getElementById("proximo").innerHTML = "🚫 Sem previsão de ônibus";
+    document.getElementById("origem").innerText = "";
+    document.getElementById("tempo").innerText = "";
+  }
+
+  // 4. Mostra o itinerário do último que saiu (se houver)
+  if(ultimo){
+    mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora);
+  } else {
+    document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens de hoje...</li>";
+    document.getElementById("infoViagem").innerHTML = "";
+  }
 }
 
-let agora=new Date();
-let atualMin=agora.getHours()*60+agora.getMinutes();
 
-let proximo=null;
-let ultimo=null;
-
-horarios.forEach(h=>{
-
-let min=minutos(h[0]);
-
-if(min>atualMin && !proximo){
-proximo={hora:h[0],origem:h[1],min};
-}
-
-if(min<=atualMin){
-ultimo={hora:h[0],origem:h[1],min};
-}
-
-});
-
-if(proximo){
-
-let falta=proximo.min-atualMin;
-
-document.getElementById("proximo").innerHTML="🚌 "+proximo.hora;
-document.getElementById("origem").innerText="Saída: "+proximo.origem;
-document.getElementById("tempo").innerText=formatarTempo(falta);
-
-}
-
-if(ultimo){
-
-mostrarChegadas(ultimo.min,ultimo.origem,ultimo.hora);
-
-}
-
-}
-
+  
 
 /* -----------------------------
 INICIALIZAÇÃO
