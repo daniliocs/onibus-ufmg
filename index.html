@@ -65,7 +65,22 @@ font-weight:bold;
 
 <div class="card">
 <h2>Ponto mais próximo</h2>
-<div id="gps">Obtendo localização...</div>
+
+<button onclick="usarGPS()" style="
+padding:10px 14px;
+font-size:16px;
+border:none;
+border-radius:8px;
+background:#006633;
+color:white;
+cursor:pointer;
+margin-bottom:10px;
+">
+📍 Usar minha localização
+</button>
+
+<div id="gps">Clique no botão para detectar sua posição</div>
+
 </div>
 
 <script>
@@ -80,33 +95,39 @@ const TEMPO_ATUALIZACAO=10000;
 /* -----------------------------
 ROTAS
 ----------------------------- */
-
 const rotaCampus=[
-{nome:"Escola de Música",t:0},
-{nome:"FaE",t:3},
-{nome:"FACE",t:5},
-{nome:"Reitoria",t:7},
-{nome:"CAD 1",t:9},
-{nome:"Farmácia",t:11},
-{nome:"Odonto",t:13},
-{nome:"Educação Física",t:15},
-{nome:"Moradia 1",t:21},
-{nome:"Moradia 2 e 3",t:24}
+
+{p:"Escola de Música",t:0},
+{p:"Belas Artes",t:1},
+{p:"FaE",t:3},
+{p:"RU 1",t:4},
+{p:"FACE",t:5},
+{p:"Reitoria",t:7},
+{p:"CAD 1",t:9},
+{p:"Farmácia",t:11},
+{p:"Veterinária",t:12},
+{p:"Odonto",t:13},
+{p:"Educação Física",t:15},
+{p:"Moradia 1",t:21},
+{p:"Moradia 2 e 3",t:24}
+
 ];
 
 const rotaMoradia=[
-{nome:"Moradia 1",t:0},
-{nome:"Moradia 2 e 3",t:2},
-{nome:"Educação Física",t:7},
-{nome:"Odonto",t:9},
-{nome:"Veterinária",t:10},
-{nome:"Farmácia",t:11},
-{nome:"RU 2",t:12},
-{nome:"Engenharia",t:14},
-{nome:"RU 1",t:16},
-{nome:"FaE",t:18},
-{nome:"Belas Artes",t:20},
-{nome:"Escola de Música",t:22}
+
+{p:"Moradia 1",t:0},
+{p:"Moradia 2 e 3",t:2},
+{p:"Educação Física",t:7},
+{p:"Odonto",t:9},
+{p:"Veterinária",t:10},
+{p:"Farmácia",t:11},
+{p:"RU 2",t:12},
+{p:"Engenharia",t:14},
+{p:"RU 1",t:16},
+{p:"FaE",t:18},
+{p:"Belas Artes",t:20},
+{p:"Escola de Música",t:22}
+
 ];
 
 
@@ -147,16 +168,15 @@ const horariosSemana=[
 ];
 
 const horariosSabado=[
-["07:20","Escola de Música"],
-["07:40","Moradia"],
-["10:00","Escola de Música"],
-["11:00","Moradia"],
-["15:00","Escola de Música"],
-["15:20","Moradia"],
-["19:00","Escola de Música"],
-["19:25","Moradias","passagem"]
-];
 
+{hora:"07:40",origem:"Moradia"}, 
+{hora:"10:00",origem:"Escola de Música"}, 
+{hora:"11:00",origem:"Moradia"},
+{hora:"12:00",origem:"Escola de Música"},
+{hora:"12:20",origem:"Moradia"},
+{hora:"13:30",origem:"Escola de Música"}
+
+] 
 
 /* -----------------------------
 PONTOS PARA GPS
@@ -165,11 +185,20 @@ PONTOS PARA GPS
 const pontos=[
 
 {nome:"Escola de Música",lat:-19.8621,lon:-43.9618},
+{nome:"Belas Artes",lat:null,lon:null},
 {nome:"FaE",lat:-19.8682,lon:-43.9636},
+{nome:"RU 1",lat:null,lon:null},
 {nome:"FACE",lat:-19.8701,lon:-43.9686},
 {nome:"Reitoria",lat:-19.8766,lon:-43.9762},
+{nome:"CAD 1",lat:null,lon:null},
+{nome:"Farmácia",lat:null,lon:null},
+{nome:"Veterinária",lat:null,lon:null},
+{nome:"Odonto",lat:null,lon:null},
+{nome:"Educação Física",lat:null,lon:null},
 {nome:"Moradia 1",lat:-19.8706,lon:-43.9862},
-{nome:"Moradia 2 e 3",lat:-19.8661,lon:-43.9845}
+{nome:"Moradia 2 e 3",lat:-19.8661,lon:-43.9845},
+{nome:"RU 2",lat:null,lon:null},
+{nome:"Engenharia",lat:null,lon:null}
 
 ];
 
@@ -201,23 +230,21 @@ return "Faltam "+m+" min";
 
 }
 
-function distancia(a,b,c,d){
+function distancia(lat1,lon1,lat2,lon2){
 
 const R=6371;
 
-let dLat=(c-a)*Math.PI/180;
-let dLon=(d-b)*Math.PI/180;
+const dLat=(lat2-lat1)*Math.PI/180;
+const dLon=(lon2-lon1)*Math.PI/180;
 
-let x=
-Math.sin(dLat/2)**2+
-Math.cos(a*Math.PI/180)*
-Math.cos(c*Math.PI/180)*
-Math.sin(dLon/2)**2;
+const a=
+Math.sin(dLat/2)*Math.sin(dLat/2)+
+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)*Math.sin(dLon/2);
 
-let y=2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 
-return R*y;
-
+return R*c;
 }
 
 
@@ -227,25 +254,37 @@ GPS
 
 function pontoMaisProximo(lat,lon){
 
-let menor=999;
 let melhor=null;
+let menor=999;
 
-pontos.forEach(p=>{
+for(let p of pontos){
 
-let d=distancia(lat,lon,p.lat,p.lon);
+if(p.lat==null) continue;
+
+const d=distancia(lat,lon,p.lat,p.lon);
 
 if(d<menor){
 menor=d;
 melhor=p;
 }
 
-});
+}
 
 return {ponto:melhor,dist:menor};
 
 }
 
-function atualizarGPS(){
+  
+function usarGPS(){
+
+if(!navigator.geolocation){
+
+document.getElementById("gps").innerText="GPS não suportado";
+return;
+
+}
+
+document.getElementById("gps").innerText="Obtendo localização...";
 
 navigator.geolocation.getCurrentPosition(function(pos){
 
@@ -254,8 +293,14 @@ let lon=pos.coords.longitude;
 
 let r=pontoMaisProximo(lat,lon);
 
-document.getElementById("gps").innerText=
-"📍 "+r.ponto.nome+" ("+(r.dist*1000).toFixed(0)+" m)";
+document.getElementById("gps").innerHTML=
+"📍 Ponto mais próximo: <b>"+r.ponto.nome+"</b><br>"+
+"Distância: "+(r.dist*1000).toFixed(0)+" m";
+
+},
+function(){
+
+document.getElementById("gps").innerText="Não foi possível obter localização";
 
 });
 
@@ -405,7 +450,6 @@ INICIALIZAÇÃO
 ----------------------------- */
 
 listarHorarios();
-atualizarGPS();
 atualizar();
 
 setInterval(atualizar,TEMPO_ATUALIZACAO);
