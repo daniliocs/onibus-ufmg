@@ -275,8 +275,9 @@ document.getElementById("origem").innerText=
 "Próxima saída: "+proximo.origem;
 
 document.getElementById("tempo").className=cor;
+  
 document.getElementById("tempo").innerText=
-"Faltam "+falta+" minutos";
+formatarTempo(falta);;
 
 }
 
@@ -353,8 +354,21 @@ lista.appendChild(li);
 }
 
 
-  
 setInterval(atualizar,10000);
+
+
+ function formatarTempo(min){
+
+let h=Math.floor(min/60);
+let m=min%60;
+
+if(h>0){
+return "Faltam "+h+"h e "+m+" min";
+}else{
+return "Faltam "+m+" min";
+}
+
+} 
 
 atualizar();
 
