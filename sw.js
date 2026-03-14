@@ -1,4 +1,4 @@
-const CACHE_NAME = 'onibus-ufmg-v1';
+const CACHE_NAME = 'onibus-ufmg-v2';
 const ASSETS = [
   './',
   './index.html',
