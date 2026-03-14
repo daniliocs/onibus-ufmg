@@ -702,20 +702,31 @@ function atualizar(){
   }
 
 
- // 3. Atualiza os textos na tela
-  if(proximo){
-    if(proximo.quando === "hoje"){
+
+// 3. Atualiza os textos na tela
+  if (proximo) {
+    if (proximo.quando === "hoje") {
       let falta = proximo.min - atualMin;
-      document.getElementById("proximo").innerHTML = "🚌 " + proximo.hora;
+      
+      // MÁGICA DO AVISO: Verifica se a hora do próximo ônibus é igual à hora do último ônibus da lista de hoje
+      let ehOUltimo = (proximo.hora === horarios[horarios.length - 1][0]);
+      
+      // Cria a etiqueta vermelha se for o último, ou deixa vazio se não for
+      let etiquetaAviso = ehOUltimo 
+        ? "<div style='background:#cc0000; color:white; padding:6px 10px; border-radius:6px; font-size:14px; font-weight:bold; display:inline-block; margin-bottom:8px;'>⚠️ ATENÇÃO: ÚLTIMO ÔNIBUS DE HOJE</div><br>" 
+        : "";
+
+      document.getElementById("proximo").innerHTML = etiquetaAviso + "🚌 " + proximo.hora;
       document.getElementById("tempo").innerText = formatarTempo(falta);
       document.getElementById("origem").innerText = "Saída: " + proximo.origem;
+      
     } else {
-      // Ajuste para o visual do Item 1
+      // Ajuste de quando as viagens do dia já encerraram e ele mostra o de amanhã
       document.getElementById("proximo").innerHTML = 
         "<span style='font-size: 20px; color: #cc0000;'>⚠️ Último ônibus do dia já saiu</span><br>"+
-        "<span style='font-size: 22px; color: #333; margin-top: 10px; display: block;'>Próximo: " + proximo.quando.toLowerCase() + " " + proximo.hora + "</span>";
+        "<span style='font-size: 22px; color: #333; margin-top: 10px; display: block;'>Próximo: " + proximo.quando.toLowerCase() + " às " + proximo.hora + "</span>";
       document.getElementById("origem").innerText = "Saída: " + proximo.origem;
-      document.getElementById("tempo").innerText = ""; // Limpa o tempo
+      document.getElementById("tempo").innerText = ""; 
     }
   } else {
     document.getElementById("proximo").innerHTML = "🚫 Sem previsão de ônibus";
@@ -723,6 +734,7 @@ function atualizar(){
     document.getElementById("tempo").innerText = "";
   }
 
+  
  // 4. Mostra o itinerário do ônibus atual ou do próximo
   if (ultimo) {
     // Descobre qual rota o último ônibus está fazendo para saber o tempo total
