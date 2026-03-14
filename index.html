@@ -148,6 +148,10 @@ button:active {
   color: #555;
 }
 
+.texto-dia-seguinte {
+  color: #333; /* Cinza escuro para o dia */
+}
+  
 /* Pequeno ajuste visual pro mapa do Leaflet */
 #mapa {
   border: 2px solid #e1e4e8;
@@ -173,6 +177,10 @@ button:active {
     border-bottom-color: #333;
   }
 
+.texto-dia-seguinte {
+  color: #e0e0e0; /* Cinza clarinho para a noite */
+}
+  
   /* Cores de destaque adaptadas para o escuro */
   h1, #proximo { color: #4ade80; } /* Verde mais claro para dar contraste */
   #tempo { color: #fbbf24; } /* Amarelo/laranja adaptado */
@@ -741,7 +749,7 @@ function atualizar(){
       // Ajuste de quando as viagens do dia já encerraram e ele mostra o de amanhã
       document.getElementById("proximo").innerHTML = 
         "<span style='font-size: 20px; color: #cc0000;'>⚠️ Último ônibus do dia já saiu</span><br>"+
-        "<span style='font-size: 22px; color: #333; margin-top: 10px; display: block;'>Próximo: " + proximo.quando.toLowerCase() + " às " + proximo.hora + "</span>";
+        "<span class='texto-dia-seguinte' style='font-size: 22px; margin-top: 10px; display: block;'>Próximo: " + proximo.quando.toLowerCase() + " às " + proximo.hora + "</span>";
       document.getElementById("origem").innerText = "Saída: " + proximo.origem;
       document.getElementById("tempo").innerText = ""; 
     }
