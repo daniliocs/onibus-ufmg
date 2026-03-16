@@ -255,6 +255,29 @@ margin-bottom:10px;
 
 </div>
 
+
+<div class="card">
+  <h2>🏠 Como volto pra casa?</h2>
+  <p style="font-size: 14px; color: #555; margin-top: 0;">Descubra onde ir para pegar o ônibus rumo às Moradias.</p>
+  
+  <button id="btnVolta" onclick="descobrirVolta()" style="
+    padding:10px 14px;
+    font-size:16px;
+    border:none;
+    border-radius:8px;
+    background:#e67e22; /* Laranja para diferenciar do botão verde */
+    color:white;
+    cursor:pointer;
+    margin-bottom:10px;
+    width: 100%;
+    box-shadow: 0 4px 6px rgba(230,126,34,0.2);
+  ">
+  🧭 Encontrar ponto de volta
+  </button>
+
+  <div id="resultadoVolta" style="font-size: 15px; color: #444; margin-top: 10px;"></div>
+</div>
+
 <script>
 
 /* -----------------------------
@@ -497,6 +520,119 @@ melhor=p;
 return {ponto:melhor,dist:menor};
 
 }
+
+
+
+// Acha o ponto mais próximo, mas APENAS na rota de volta (rotaCampus)
+function pontoMaisProximoVolta(lat, lon) {
+  let melhor = null;
+  let menor = 999;
+  
+  // Pegamos apenas os nomes dos pontos da rotaCampus, tirando as próprias Moradias
+  let paradasDeVolta = rotaCampus.map(p => p.p).filter(nome => !nome.includes("Moradia"));
+
+  for(let p of pontos) {
+    if(p.lat == null) continue;
+    
+    // Se o ponto não faz parte do trajeto de volta, ele ignora
+    if(!paradasDeVolta.includes(p.nome)) continue;
+
+    const d = distancia(lat, lon, p.lat, p.lon);
+    if(d < menor){
+      menor = d;
+      melhor = p;
+    }
+  }
+
+  return {ponto: melhor, dist: menor};
+}
+
+// Calcula o tempo, mas APENAS para ônibus que saíram da Escola de Música rumo à Moradia
+function calcularTempoVolta(nomeDoPonto) {
+  let agora = new Date();
+  let atualMin = agora.getHours() * 60 + agora.getMinutes();
+  let horarios = horariosHoje(); 
+  let menorEspera = null;
+
+  for (let h of horarios) {
+    let minSaida = minutos(h[0]);
+    let origem = h[1];
+    
+    // Ignora ônibus que estão saindo da Moradia (estes são os de ida)
+    if (origem.includes("Moradia")) continue; 
+    
+    // Como é volta, a rota é sempre a rotaCampus (ou rotaPassagem se houver volta nela)
+    let rota = (h[2] === "passagem") ? rotaPassagem : rotaCampus;
+    
+    let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
+    
+    if (pontoNaRota) {
+      let minChegada = minSaida + pontoNaRota.t;
+      if (minChegada > atualMin) {
+        let espera = minChegada - atualMin;
+        if (menorEspera === null || espera < menorEspera) {
+          menorEspera = espera;
+        }
+      }
+    }
+  }
+  return menorEspera;
+}
+
+
+
+function descobrirVolta() {
+  const btn = document.getElementById("btnVolta");
+  const visor = document.getElementById("resultadoVolta");
+
+  if(!navigator.geolocation){
+    visor.innerText = "GPS não suportado pelo seu navegador.";
+    return;
+  }
+
+  btn.innerText = "⏳ Buscando sua posição...";
+
+  // Solicita a localização do usuário 1 única vez
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      btn.innerText = "🧭 Atualizar ponto de volta";
+      
+      let lat = pos.coords.latitude;
+      let lon = pos.coords.longitude;
+
+      // Chama a nossa função nova que só olha para o lado de cá do anel viário
+      let r = pontoMaisProximoVolta(lat, lon);
+      
+      if(!r.ponto) {
+        visor.innerHTML = "Não foi possível calcular as rotas de volta.";
+        return;
+      }
+
+      let espera = calcularTempoVolta(r.ponto.nome);
+
+      if(espera !== null) {
+        // Usa a nossa função formatarHoraMinuto() que criamos hoje mais cedo!
+        visor.innerHTML = 
+          "Caminhe até o ponto <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m).<br><br>" +
+          "🚌 O próximo ônibus passa lá em: <span style='color:#e67e22; font-size:22px; font-weight:bold;'>" + formatarHoraMinuto(espera) + "</span>";
+      } else {
+        visor.innerHTML = 
+          "Caminhe até o ponto <b>" + r.ponto.nome + "</b>.<br>" +
+          "<span style='color:red;'>🚫 Não há mais ônibus voltando hoje.</span>";
+      }
+    },
+    function(err){
+      btn.innerText = "🧭 Encontrar ponto de volta";
+      if(err.code === 1) {
+        visor.innerHTML = "<span style='color:red;'>Permissão negada. Ative a localização no seu navegador.</span>";
+      } else {
+        visor.innerHTML = "<span style='color:red;'>Não foi possível obter a localização.</span>";
+      }
+    },
+    { enableHighAccuracy: true }
+  );
+}
+
 
   
 
