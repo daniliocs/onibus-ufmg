@@ -295,6 +295,7 @@ const rotaMoradia=[
 {p:"Farmácia",t:11},
 {p:"RU 2",t:12},
 {p:"Engenharia",t:14},
+{p:"IGC",t:15}, // <-- IGC adicionado aqui!
 {p:"RU 1",t:16},
 {p:"FaE",t:18},
 {p:"Belas Artes",t:20},
@@ -598,17 +599,38 @@ function usarGPS(){
 HORÁRIOS DO DIA E PRÓXIMOS
 ----------------------------- */
 
-// Nova função: descobre a lista de horários de qualquer dia da semana (0 = Domingo, 6 = Sábado)
-function obterHorarios(dia){
-  if(dia >= 1 && dia <= 5) return horariosSemana;
-  if(dia == 6) return horariosSabado;
-  return [];
+// Lista de feriados fixos de Belo Horizonte e Nacionais (dia/mês)
+const feriadosBH = [
+  "01/01", // Confraternização Universal
+  "21/04", // Tiradentes
+  "01/05", // Dia do Trabalhador
+  "15/08", // Assunção de Nossa Senhora (BH)
+  "07/09", // Independência do Brasil
+  "12/10", // Nossa Senhora Aparecida
+  "02/11", // Finados
+  "15/11", // Proclamação da República
+  "08/12", // Imaculada Conceição (BH)
+  "25/12"  // Natal
+];
+
+function ehFeriado(dataObj) {
+  let dia = ("0" + dataObj.getDate()).slice(-2);
+  let mes = ("0" + (dataObj.getMonth() + 1)).slice(-2);
+  return feriadosBH.includes(dia + "/" + mes);
 }
 
-// Mantemos essa função para não quebrar a sua lista de "Horários de Hoje" na tela
+function obterHorarios(dataObj){
+  if (ehFeriado(dataObj)) return []; // Se for feriado, zera os ônibus
+
+  let diaDaSemana = dataObj.getDay();
+  if(diaDaSemana >= 1 && diaDaSemana <= 5) return horariosSemana;
+  if(diaDaSemana == 6) return horariosSabado;
+  
+  return []; // Domingo
+}
+
 function horariosHoje(){
-  let dia = new Date().getDay();
-  return obterHorarios(dia);
+  return obterHorarios(new Date());
 }
 
 
@@ -684,11 +706,10 @@ PRÓXIMO ÔNIBUS
   
 function atualizar(){
   let agora = new Date();
-  let diaAtual = agora.getDay();
   let atualMin = agora.getHours() * 60 + agora.getMinutes();
 
-  // Puxa os horários de hoje
-  let horarios = obterHorarios(diaAtual);
+  // Puxa os horários da data de hoje (passando a variável agora)
+  let horarios = obterHorarios(agora);
 
   let proximo = null;
   let ultimo = null;
@@ -698,11 +719,9 @@ function atualizar(){
     let min = minutos(h[0]);
     
     if(min > atualMin && !proximo){
-      // Adicionamos o h[2] aqui
       proximo = {hora: h[0], origem: h[1], min: min, quando: "hoje", tipo: h[2]};
     }
     if(min <= atualMin){
-      // E aqui também
       ultimo = {hora: h[0], origem: h[1], min: min, tipo: h[2]};
     }
   });
@@ -710,23 +729,22 @@ function atualizar(){
   // 2. Se não achou hoje, procura nos próximos dias
   if(!proximo){
     let diasNomes = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-    let proximoDia = (diaAtual + 1) % 7;
     
     // Procura até 7 dias para frente
     for(let i = 1; i <= 7; i++){
-      let horariosFuturos = obterHorarios(proximoDia);
+      let dataFutura = new Date();
+      dataFutura.setDate(agora.getDate() + i);
+      
+      let horariosFuturos = obterHorarios(dataFutura);
       
       if(horariosFuturos.length > 0){
         let h = horariosFuturos[0]; // Pega o primeiro ônibus desse dia futuro
-        let textoDia = (i === 1) ? "Amanhã" : diasNomes[proximoDia];
+        let textoDia = (i === 1) ? "Amanhã" : diasNomes[dataFutura.getDay()];
         proximo = {hora: h[0], origem: h[1], quando: textoDia};
         break; // Achou o ônibus, para de procurar
       }
-      proximoDia = (proximoDia + 1) % 7; // Pula pro próximo dia
     }
   }
-
-
 
 // 3. Atualiza os textos na tela
   if (proximo) {
@@ -746,9 +764,14 @@ function atualizar(){
       document.getElementById("origem").innerText = "Saída: " + proximo.origem;
       
     } else {
-      // Ajuste de quando as viagens do dia já encerraram e ele mostra o de amanhã
+      // NOVA MÁGICA: Checa se hoje tinha ônibus para definir a mensagem de erro
+      let tinhaOnibusHoje = horarios.length > 0;
+      let msgErro = tinhaOnibusHoje 
+        ? "⚠️ Último ônibus do dia já saiu" 
+        : "🚫 Não há ônibus hoje (Domingo/Feriado)";
+
       document.getElementById("proximo").innerHTML = 
-        "<span style='font-size: 20px; color: #cc0000;'>⚠️ Último ônibus do dia já saiu</span><br>"+
+        "<span style='font-size: 20px; color: #cc0000;'>" + msgErro + "</span><br>"+
         "<span class='texto-dia-seguinte' style='font-size: 22px; margin-top: 10px; display: block;'>Próximo: " + proximo.quando.toLowerCase() + " às " + proximo.hora + "</span>";
       document.getElementById("origem").innerText = "Saída: " + proximo.origem;
       document.getElementById("tempo").innerText = ""; 
@@ -773,7 +796,7 @@ function atualizar(){
     } 
     // Se ele já chegou no final, mas ainda tem próximo ônibus hoje...
     else if (proximo && proximo.quando === "hoje") {
-      mostrarChegadas(proximo.min, proximo.origem, proximo.hora, ultimo.tipo);
+      mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo); // Corrigido aqui (era ultimo.tipo)
     } 
     // Se ele já terminou e não tem mais nenhum ônibus hoje...
     else {
@@ -783,7 +806,7 @@ function atualizar(){
   } 
   // Se o primeiro ônibus do dia ainda nem saiu...
   else if (proximo && proximo.quando === "hoje") {
-    mostrarChegadas(proximo.min, proximo.origem, proximo.hora, ultimo.tipo);
+    mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo); // Corrigido aqui também
   } else {
     document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens...</li>";
     document.getElementById("infoViagem").innerHTML = "";
