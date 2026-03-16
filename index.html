@@ -397,22 +397,27 @@ return parseInt(p[0])*60+parseInt(p[1]);
 
 }
 
+// Cria o formato legível (ex: "1h40" ou "45 min")
+function formatarHoraMinuto(min) {
+  let h = Math.floor(min / 60);
+  let m = min % 60;
+  
+  // Coloca o zero à esquerda se for menor que 10 (ex: 1h05)
+  let mStr = m < 10 ? "0" + m : m;
+  
+  if (h > 0) {
+    return h + "h" + mStr;
+  }
+  return m + " min";
+}
+
+// Usa a função acima e adiciona o texto para o card principal
 function formatarTempo(min){
-
-let h=Math.floor(min/60);
-let m=min%60;
-
-if(h>0){
-
-if(m<10)m="0"+m;
-return "Faltam "+h+":"+m;
-
+  return "Faltam " + formatarHoraMinuto(min);
 }
 
-return "Faltam "+m+" min";
 
-}
-
+  
 function distancia(lat1,lon1,lat2,lon2){
 
 const R=6371;
@@ -553,9 +558,10 @@ function usarGPS(){
 
       let r = pontoMaisProximo(lat,lon);
       let espera = calcularTempoNoPonto(r.ponto.nome);
+
       
       let textoEspera = espera !== null 
-        ? "<br><br>🚌 Próximo ônibus aqui em:<br><span style='font-size:24px; color:#006633; font-weight:bold;'>" + espera + " min</span>" 
+        ? "<br><br>🚌 Próximo ônibus aqui em:<br><span style='font-size:24px; color:#006633; font-weight:bold;'>" + formatarHoraMinuto(espera) + "</span>" 
         : "<br><br><span style='font-size:16px; color:red;'>🚫 Sem mais ônibus neste ponto hoje</span>";
 
       visor.innerHTML =
