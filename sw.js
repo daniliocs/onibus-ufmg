@@ -1,4 +1,4 @@
-const CACHE_NAME = 'onibus-ufmg-v7'; // Mude para v3 na próxima vez que alterar o site
+const CACHE_NAME = 'onibus-ufmg-v8'; // Mude para v3 na próxima vez que alterar o site
 const ASSETS = [
   './',
   './index.html',
