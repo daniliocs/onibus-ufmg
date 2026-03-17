@@ -582,7 +582,7 @@ function calcularTempoVolta(nomeDoPonto) {
 function descobrirVolta() {
   const btn = document.getElementById("btnVolta");
   const visor = document.getElementById("resultadoVolta");
-  const divMapaVolta = document.getElementById("mapaVolta"); // Aponta pro mapa novo
+  const divMapaVolta = document.getElementById("mapaVolta");
 
   if(!navigator.geolocation){
     visor.innerText = "GPS não suportado pelo seu navegador.";
@@ -629,27 +629,32 @@ function descobrirVolta() {
         }).addTo(mapaVolta);
       }
 
+      // CORREÇÃO 1: Avisa o Leaflet que a div apareceu na tela e ele precisa se redimensionar
+      setTimeout(() => {
+        mapaVolta.invalidateSize();
+      }, 200);
+
       // Limpa a rota anterior se a pessoa clicar de novo
       if (controleRotaVolta !== null) {
         mapaVolta.removeControl(controleRotaVolta);
       }
 
-      // Traça a rota a pé com servidor de pedestres
+      // CORREÇÃO 2: Configuração limpa e segura da rota a pé
       controleRotaVolta = L.Routing.control({
         waypoints: [
           L.latLng(lat, lon), 
           L.latLng(r.ponto.lat, r.ponto.lon) 
         ],
         router: L.Routing.osrmv1({
-          serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1',
-          profile: 'foot'
+          profile: 'foot' // Garante que a rota será feita por calçadas e trilhas
         }),
         lineOptions: {
           styles: [{color: '#e67e22', opacity: 0.8, weight: 6}]
         },
-        createMarker: function() { return null; },
-        fitSelectedRoutes: true,
-        show: false
+        show: false,
+        addWaypoints: false, // Impede do usuário arrastar a linha sem querer e quebrar o mapa
+        routeWhileDragging: false,
+        fitSelectedRoutes: true
       }).addTo(mapaVolta);
       
       // Marca o usuário no mapa secundário
