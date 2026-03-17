@@ -152,7 +152,6 @@ button:active {
   color: #333; /* Cinza escuro para o dia */
 }
   
-/* Pequeno ajuste visual pro mapa do Leaflet */
 #mapa {
   border: 2px solid #e1e4e8;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -201,16 +200,13 @@ button:active {
 
 
   
-  
 </style>
-
-
-
-
-
 
 </head>
 
+  
+
+  
 <body>
 
 <h1>🚌 Ônibus Moradias UFMG</h1>
@@ -265,7 +261,7 @@ margin-bottom:10px;
     font-size:16px;
     border:none;
     border-radius:8px;
-    background:#e67e22; /* Laranja para diferenciar do botão verde */
+    background:#e67e22;
     color:white;
     cursor:pointer;
     margin-bottom:10px;
@@ -276,6 +272,8 @@ margin-bottom:10px;
   </button>
 
   <div id="resultadoVolta" style="font-size: 15px; color: #444; margin-top: 10px;"></div>
+  
+  <div id="mapaVolta" style="height: 300px; width: 100%; margin-top: 15px; border-radius: 8px; display: none; z-index: 1; border: 2px solid #e1e4e8;"></div>
 </div>
 
 <script>
@@ -318,7 +316,7 @@ const rotaMoradia=[
 {p:"Farmácia",t:11},
 {p:"RU 2",t:12},
 {p:"Engenharia",t:14},
-{p:"IGC",t:15}, // <-- IGC adicionado aqui!
+{p:"IGC",t:15},
 {p:"RU 1",t:16},
 {p:"FaE",t:18},
 {p:"Belas Artes",t:20},
@@ -584,7 +582,7 @@ function calcularTempoVolta(nomeDoPonto) {
 function descobrirVolta() {
   const btn = document.getElementById("btnVolta");
   const visor = document.getElementById("resultadoVolta");
-  const divMapa = document.getElementById("mapa");
+  const divMapaVolta = document.getElementById("mapaVolta"); // Aponta pro mapa novo
 
   if(!navigator.geolocation){
     visor.innerText = "GPS não suportado pelo seu navegador.";
@@ -619,31 +617,25 @@ function descobrirVolta() {
           "<span style='color:red;'>🚫 Não há mais ônibus voltando hoje.</span>";
       }
 
-      // --- MÁGICA DA ROTA NO MAPA ---
-      divMapa.style.display = "block";
+      // --- MÁGICA DA ROTA NO MAPA 2 ---
+      divMapaVolta.style.display = "block";
       
-      if(meuMapa === null) {
-        meuMapa = L.map('mapa').setView([lat, lon], 15); 
+      // Inicializa o mapa secundário
+      if(mapaVolta === null) {
+        mapaVolta = L.map('mapaVolta').setView([lat, lon], 15); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 18,
           attribution: '© OpenStreetMap'
-        }).addTo(meuMapa);
-
-        pontos.forEach(p => {
-          if(p.lat !== null && p.lon !== null){
-            L.marker([p.lat, p.lon]).addTo(meuMapa).bindPopup("<b>" + p.nome + "</b>");
-          }
-        });
+        }).addTo(mapaVolta);
       }
 
-      // Se já existia uma rota velha desenhada, apaga ela
-      if (controleRota !== null) {
-        meuMapa.removeControl(controleRota);
+      // Limpa a rota anterior se a pessoa clicar de novo
+      if (controleRotaVolta !== null) {
+        mapaVolta.removeControl(controleRotaVolta);
       }
 
-
-     // Traça a rota a pé com servidor de pedestres
-      controleRota = L.Routing.control({
+      // Traça a rota a pé com servidor de pedestres
+      controleRotaVolta = L.Routing.control({
         waypoints: [
           L.latLng(lat, lon), 
           L.latLng(r.ponto.lat, r.ponto.lon) 
@@ -658,14 +650,15 @@ function descobrirVolta() {
         createMarker: function() { return null; },
         fitSelectedRoutes: true,
         show: false
-      }).addTo(meuMapa);
+      }).addTo(mapaVolta);
       
-      if(marcadorUsuario === null){
-        marcadorUsuario = L.circleMarker([lat, lon], {
+      // Marca o usuário no mapa secundário
+      if(marcadorUsuarioVolta === null){
+        marcadorUsuarioVolta = L.circleMarker([lat, lon], {
           color: 'blue', fillColor: '#3388ff', fillOpacity: 0.8, radius: 8
-        }).addTo(meuMapa).bindPopup("Você está aqui").openPopup();
+        }).addTo(mapaVolta).bindPopup("Você está aqui").openPopup();
       } else {
-        marcadorUsuario.setLatLng([lat, lon]);
+        marcadorUsuarioVolta.setLatLng([lat, lon]);
       }
 
     },
@@ -683,12 +676,17 @@ function descobrirVolta() {
 
   
 
-// Variável global para guardar o "vídeo" do GPS
-// Variáveis globais para o mapa
+
+// Variáveis do Mapa 1 (Botão Verde)
 let gpsWatchId = null;
 let meuMapa = null;
 let marcadorUsuario = null;
-let controleRota = null;
+let primeiraVezGPS = true;
+
+// Variáveis do Mapa 2 (Botão Laranja - Rota a pé)
+let mapaVolta = null;
+let controleRotaVolta = null;
+let marcadorUsuarioVolta = null;
 
 
   
