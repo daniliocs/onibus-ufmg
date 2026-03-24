@@ -66,11 +66,23 @@ h1 {
   color: #666;
 }
 
+/* NOVO: Tag com a quantidade de ônibus no card principal */
+#qtd-onibus {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 10px;
+  background: #e8f5e9;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #006633;
+}
+
 #tempo {
   font-size: 16px;
   font-weight: 600;
   color: #e67e22; /* Um tom de laranja/amarelo para destaque */
-  margin-top: 5px;
+  margin-top: 8px;
 }
 
 /* Linha do tempo visual para as chegadas */
@@ -113,13 +125,24 @@ h1 {
 }
 
 #lista li {
-  padding: 10px 0;
+  padding: 12px 0;
   border-bottom: 1px solid #eee;
   color: #555;
+  font-size: 15px;
 }
 
 #lista li:last-child {
   border-bottom: none;
+}
+
+/* NOVO: Destaque visual para o nome do local na lista */
+.destaque-local {
+  font-weight: 700;
+  color: #006633;
+  background: #e8f5e9;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 /* Botão do GPS */
@@ -196,6 +219,17 @@ button:active {
 
   /* Bordas do mapa */
   #mapa { border-color: #333; }
+
+  /* NOVO: Cores modo escuro para os destaques */
+  .destaque-local {
+    background: #1a3320;
+    color: #4ade80;
+  }
+  
+  #qtd-onibus {
+    background: #1a3320;
+    color: #4ade80;
+  }
 }
 
 
@@ -215,6 +249,7 @@ button:active {
 <h2>Próximo ônibus</h2>
 <div id="proximo"></div>
 <div id="origem"></div>
+<div id="qtd-onibus" style="display: none;"></div>
 <div id="tempo"></div>
 </div>
 
@@ -333,49 +368,48 @@ const rotaPassagem = [
 ];
 
 /* -----------------------------
-HORÁRIOS
+HORÁRIOS (ATUALIZADO COM AS QUANTIDADES DA IMAGEM)
+Formato: [hora, origem, tipo, quantidade_de_veiculos]
 ----------------------------- */
 
 const horariosSemana=[
-
-["06:45","Moradia"],
-["07:20","Escola de Música"],
-["07:40","Moradia"],
-["10:00","Escola de Música"],
-["11:00","Moradia"],
-["11:50","Escola de Música"],
-["12:15","Moradia"],
-["13:10","Escola de Música"],
-["13:30","Moradia"],
-["15:00","Escola de Música"],
-["15:20","Moradia"],
-["17:00","Escola de Música"],
-["17:20","Moradia"],
-["17:50","Escola de Música"],
-["18:20","Moradia"],
-["19:00","Escola de Música"],
-["19:20","Moradias","passagem"],
-["19:40","Escola de Música"],
-["20:00","Moradias","passagem"],
-["21:00","Escola de Música"],
-["21:20","Moradias","passagem"],
-["21:35","Escola de Música"],
-["21:45","Moradias","passagem"],
-["22:15","Escola de Música"],
-["22:35","Moradias","passagem"],
-["22:50","Escola de Música"],
-["23:10","Moradias","passagem"]
-
+  ["06:45","Moradia", null, 3],
+  ["07:20","Escola de Música", null, 3],
+  ["07:40","Moradia", null, 3],
+  ["10:00","Escola de Música", null, 3],
+  ["11:00","Moradia", null, 3],
+  ["11:50","Escola de Música", null, 3],
+  ["12:15","Moradia", null, 3],
+  ["13:10","Escola de Música", null, 3],
+  ["13:30","Moradia", null, 3],
+  ["15:00","Escola de Música", null, 1],
+  ["15:20","Moradia", null, 1],
+  ["17:00","Escola de Música", null, 2],
+  ["17:20","Moradia", null, 2],
+  ["17:50","Escola de Música", null, 2],
+  ["18:20","Moradia", null, 2],
+  ["19:00","Escola de Música", null, 2],
+  ["19:20","Moradias","passagem", 2], // Passagem usa a mesma quant. da saída de 19:00
+  ["19:40","Escola de Música", null, 2],
+  ["20:00","Moradias","passagem", 2], // Idem para as de 19:40
+  ["21:00","Escola de Música", null, 2],
+  ["21:20","Moradias","passagem", 2], // Idem 21:00
+  ["21:35","Escola de Música", null, 1],
+  ["21:45","Moradias","passagem", 1], // Idem 21:35
+  ["22:15","Escola de Música", null, 1],
+  ["22:35","Moradias","passagem", 1], // Idem 22:15
+  ["22:50","Escola de Música", null, 1],
+  ["23:10","Moradias","passagem", 1]  // Idem 22:50
 ];
 
 
 const horariosSabado = [
-  ["07:40", "Moradia"], 
-  ["10:00", "Escola de Música"], 
-  ["11:00", "Moradia"],
-  ["12:00", "Escola de Música"],
-  ["12:20", "Moradia"],
-  ["13:30", "Escola de Música","passagem"]
+  ["07:40", "Moradia", null, 1], 
+  ["10:00", "Escola de Música", null, 2], 
+  ["11:00", "Moradia", null, 2],
+  ["12:00", "Escola de Música", null, 2],
+  ["12:20", "Moradia", null, 2],
+  ["13:30", "Escola de Música","passagem", 2]
 ];
 
 
@@ -411,18 +445,14 @@ UTILITÁRIOS
 ----------------------------- */
 
 function minutos(hora){
-
-let p=hora.split(":");
-return parseInt(p[0])*60+parseInt(p[1]);
-
+  let p=hora.split(":");
+  return parseInt(p[0])*60+parseInt(p[1]);
 }
 
-// Cria o formato legível (ex: "1h40" ou "45 min")
 function formatarHoraMinuto(min) {
   let h = Math.floor(min / 60);
   let m = min % 60;
   
-  // Coloca o zero à esquerda se for menor que 10 (ex: 1h05)
   let mStr = m < 10 ? "0" + m : m;
   
   if (h > 0) {
@@ -431,28 +461,25 @@ function formatarHoraMinuto(min) {
   return m + " min";
 }
 
-// Usa a função acima e adiciona o texto para o card principal
 function formatarTempo(min){
   return "Faltam " + formatarHoraMinuto(min);
 }
 
-
   
 function distancia(lat1,lon1,lat2,lon2){
+  const R=6371;
 
-const R=6371;
+  const dLat=(lat2-lat1)*Math.PI/180;
+  const dLon=(lon2-lon1)*Math.PI/180;
 
-const dLat=(lat2-lat1)*Math.PI/180;
-const dLon=(lon2-lon1)*Math.PI/180;
+  const a=
+  Math.sin(dLat/2)*Math.sin(dLat/2)+
+  Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+  Math.sin(dLon/2)*Math.sin(dLon/2);
 
-const a=
-Math.sin(dLat/2)*Math.sin(dLat/2)+
-Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)*Math.sin(dLon/2);
+  const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 
-const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-
-return R*c;
+  return R*c;
 }
 
 
@@ -466,9 +493,8 @@ function calcularTempoNoPonto(nomeDoPonto) {
   for (let h of horarios) {
     let minSaida = minutos(h[0]);
     let origem = h[1];
-    let tipo = h[2]; // Puxa o tipo
+    let tipo = h[2]; 
     
-    // NOVA LÓGICA DE ESCOLHA:
     let rota = rotaCampus;
     if (tipo === "passagem") {
       rota = rotaPassagem;
@@ -476,12 +502,10 @@ function calcularTempoNoPonto(nomeDoPonto) {
       rota = rotaMoradia;
     }
   
-    // Procura o seu ponto na rota deste ônibus específico
     let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
     
     if (pontoNaRota) {
       let minChegada = minSaida + pontoNaRota.t;
-      // Se o ônibus ainda não passou por este ponto
       if (minChegada > atualMin) {
         let espera = minChegada - atualMin;
         if (menorEspera === null || espera < menorEspera) {
@@ -521,18 +545,15 @@ return {ponto:melhor,dist:menor};
 
 
 
-// Acha o ponto mais próximo, mas APENAS na rota de volta (rotaCampus)
 function pontoMaisProximoVolta(lat, lon) {
   let melhor = null;
   let menor = 999;
   
-  // Pegamos apenas os nomes dos pontos da rotaCampus, tirando as próprias Moradias
   let paradasDeVolta = rotaCampus.map(p => p.p).filter(nome => !nome.includes("Moradia"));
 
   for(let p of pontos) {
     if(p.lat == null) continue;
     
-    // Se o ponto não faz parte do trajeto de volta, ele ignora
     if(!paradasDeVolta.includes(p.nome)) continue;
 
     const d = distancia(lat, lon, p.lat, p.lon);
@@ -545,7 +566,6 @@ function pontoMaisProximoVolta(lat, lon) {
   return {ponto: melhor, dist: menor};
 }
 
-// Calcula o tempo, mas APENAS para ônibus que saíram da Escola de Música rumo à Moradia
 function calcularTempoVolta(nomeDoPonto) {
   let agora = new Date();
   let atualMin = agora.getHours() * 60 + agora.getMinutes();
@@ -556,10 +576,8 @@ function calcularTempoVolta(nomeDoPonto) {
     let minSaida = minutos(h[0]);
     let origem = h[1];
     
-    // Ignora ônibus que estão saindo da Moradia (estes são os de ida)
     if (origem.includes("Moradia")) continue; 
     
-    // Como é volta, a rota é sempre a rotaCampus (ou rotaPassagem se houver volta nela)
     let rota = (h[2] === "passagem") ? rotaPassagem : rotaCampus;
     
     let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
@@ -617,10 +635,8 @@ function descobrirVolta() {
           "<span style='color:red;'>🚫 Não há mais ônibus voltando hoje.</span>";
       }
 
-      // --- MÁGICA DA ROTA NO MAPA 2 ---
       divMapaVolta.style.display = "block";
       
-      // Inicializa o mapa secundário
       if(mapaVolta === null) {
         mapaVolta = L.map('mapaVolta').setView([lat, lon], 15); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -629,35 +645,31 @@ function descobrirVolta() {
         }).addTo(mapaVolta);
       }
 
-      // CORREÇÃO 1: Avisa o Leaflet que a div apareceu na tela e ele precisa se redimensionar
       setTimeout(() => {
         mapaVolta.invalidateSize();
       }, 200);
 
-      // Limpa a rota anterior se a pessoa clicar de novo
       if (controleRotaVolta !== null) {
         mapaVolta.removeControl(controleRotaVolta);
       }
 
-      // CORREÇÃO 2: Configuração limpa e segura da rota a pé
       controleRotaVolta = L.Routing.control({
         waypoints: [
           L.latLng(lat, lon), 
           L.latLng(r.ponto.lat, r.ponto.lon) 
         ],
         router: L.Routing.osrmv1({
-          profile: 'foot' // Garante que a rota será feita por calçadas e trilhas
+          profile: 'foot' 
         }),
         lineOptions: {
           styles: [{color: '#e67e22', opacity: 0.8, weight: 6}]
         },
         show: false,
-        addWaypoints: false, // Impede do usuário arrastar a linha sem querer e quebrar o mapa
+        addWaypoints: false, 
         routeWhileDragging: false,
         fitSelectedRoutes: true
       }).addTo(mapaVolta);
       
-      // Marca o usuário no mapa secundário
       if(marcadorUsuarioVolta === null){
         marcadorUsuarioVolta = L.circleMarker([lat, lon], {
           color: 'blue', fillColor: '#3388ff', fillOpacity: 0.8, radius: 8
@@ -682,13 +694,11 @@ function descobrirVolta() {
   
 
 
-// Variáveis do Mapa 1 (Botão Verde)
 let gpsWatchId = null;
 let meuMapa = null;
 let marcadorUsuario = null;
 let primeiraVezGPS = true;
 
-// Variáveis do Mapa 2 (Botão Laranja - Rota a pé)
 let mapaVolta = null;
 let controleRotaVolta = null;
 let marcadorUsuarioVolta = null;
@@ -711,25 +721,22 @@ function usarGPS(){
     botao.innerHTML = "📍 Usar minha localização";
     botao.style.background = "#006633";
     visor.innerHTML = "Atualização do GPS pausada.";
-    divMapa.style.display = "none"; // Esconde o mapa
+    divMapa.style.display = "none"; 
     return;
   }
 
   visor.innerText = "Obtendo localização e carregando mapa...";
   botao.innerHTML = "🛑 Parar localização";
   botao.style.background = "#cc0000";
-  divMapa.style.display = "block"; // Mostra o mapa
+  divMapa.style.display = "block"; 
 
-  // Inicializa o mapa apenas uma vez
   if(meuMapa === null) {
-    // Foca inicialmente no centro da UFMG
     meuMapa = L.map('mapa').setView([-19.8690, -43.9664], 14); 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
       attribution: '© OpenStreetMap'
     }).addTo(meuMapa);
 
-    // Plota os pontos de ônibus no mapa
     pontos.forEach(p => {
       if(p.lat !== null && p.lon !== null){
         L.marker([p.lat, p.lon])
@@ -757,7 +764,6 @@ function usarGPS(){
         textoEspera;
 
       
-      // Atualiza o usuário no mapa
       if(marcadorUsuario === null){
         marcadorUsuario = L.circleMarker([lat, lon], {
           color: 'blue', fillColor: '#3388ff', fillOpacity: 0.8, radius: 8
@@ -766,7 +772,6 @@ function usarGPS(){
         marcadorUsuario.setLatLng([lat, lon]);
       }
       
-      // Centraliza a visão do mapa entre o usuário e o ponto mais próximo
       if(r.ponto.lat !== null) {
         let grupo = new L.featureGroup([marcadorUsuario, L.marker([r.ponto.lat, r.ponto.lon])]);
         meuMapa.fitBounds(grupo.getBounds(), {padding: [30, 30]});
@@ -793,18 +798,17 @@ function usarGPS(){
 HORÁRIOS DO DIA E PRÓXIMOS
 ----------------------------- */
 
-// Lista de feriados fixos de Belo Horizonte e Nacionais (dia/mês)
 const feriadosBH = [
-  "01/01", // Confraternização Universal
-  "21/04", // Tiradentes
-  "01/05", // Dia do Trabalhador
-  "15/08", // Assunção de Nossa Senhora (BH)
-  "07/09", // Independência do Brasil
-  "12/10", // Nossa Senhora Aparecida
-  "02/11", // Finados
-  "15/11", // Proclamação da República
-  "08/12", // Imaculada Conceição (BH)
-  "25/12"  // Natal
+  "01/01", 
+  "21/04", 
+  "01/05", 
+  "15/08", 
+  "07/09", 
+  "12/10", 
+  "02/11", 
+  "15/11", 
+  "08/12", 
+  "25/12"  
 ];
 
 function ehFeriado(dataObj) {
@@ -814,13 +818,13 @@ function ehFeriado(dataObj) {
 }
 
 function obterHorarios(dataObj){
-  if (ehFeriado(dataObj)) return []; // Se for feriado, zera os ônibus
+  if (ehFeriado(dataObj)) return []; 
 
   let diaDaSemana = dataObj.getDay();
   if(diaDaSemana >= 1 && diaDaSemana <= 5) return horariosSemana;
   if(diaDaSemana == 6) return horariosSabado;
   
-  return []; // Domingo
+  return []; 
 }
 
 function horariosHoje(){
@@ -845,13 +849,18 @@ function listarHorarios(){
 
   horarios.forEach(h=>{
     let li=document.createElement("li");
+    
+    // Novas variáveis extraídas do array atualizado
+    let hora = h[0];
+    let origem = h[1];
+    let tipo = h[2];
+    let qtd = h[3];
 
-    // NOVA REGRA: Só escreve "Passando nas moradias" se a tag for passagem E a origem for Moradia
-    if(h[2] === "passagem" && h[1].includes("Moradia")){
-      li.innerText = h[0] + " — Passando nas moradias";
+    // Lógica para destacar o nome usando a classe 'destaque-local'
+    if(tipo === "passagem" && origem.includes("Moradia")){
+      li.innerHTML = `<b>${hora}</b> — Passando na <span class="destaque-local">Moradia</span>`;
     } else {
-      // Caso contrário, usa o texto padrão (ex: Saída Escola de Música)
-      li.innerText = h[0] + " — Saída " + h[1];
+      li.innerHTML = `<b>${hora}</b> — Saída <span class="destaque-local">${origem}</span>`;
     }
 
     lista.appendChild(li);
@@ -859,14 +868,13 @@ function listarHorarios(){
 }
 
 
-function mostrarChegadas(saida, origem, hora, tipo) { // Adicione o 'tipo' aqui
+function mostrarChegadas(saida, origem, hora, tipo) { 
   let lista = document.getElementById("chegadas");
   lista.innerHTML = "";
 
   document.getElementById("infoViagem").innerHTML =
     "Previsão baseada no ônibus das " + hora + " (saída: " + origem + ")";
 
-  // NOVA LÓGICA DE ESCOLHA:
   let rota = rotaCampus;
   if (tipo === "passagem") {
     rota = rotaPassagem;
@@ -902,29 +910,26 @@ function atualizar(){
   let agora = new Date();
   let atualMin = agora.getHours() * 60 + agora.getMinutes();
 
-  // Puxa os horários da data de hoje (passando a variável agora)
   let horarios = obterHorarios(agora);
 
   let proximo = null;
   let ultimo = null;
 
-  // 1. Tenta achar o próximo ônibus HOJE
+  // Atualização com os novos índices da array (+ a quantidade h[3])
   horarios.forEach(h => {
     let min = minutos(h[0]);
     
     if(min > atualMin && !proximo){
-      proximo = {hora: h[0], origem: h[1], min: min, quando: "hoje", tipo: h[2]};
+      proximo = {hora: h[0], origem: h[1], min: min, quando: "hoje", tipo: h[2], qtd: h[3]};
     }
     if(min <= atualMin){
-      ultimo = {hora: h[0], origem: h[1], min: min, tipo: h[2]};
+      ultimo = {hora: h[0], origem: h[1], min: min, tipo: h[2], qtd: h[3]};
     }
   });
 
-  // 2. Se não achou hoje, procura nos próximos dias
   if(!proximo){
     let diasNomes = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
     
-    // Procura até 7 dias para frente
     for(let i = 1; i <= 7; i++){
       let dataFutura = new Date();
       dataFutura.setDate(agora.getDate() + i);
@@ -932,33 +937,33 @@ function atualizar(){
       let horariosFuturos = obterHorarios(dataFutura);
       
       if(horariosFuturos.length > 0){
-        let h = horariosFuturos[0]; // Pega o primeiro ônibus desse dia futuro
+        let h = horariosFuturos[0]; 
         let textoDia = (i === 1) ? "Amanhã" : diasNomes[dataFutura.getDay()];
-        proximo = {hora: h[0], origem: h[1], quando: textoDia};
-        break; // Achou o ônibus, para de procurar
+        proximo = {hora: h[0], origem: h[1], quando: textoDia, tipo: h[2], qtd: h[3]};
+        break; 
       }
     }
   }
 
-// 3. Atualiza os textos na tela
+  // Bloco atualizado para inserir a div de quantidade de ônibus
   if (proximo) {
+    let qtdTexto = proximo.qtd > 1 ? proximo.qtd + " veículos" : proximo.qtd + " veículo";
+    document.getElementById("qtd-onibus").innerHTML = "🚌 " + qtdTexto;
+    document.getElementById("qtd-onibus").style.display = "inline-block";
+
     if (proximo.quando === "hoje") {
       let falta = proximo.min - atualMin;
-      
-      // MÁGICA DO AVISO: Verifica se a hora do próximo ônibus é igual à hora do último ônibus da lista de hoje
       let ehOUltimo = (proximo.hora === horarios[horarios.length - 1][0]);
-      
-      // Cria a etiqueta vermelha se for o último, ou deixa vazio se não for
       let etiquetaAviso = ehOUltimo 
         ? "<div style='background:#cc0000; color:white; padding:6px 10px; border-radius:6px; font-size:14px; font-weight:bold; display:inline-block; margin-bottom:8px;'>⚠️ ATENÇÃO: ÚLTIMO ÔNIBUS DE HOJE</div><br>" 
         : "";
 
       document.getElementById("proximo").innerHTML = etiquetaAviso + "🚌 " + proximo.hora;
       document.getElementById("tempo").innerText = formatarTempo(falta);
-      document.getElementById("origem").innerText = "Saída: " + proximo.origem;
+      // Aqui usamos <b> na origem para não perder o destaque
+      document.getElementById("origem").innerHTML = "Saída: <b>" + proximo.origem + "</b>";
       
     } else {
-      // NOVA MÁGICA: Checa se hoje tinha ônibus para definir a mensagem de erro
       let tinhaOnibusHoje = horarios.length > 0;
       let msgErro = tinhaOnibusHoje 
         ? "⚠️ Último ônibus do dia já saiu" 
@@ -967,40 +972,35 @@ function atualizar(){
       document.getElementById("proximo").innerHTML = 
         "<span style='font-size: 20px; color: #cc0000;'>" + msgErro + "</span><br>"+
         "<span class='texto-dia-seguinte' style='font-size: 22px; margin-top: 10px; display: block;'>Próximo: " + proximo.quando.toLowerCase() + " às " + proximo.hora + "</span>";
-      document.getElementById("origem").innerText = "Saída: " + proximo.origem;
+      document.getElementById("origem").innerHTML = "Saída: <b>" + proximo.origem + "</b>";
       document.getElementById("tempo").innerText = ""; 
     }
   } else {
     document.getElementById("proximo").innerHTML = "🚫 Sem previsão de ônibus";
     document.getElementById("origem").innerText = "";
     document.getElementById("tempo").innerText = "";
+    document.getElementById("qtd-onibus").style.display = "none";
   }
 
   
- // 4. Mostra o itinerário do ônibus atual ou do próximo
   if (ultimo) {
-    // Descobre qual rota o último ônibus está fazendo para saber o tempo total
     let rotaUltimo = (ultimo.origem.includes("Moradia")) ? rotaMoradia : rotaCampus;
     let tempoTotalViagem = rotaUltimo[rotaUltimo.length - 1].t; 
     let minutoFimDaViagem = ultimo.min + tempoTotalViagem;
 
-    // Se o ônibus atual ainda está no meio do caminho...
     if (atualMin <= minutoFimDaViagem) {
       mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora, ultimo.tipo);
     } 
-    // Se ele já chegou no final, mas ainda tem próximo ônibus hoje...
     else if (proximo && proximo.quando === "hoje") {
-      mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo); // Corrigido aqui (era ultimo.tipo)
+      mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo);
     } 
-    // Se ele já terminou e não tem mais nenhum ônibus hoje...
     else {
       document.getElementById("chegadas").innerHTML = "<li>Viagens encerradas no momento.</li>";
       document.getElementById("infoViagem").innerHTML = "";
     }
   } 
-  // Se o primeiro ônibus do dia ainda nem saiu...
   else if (proximo && proximo.quando === "hoje") {
-    mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo); // Corrigido aqui também
+    mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo); 
   } else {
     document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens...</li>";
     document.getElementById("infoViagem").innerHTML = "";
@@ -1009,22 +1009,20 @@ function atualizar(){
 
 estimarPosicaoOnibus();
   
-} // Fim da função atualizar()
+} 
 
 
 
 
   
-// Variável para guardar o ícone do ônibus no mapa
 let marcadorOnibus = null;
 
 function estimarPosicaoOnibus() {
-  if (meuMapa === null) return; // Só calcula se o mapa estiver aberto
+  if (meuMapa === null) return; 
 
   let agora = new Date();
   let atualMin = agora.getHours() * 60 + agora.getMinutes();
   
-  // Usamos a variável global 'ultimo' que a função atualizar() gera
   if (!ultimo) return; 
 
   
@@ -1038,7 +1036,6 @@ function estimarPosicaoOnibus() {
   let tempoTotal = rota[rota.length - 1].t;
   let minutoFim = ultimo.min + tempoTotal;
 
-  // Se o ônibus já terminou a viagem, remove o ícone
   if (atualMin > minutoFim) {
     if (marcadorOnibus) {
       meuMapa.removeLayer(marcadorOnibus);
@@ -1049,7 +1046,6 @@ function estimarPosicaoOnibus() {
 
   let tempoDecorrido = atualMin - ultimo.min;
 
-  // Encontra entre quais pontos ele está
   let pontoAnterior = rota[0];
   let pontoProximo = rota[rota.length - 1];
 
@@ -1061,25 +1057,19 @@ function estimarPosicaoOnibus() {
     }
   }
 
-  // Puxa as coordenadas reais da lista de "pontos"
   let coordAnt = pontos.find(p => p.nome === pontoAnterior.p);
   let coordProx = pontos.find(p => p.nome === pontoProximo.p);
 
-  // Só desenha se tivermos as coordenadas dos dois pontos
   if (coordAnt && coordProx && coordAnt.lat !== null && coordProx.lat !== null) {
     
-    // Calcula a porcentagem do trajeto entre esses dois pontos
     let tempoTrecho = pontoProximo.t - pontoAnterior.t;
     let tempoAndadoTrecho = tempoDecorrido - pontoAnterior.t;
     let porcentagem = tempoAndadoTrecho / tempoTrecho;
 
-    // Interpola a Latitude e Longitude (Matemática de linha reta)
     let latAtual = coordAnt.lat + ((coordProx.lat - coordAnt.lat) * porcentagem);
     let lonAtual = coordAnt.lon + ((coordProx.lon - coordAnt.lon) * porcentagem);
 
-    // Cria ou atualiza o ícone do ônibus
     if (!marcadorOnibus) {
-      // Cria um ícone personalizado (uma bolinha amarela/laranja)
       let iconeBus = L.divIcon({
         html: '🚌',
         className: '',
