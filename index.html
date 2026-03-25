@@ -639,6 +639,19 @@ function descobrirVolta() {
       let lat = pos.coords.latitude;
       let lon = pos.coords.longitude;
 
+      let moradia1 = pontos.find(p => p.nome === "Moradia 1");
+      let moradia23 = pontos.find(p => p.nome === "Moradia 2 e 3");
+      let distM1 = distancia(lat, lon, moradia1.lat, moradia1.lon);
+      let distM23 = distancia(lat, lon, moradia23.lat, moradia23.lon);
+
+      if (distM1 < 0.3 || distM23 < 0.3) {
+        visor.innerHTML = "<span style='color:#006633; font-weight:bold; font-size:18px;'>🏠 Você já se encontra na Moradia!</span>";
+        btn.innerText = "🧭 Encontrar ponto de volta";
+        divMapaVolta.style.display = "none";
+        return; // Para a execução por aqui
+      }
+      // --- FIM DA VERIFICAÇÃO ---
+
       let r = pontoMaisProximoVolta(lat, lon);
       
       if(!r.ponto) {
@@ -672,26 +685,34 @@ function descobrirVolta() {
         mapaVolta.invalidateSize();
       }, 200);
 
+     // Remove a rota (linha) anterior se existir
       if (controleRotaVolta !== null) {
-        mapaVolta.removeControl(controleRotaVolta);
+        mapaVolta.removeLayer(controleRotaVolta);
       }
 
-      controleRotaVolta = L.Routing.control({
-        waypoints: [
-          L.latLng(lat, lon), 
-          L.latLng(r.ponto.lat, r.ponto.lon) 
-        ],
-        router: L.Routing.osrmv1({
-          profile: 'foot' 
-        }),
-        lineOptions: {
-          styles: [{color: '#e67e22', opacity: 0.8, weight: 6}]
-        },
-        show: false,
-        addWaypoints: false, 
-        routeWhileDragging: false,
-        fitSelectedRoutes: true
-      }).addTo(mapaVolta);
+      // Faz uma requisição direta para a API gratuita de rotas a pé
+      let urlRota = `https://router.project-osrm.org/route/v1/foot/${lon},${lat};${r.ponto.lon},${r.ponto.lat}?geometries=geojson`;
+      
+      fetch(urlRota)
+        .then(res => res.json())
+        .then(data => {
+          if(data.routes && data.routes.length > 0) {
+            // Inverte as coordenadas que vêm da API para o padrão do Leaflet
+            let coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            
+            // Desenha a linha da rota
+            controleRotaVolta = L.polyline(coords, {color: '#e67e22', weight: 6, opacity: 0.8}).addTo(mapaVolta);
+            
+            // Coloca um marcador vermelho no ponto de ônibus de destino
+            L.circleMarker([r.ponto.lat, r.ponto.lon], {
+              color: 'red', fillColor: '#f03', fillOpacity: 0.8, radius: 8
+            }).addTo(mapaVolta).bindPopup("Destino: " + r.ponto.nome);
+            
+            // Centraliza o mapa para mostrar o caminho todo
+            mapaVolta.fitBounds(controleRotaVolta.getBounds(), {padding: [30, 30]});
+          }
+        })
+        .catch(err => console.log("Erro ao desenhar rota:", err));
       
       if(marcadorUsuarioVolta === null){
         marcadorUsuarioVolta = L.circleMarker([lat, lon], {
