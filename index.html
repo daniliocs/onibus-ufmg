@@ -859,7 +859,9 @@ function horariosHoje(){
 INTERFACE
 ----------------------------- */
 
-function listarHorarios(){
+
+
+  function listarHorarios(){
   let lista = document.getElementById("lista");
   lista.innerHTML = "";
   let horarios = horariosHoje();
@@ -884,15 +886,36 @@ function listarHorarios(){
 
     temHorarioNoFiltro = true;
     let li = document.createElement("li");
+    
+    // NOVO: Criando o container para alinhar o texto e o botão de alarme
+    li.style.display = "flex";
+    li.style.justifyContent = "space-between";
+    li.style.alignItems = "center";
 
-    // Aplicação das tags coloridas na lista
+    // O texto do ônibus (mantendo as suas tags coloridas)
+    let textoHtml = "";
     if(tipo === "passagem" && origem.includes("Moradia")){
-      li.innerHTML = `<b>${hora}</b> — <span class="tag-passagem">Passando na Moradia</span>`;
+      textoHtml = `<b>${hora}</b> — <span class="tag-passagem">Passando na Moradia</span>`;
     } else if (origem.includes("Moradia")) {
-      li.innerHTML = `<b>${hora}</b> — Saída <span class="tag-moradia">Moradia</span>`;
+      textoHtml = `<b>${hora}</b> — Saída <span class="tag-moradia">Moradia</span>`;
     } else {
-      li.innerHTML = `<b>${hora}</b> — Saída <span class="tag-escola">${origem}</span>`;
+      textoHtml = `<b>${hora}</b> — Saída <span class="tag-escola">${origem}</span>`;
     }
+
+    // NOVO: O botão de notificação (o "Sininho")
+    let btnAlarme = `<button onclick="agendarAlerta('${hora}', '${origem}')" style="
+        width: auto;
+        padding: 6px 10px;
+        margin-bottom: 0;
+        font-size: 14px;
+        background: #f0f2f5;
+        color: #555;
+        border-radius: 8px;
+        box-shadow: none;
+    ">🔔</button>`;
+
+    // Junta o texto e o botão
+    li.innerHTML = `<div>${textoHtml}</div> ${btnAlarme}`;
 
     lista.appendChild(li);
   });
@@ -902,6 +925,8 @@ function listarHorarios(){
     lista.innerHTML = "<li>Nenhum ônibus desta rota cadastrado para hoje.</li>";
   }
 }
+
+  
 
 function mostrarChegadas(saida, origem, hora, tipo) { 
   let lista = document.getElementById("chegadas");
@@ -1114,6 +1139,47 @@ function estimarPosicaoOnibus() {
   }
 }
 
+// NOVO: Função para lidar com o clique no sininho
+function agendarAlerta(horaBus, origemBus) {
+  // 1. Verifica se o navegador suporta notificações
+  if (!("Notification" in window)) {
+    alert("Este navegador não suporta notificações do sistema.");
+    return;
+  }
+
+  // 2. Verifica se já temos permissão
+  if (Notification.permission === "granted") {
+    dispararTeste(horaBus, origemBus);
+  } 
+  // 3. Se não temos permissão e também não foi bloqueada, pedimos
+  else if (Notification.permission !== "denied") {
+    Notification.requestPermission().then((permission) => {
+      if (permission === "granted") {
+        dispararTeste(horaBus, origemBus);
+      } else {
+        alert("Permissão para notificações negada. Não poderei avisar você.");
+      }
+    });
+  } else {
+      alert("As notificações estão bloqueadas nas configurações do seu navegador.");
+  }
+}
+
+// NOVO: Função que manda a mensagem pro Service Worker exibir a notificação
+function dispararTeste(horaBus, origemBus) {
+  // Envia uma mensagem para o Service Worker ativo
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'SHOW_NOTIFICATION',
+        titulo: `Teste Alerta: Ônibus ${horaBus}`,
+        mensagem: `Atenção, o ônibus da rota ${origemBus} vai sair em breve!`
+      });
+  } else {
+      alert("Service Worker não está controlando a página. Recarregue a página e tente de novo.");
+  }
+}
+
+  
 /* -----------------------------
 INICIALIZAÇÃO
 ----------------------------- */
