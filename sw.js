@@ -1,4 +1,4 @@
-const CACHE_NAME = 'onibus-ufmg-v17'; // Mude para v3 na próxima vez que alterar o site
+const CACHE_NAME = 'onibus-ufmg-v18'; // Atualizado para v18
 const ASSETS = [
   './',
   './index.html',
@@ -34,4 +34,28 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request).then(response => response || fetch(e.request))
   );
+});
+
+// --- NOVA PARTE: NOTIFICAÇÕES ---
+
+// Intercepta a mensagem vinda do index.html para mostrar a notificação
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const titulo = event.data.titulo || 'Ônibus Moradias UFMG';
+    const opcoes = {
+      body: event.data.mensagem,
+      icon: './icone.png', 
+      badge: './icone.png', 
+      vibrate: [200, 100, 200], 
+      tag: 'onibus-alerta', // Evita spam se disparar várias vezes
+    };
+
+    // Pede ao sistema operacional para mostrar a notificação
+    self.registration.showNotification(titulo, opcoes);
+  }
+});
+
+// Limpa a notificação da tela se o usuário clicar nela
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close(); 
 });
