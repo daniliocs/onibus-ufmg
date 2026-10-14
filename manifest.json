@@ -1,15 +1,26 @@
 {
   "name": "Ônibus Moradias UFMG",
-  "short_name": "Ônibus UFMG",
+  "short_name": "Morabus UFMG",
+  "description": "Horários em tempo real, estimativa nos pontos, GPS e alertas do ônibus das Moradias Estudantis da UFMG.",
+  "lang": "pt-BR",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f0f2f5",
   "theme_color": "#006633",
   "icons": [
     {
-      "src": "Morabus.png",
+      "src": "./Morabus.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./Morabus.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
