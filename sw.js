@@ -1,61 +1,96 @@
-const CACHE_NAME = 'onibus-ufmg-v21'; // Atualizado para v18
+const CACHE_NAME = 'onibus-ufmg-v19';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './icone.png',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
-// Instala e força a atualização imediata
-self.addEventListener('install', e => {
-  self.skipWaiting(); // Expulsa a versão velha na hora!
+// 1. Instalação: salva os arquivos essenciais e ativa imediatamente
+self.addEventListener('install', (e) => {
+  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS);
+    })
   );
 });
 
-// Ativa e faz a faxina do cache antigo
-self.addEventListener('activate', e => {
+// 2. Ativação: limpa caches de versões antigas
+self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then(chaves => {
+    caches.keys().then((chaves) => {
       return Promise.all(
-        chaves.map(chave => {
+        chaves.map((chave) => {
           if (chave !== CACHE_NAME) {
-            return caches.delete(chave); // Apaga os arquivos da versão anterior
+            return caches.delete(chave);
           }
         })
       );
     })
   );
-  return self.clients.claim(); // Assume o controle da tela imediatamente
+  return self.clients.claim();
 });
 
-// Intercepta as requisições
-self.addEventListener('fetch', e => {
+// 3. Interceptação de requisições: Estratégia Network-First (Rede primeiro, Cache como fallback offline)
+self.addEventListener('fetch', (e) => {
+  // Ignora requisições que não sejam GET ou que sejam da API externa de rotas a pé (OSRM)
+  if (e.request.method !== 'GET' || e.request.url.includes('router.project-osrm.org')) {
+    return;
+  }
+
   e.respondWith(
-    caches.match(e.request).then(response => response || fetch(e.request))
+    fetch(e.request)
+      .then((networkResponse) => {
+        // Se a resposta da rede foi válida, atualiza o cache em segundo plano
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseClone);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // Sem internet: entrega a versão salva no cache
+        return caches.match(e.request);
+      })
   );
 });
 
-// --- NOVA PARTE: NOTIFICAÇÕES ---
-
-// Intercepta a mensagem vinda do index.html para mostrar a notificação
+// 4. Recebe comando do index.html para disparar Notificação
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
     const titulo = event.data.titulo || 'Ônibus Moradias UFMG';
     const opcoes = {
       body: event.data.mensagem,
-      icon: './icone.png', 
-      badge: './icone.png', 
-      vibrate: [200, 100, 200], 
-      tag: 'onibus-alerta', // Evita spam se disparar várias vezes
+      icon: './icone.png',
+      badge: './icone.png',
+      vibrate: [200, 100, 200],
+      tag: 'onibus-alerta',
+      renotify: true
     };
 
-    // Pede ao sistema operacional para mostrar a notificação
     self.registration.showNotification(titulo, opcoes);
   }
 });
 
-// Limpa a notificação da tela se o usuário clicar nela
+// 5. Ao tocar na notificação, fecha o alerta e abre/foca o app
 self.addEventListener('notificationclick', (event) => {
-  event.notification.close(); 
+  event.notification.close();
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('./');
+      }
+    })
+  );
 });
