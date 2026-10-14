@@ -21,7 +21,7 @@
     body {
       font-family: 'Inter', sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 16px;
       background: #f0f2f5;
       color: #333;
       max-width: 600px;
@@ -29,24 +29,68 @@
       margin-right: auto;
     }
 
+    /* Cabeçalho e barra de ações rápidas */
+    .header-app {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
     h1 {
       color: #006633;
-      text-align: center;
       font-size: 24px;
-      margin-bottom: 25px;
+      margin: 5px 0 12px 0;
+    }
+
+    .acoes-topo {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-topo {
+      width: auto;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 20px;
+      background: white;
+      color: #006633;
+      border: 1px solid #cce3d6;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+      margin-bottom: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-topo.instalar {
+      background: #006633;
+      color: white;
+      border-color: #006633;
     }
 
     .card {
       background: white;
       padding: 20px;
       margin: 15px 0;
-      border-radius: 12px;
+      border-radius: 14px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       border: 1px solid #e1e4e8;
     }
 
+    .card-header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #f0f2f5;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      gap: 8px;
+    }
+
     .card h2 {
-      margin-top: 0;
+      margin: 0;
       font-size: 18px;
       color: #444;
       border-bottom: 2px solid #f0f2f5;
@@ -54,11 +98,17 @@
       margin-bottom: 15px;
     }
 
+    .card-header-flex h2 {
+      border-bottom: none;
+      padding-bottom: 0;
+      margin-bottom: 0;
+    }
+
     #proximo {
       font-size: 32px;
       font-weight: 700;
       color: #006633;
-      margin: 10px 0;
+      margin: 6px 0;
     }
 
     #origem {
@@ -73,7 +123,7 @@
       padding: 4px 10px;
       background: #e8f5e9;
       border-radius: 6px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: #006633;
     }
@@ -85,24 +135,79 @@
       margin-top: 8px;
     }
 
-    #infoViagem {
-      font-size: 14px;
+    /* Painel Duplo: Próximo por Sentido */
+    .resumo-sentidos {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 15px;
+      border-top: 1px dashed #e1e4e8;
+    }
+
+    .box-sentido {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.2s;
+    }
+
+    .box-sentido:active {
+      transform: scale(0.98);
+    }
+
+    .box-sentido-titulo {
+      font-size: 12px;
+      font-weight: 600;
       color: #666;
-      margin-bottom: 12px;
+      margin-bottom: 4px;
+    }
+
+    .box-sentido-hora {
+      font-size: 20px;
+      font-weight: 700;
+      color: #222;
+    }
+
+    .box-sentido-falta {
+      font-size: 12px;
+      font-weight: 600;
+      color: #006633;
+      margin-top: 2px;
     }
 
     /* Linha do tempo visual para as chegadas */
+    #infoViagem {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    .badge-andamento {
+      display: inline-block;
+      background: #e8f5e9;
+      color: #006633;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      margin-bottom: 6px;
+    }
+
     #chegadas {
       list-style: none;
       padding-left: 20px;
-      border-left: 3px solid #006633;
+      border-left: 3px solid #cbd5e1;
       margin-left: 10px;
       margin-bottom: 0;
     }
 
     #chegadas li {
       position: relative;
-      padding-bottom: 15px;
+      padding-bottom: 14px;
       font-size: 15px;
       color: #444;
     }
@@ -111,12 +216,32 @@
       content: '';
       position: absolute;
       left: -27px;
-      top: 2px;
+      top: 3px;
       width: 10px;
       height: 10px;
       background: white;
-      border: 3px solid #006633;
+      border: 3px solid #94a3b8;
       border-radius: 50%;
+    }
+
+    #chegadas li.ponto-concluido {
+      opacity: 0.5;
+    }
+
+    #chegadas li.ponto-concluido::before {
+      background: #006633;
+      border-color: #006633;
+    }
+
+    #chegadas li.ponto-atual {
+      font-weight: 700;
+      color: #006633;
+    }
+
+    #chegadas li.ponto-atual::before {
+      background: #e67e22;
+      border-color: #e67e22;
+      transform: scale(1.2);
     }
 
     #chegadas li:last-child {
@@ -131,7 +256,7 @@
     }
 
     #lista li {
-      padding: 12px 0;
+      padding: 12px 8px;
       border-bottom: 1px solid #eee;
       color: #555;
       font-size: 15px;
@@ -139,6 +264,8 @@
       justify-content: space-between;
       align-items: center;
       gap: 10px;
+      border-radius: 8px;
+      transition: background 0.2s;
     }
 
     #lista li:last-child {
@@ -146,7 +273,31 @@
     }
 
     #lista li.horario-passado {
-      opacity: 0.45;
+      opacity: 0.42;
+    }
+
+    #lista li.horario-proximo {
+      background: #f0fdf4;
+      border-left: 4px solid #006633;
+      padding-left: 10px;
+      font-weight: 600;
+    }
+
+    .selo-proximo {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: #006633;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .info-horario-clicavel {
+      cursor: pointer;
+      flex: 1;
     }
 
     /* Tags de cores */
@@ -157,6 +308,7 @@
       padding: 2px 8px;
       border-radius: 6px;
       display: inline-block;
+      font-size: 13px;
     }
 
     .tag-escola {
@@ -166,6 +318,7 @@
       padding: 2px 8px;
       border-radius: 6px;
       display: inline-block;
+      font-size: 13px;
     }
 
     .tag-passagem {
@@ -175,6 +328,7 @@
       padding: 2px 8px;
       border-radius: 6px;
       display: inline-block;
+      font-size: 13px;
     }
 
     /* Botão Padrão */
@@ -202,7 +356,7 @@
       box-shadow: 0 4px 6px rgba(230,126,34,0.2);
     }
 
-    /* Botões de Filtro */
+    /* Botões de Filtro e Ocultar Passados */
     .filtros-container {
       display: flex;
       flex-wrap: wrap;
@@ -212,7 +366,7 @@
 
     .btn-filtro {
       width: auto;
-      padding: 6px 14px;
+      padding: 6px 12px;
       font-size: 13px;
       font-weight: 600;
       border-radius: 16px;
@@ -225,6 +379,18 @@
     .btn-filtro.ativo {
       background: #006633;
       color: white;
+    }
+
+    .btn-ocultar-passados {
+      width: auto;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 12px;
+      background: #f0f2f5;
+      color: #666;
+      margin-bottom: 0;
+      box-shadow: none;
     }
 
     /* Botão do Sininho (Alarme) */
@@ -273,6 +439,13 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
+    .rodape-compartilhar {
+      text-align: center;
+      padding: 15px 10px 25px 10px;
+      font-size: 13px;
+      color: #777;
+    }
+
     /* --- MODO ESCURO AUTOMÁTICO --- */
     @media (prefers-color-scheme: dark) {
       body {
@@ -286,10 +459,35 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.5);
       }
 
-      .card h2 {
+      .card h2, .card-header-flex {
         color: #e0e0e0;
         border-bottom-color: #333;
       }
+
+      .btn-topo {
+        background: #1e1e1e;
+        color: #4ade80;
+        border-color: #333;
+      }
+
+      .btn-topo.instalar {
+        background: #4ade80;
+        color: #121212;
+        border-color: #4ade80;
+      }
+
+      .resumo-sentidos {
+        border-top-color: #333;
+      }
+
+      .box-sentido {
+        background: #262626;
+        border-color: #383838;
+      }
+
+      .box-sentido-titulo { color: #aaa; }
+      .box-sentido-hora { color: #f0f0f0; }
+      .box-sentido-falta { color: #4ade80; }
 
       .texto-dia-seguinte {
         color: #e0e0e0;
@@ -299,12 +497,34 @@
       #tempo { color: #fbbf24; }
       #origem, #gps, #resultadoVolta, #infoViagem, .texto-subtitulo { color: #aaa; }
 
-      #chegadas li, #lista li { color: #ccc; }
-      #lista li { border-bottom-color: #333; }
-      #chegadas { border-left-color: #4ade80; }
+      .badge-andamento {
+        background: #1a3320;
+        color: #4ade80;
+      }
+
+      #chegadas { border-left-color: #444; }
+      #chegadas li { color: #ccc; }
       #chegadas li::before {
         background: #1e1e1e;
+        border-color: #666;
+      }
+      #chegadas li.ponto-concluido::before {
+        background: #4ade80;
         border-color: #4ade80;
+      }
+      #chegadas li.ponto-atual {
+        color: #4ade80;
+      }
+
+      #lista li { color: #ccc; border-bottom-color: #333; }
+      #lista li.horario-proximo {
+        background: #162a1d;
+        border-left-color: #4ade80;
+      }
+
+      .selo-proximo {
+        background: #4ade80;
+        color: #121212;
       }
 
       #mapa, #mapaVolta { border-color: #333; }
@@ -320,7 +540,7 @@
       .tag-passagem { background: #3e2723; color: #ffb74d; }
 
       /* Cores escuras para botões secundários */
-      .btn-filtro, .btn-alarme { background: #333; color: #ccc; }
+      .btn-filtro, .btn-alarme, .btn-ocultar-passados { background: #333; color: #ccc; }
       .btn-filtro.ativo { background: #4ade80; color: #121212; }
       .btn-alarme.agendado {
         background: #1a3320;
@@ -333,7 +553,17 @@
 
 <body>
 
-  <h1>🚌 Ônibus Moradias UFMG</h1>
+  <div class="header-app">
+    <h1>🚌 Ônibus Moradias UFMG</h1>
+    <div class="acoes-topo">
+      <button id="btnInstalar" class="btn-topo instalar" style="display: none;" onclick="instalarPWA()">
+        📥 Instalar App
+      </button>
+      <button class="btn-topo" onclick="compartilharApp()">
+        📲 Compartilhar nos grupos
+      </button>
+    </div>
+  </div>
 
   <div class="card">
     <h2>Próximo ônibus</h2>
@@ -341,16 +571,35 @@
     <div id="origem"></div>
     <div id="qtd-onibus" style="display: none;"></div>
     <div id="tempo"></div>
+
+    <!-- Novo Painel Duplo: Próximo de cada sentido -->
+    <div id="painelSentidos" class="resumo-sentidos" style="display: none;">
+      <div class="box-sentido" id="boxProxMoradia" title="Toque para ver a chegada nos pontos">
+        <div class="box-sentido-titulo">🏠 Saindo da Moradia</div>
+        <div class="box-sentido-hora" id="horaProxMoradia">--:--</div>
+        <div class="box-sentido-falta" id="faltaProxMoradia"></div>
+      </div>
+      <div class="box-sentido" id="boxProxCampus" title="Toque para ver a chegada nos pontos">
+        <div class="box-sentido-titulo">🎓 Saindo do Campus</div>
+        <div class="box-sentido-hora" id="horaProxCampus">--:--</div>
+        <div class="box-sentido-falta" id="faltaProxCampus"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="cardChegadas">
     <h2>Chegada estimada nos pontos</h2>
     <div id="infoViagem"></div>
     <ul id="chegadas"></ul>
   </div>
 
   <div class="card">
-    <h2>Horários de hoje</h2>
+    <div class="card-header-flex">
+      <h2>Horários de hoje</h2>
+      <button id="btnTogglePassados" class="btn-ocultar-passados" onclick="alternarHorariosPassados()" style="display: none;">
+        👁️ Ocultar anteriores
+      </button>
+    </div>
 
     <div class="filtros-container">
       <button class="btn-filtro ativo" onclick="mudarFiltro('todos')">Todos</button>
@@ -377,6 +626,10 @@
     <div id="mapaVolta"></div>
   </div>
 
+  <div class="rodape-compartilhar">
+    Útil para o seu dia a dia? <a href="javascript:void(0)" onclick="compartilharApp()" style="color: #006633; font-weight: 600;">Envie para seus amigos da Moradia!</a>
+  </div>
+
   <script>
     /* -----------------------------
     CONFIGURAÇÕES E ESTADO GLOBAL
@@ -384,13 +637,58 @@
     const TEMPO_ATUALIZACAO = 10000;
     const MINUTOS_ANTECEDENCIA_ALERTA = 10;
     let filtroAtual = 'todos';
-    let alertasAgendados = {}; // Guarda os timers de notificação por horário
+    let ocultarPassados = false;
+    let alertasAgendados = {};
+    let horarioSimulado = null; // Permite clicar num horário para ver a rota dele
 
     function mudarFiltro(tipo) {
       filtroAtual = tipo;
       document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('ativo'));
       document.querySelector(`button[onclick="mudarFiltro('${tipo}')"]`).classList.add('ativo');
       listarHorarios();
+    }
+
+    function alternarHorariosPassados() {
+      ocultarPassados = !ocultarPassados;
+      listarHorarios();
+    }
+
+    /* -----------------------------
+    COMPARTILHAR E INSTALAR PWA
+    ----------------------------- */
+    function compartilharApp() {
+      const urlAtual = window.location.href;
+      const dadosShare = {
+        title: 'Ônibus Moradias UFMG',
+        text: '🚌 Acompanhe os horários em tempo real, alertas de saída e pontos mais próximos do ônibus das Moradias UFMG:',
+        url: urlAtual
+      };
+
+      if (navigator.share) {
+        navigator.share(dadosShare).catch(() => {});
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(urlAtual).then(() => {
+          alert('Link copiado! Agora é só colar no grupo do WhatsApp.');
+        });
+      } else {
+        prompt('Copie o link abaixo para compartilhar:', urlAtual);
+      }
+    }
+
+    let eventoInstalacao = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      eventoInstalacao = e;
+      document.getElementById('btnInstalar').style.display = 'inline-flex';
+    });
+
+    function instalarPWA() {
+      if (!eventoInstalacao) return;
+      eventoInstalacao.prompt();
+      eventoInstalacao.userChoice.then(() => {
+        eventoInstalacao = null;
+        document.getElementById('btnInstalar').style.display = 'none';
+      });
     }
 
     /* -----------------------------
@@ -485,7 +783,7 @@
       ["11:00", "Moradia", null, 2],
       ["12:00", "Escola de Música", null, 2],
       ["12:20", "Moradia", null, 2],
-      ["13:30", "Escola de Música", null, 2] // Sai da Escola de Música e encerra nas Moradias (rotaCampus)
+      ["13:30", "Escola de Música", null, 2]
     ];
 
     /* -----------------------------
@@ -743,7 +1041,6 @@
               }
             })
             .catch(() => {
-              // Fallback caso a API de rota falhe no 3G/4G
               let grupo = new L.featureGroup([marcadorUsuarioVolta, marcadorDestinoVolta]);
               mapaVolta.fitBounds(grupo.getBounds(), {padding: [30, 30]});
             });
@@ -804,7 +1101,7 @@
 
       setTimeout(() => {
         meuMapa.invalidateSize();
-        atualizar(); // Atualiza para já desenhar o ônibus no mapa se houver viagem ativa
+        atualizar();
       }, 200);
 
       gpsWatchId = navigator.geolocation.watchPosition(
@@ -831,7 +1128,6 @@
             marcadorUsuario.setLatLng([lat, lon]);
           }
 
-          // Centraliza apenas na primeira leitura para não travar o zoom manual do usuário
           if (primeiraLeituraGPS) {
             primeiraLeituraGPS = false;
             if (r.ponto.lat !== null) {
@@ -884,12 +1180,25 @@
     /* -----------------------------
     INTERFACE E LISTAGEM
     ----------------------------- */
+    function simularHorarioNaTimeline(hora, origem, tipo) {
+      horarioSimulado = { hora, origem, tipo: tipo === 'null' ? null : tipo, min: minutos(hora) };
+      atualizar();
+      document.getElementById("cardChegadas").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function voltarTimelineAutomatica() {
+      horarioSimulado = null;
+      atualizar();
+    }
+
     function listarHorarios() {
       let lista = document.getElementById("lista");
+      const btnToggle = document.getElementById("btnTogglePassados");
       lista.innerHTML = "";
       let horarios = horariosHoje();
 
       if (horarios.length === 0) {
+        btnToggle.style.display = "none";
         lista.innerHTML = "<li>🚫 Não há ônibus hoje</li>";
         return;
       }
@@ -897,32 +1206,43 @@
       let agora = new Date();
       let atualMin = agora.getHours() * 60 + agora.getMinutes();
       let temHorarioNoFiltro = false;
+      let qtdPassados = 0;
+      let proximoJaMarcado = false;
 
       horarios.forEach(h => {
         let hora = h[0];
         let origem = h[1];
         let tipo = h[2];
         let minSaida = minutos(hora);
+        let jaPassou = minSaida <= atualMin;
+
+        if (jaPassou) qtdPassados++;
 
         if (filtroAtual === 'passagem' && tipo !== 'passagem') return;
         if (filtroAtual === 'moradia' && (tipo === 'passagem' || !origem.includes('Moradia'))) return;
         if (filtroAtual === 'escola' && !origem.includes('Escola')) return;
 
+        if (jaPassou && ocultarPassados) return;
+
         temHorarioNoFiltro = true;
         let li = document.createElement("li");
 
-        let jaPassou = minSaida <= atualMin;
+        let seloProximoHtml = "";
         if (jaPassou) {
           li.classList.add("horario-passado");
+        } else if (!proximoJaMarcado) {
+          proximoJaMarcado = true;
+          li.classList.add("horario-proximo");
+          seloProximoHtml = `<span class="selo-proximo">Próximo</span>`;
         }
 
         let textoHtml = "";
         if (tipo === "passagem" && origem.includes("Moradia")) {
-          textoHtml = `<b>${hora}</b> — <span class="tag-passagem">Passando na Moradia</span>`;
+          textoHtml = `<b>${hora}</b> — <span class="tag-passagem">Passando na Moradia</span> ${seloProximoHtml}`;
         } else if (origem.includes("Moradia")) {
-          textoHtml = `<b>${hora}</b> — Saída <span class="tag-moradia">Moradia</span>`;
+          textoHtml = `<b>${hora}</b> — Saída <span class="tag-moradia">Moradia</span> ${seloProximoHtml}`;
         } else {
-          textoHtml = `<b>${hora}</b> — Saída <span class="tag-escola">${origem}</span>`;
+          textoHtml = `<b>${hora}</b> — Saída <span class="tag-escola">${origem}</span> ${seloProximoHtml}`;
         }
 
         let btnAlarme = "";
@@ -933,25 +1253,50 @@
           btnAlarme = `<button class="btn-alarme ${classeAgendado}" onclick="agendarAlerta('${hora}', '${origem}')">${iconeBtn}</button>`;
         }
 
-        li.innerHTML = `<div>${textoHtml}</div> ${btnAlarme}`;
+        li.innerHTML = `
+          <div class="info-horario-clicavel" onclick="simularHorarioNaTimeline('${hora}', '${origem}', '${tipo}')" title="Toque para ver o horário em cada ponto">
+            ${textoHtml}
+          </div>
+          ${btnAlarme}
+        `;
         lista.appendChild(li);
       });
 
+      if (qtdPassados > 0) {
+        btnToggle.style.display = "inline-block";
+        btnToggle.innerText = ocultarPassados
+          ? `👁️ Mostrar anteriores (${qtdPassados})`
+          : `🙈 Ocultar anteriores`;
+      } else {
+        btnToggle.style.display = "none";
+      }
+
       if (!temHorarioNoFiltro) {
-        lista.innerHTML = "<li>Nenhum ônibus desta rota cadastrado para hoje.</li>";
+        lista.innerHTML = "<li>Nenhum ônibus restante neste filtro para hoje.</li>";
       }
     }
 
-    function mostrarChegadas(saida, origem, hora, tipo) {
+    function mostrarChegadas(saida, origem, hora, tipo, emAndamento, ehSimulacaoManual) {
       let lista = document.getElementById("chegadas");
       lista.innerHTML = "";
 
+      let agora = new Date();
+      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+
+      let badgeHtml = "";
+      if (ehSimulacaoManual) {
+        badgeHtml = `<div style="margin-bottom:6px;"><span class="badge-andamento" style="background:#e3f2fd; color:#1565c0;">🔎 Visualizando horário selecionado</span> <a href="javascript:void(0)" onclick="voltarTimelineAutomatica()" style="font-size:12px; color:#006633; font-weight:600; margin-left:6px;">Voltar ao automático</a></div>`;
+      } else if (emAndamento) {
+        badgeHtml = `<div class="badge-andamento">🟢 Viagem em andamento</div><br>`;
+      }
+
       document.getElementById("infoViagem").innerHTML =
-        "Previsão baseada no ônibus das <b>" + hora + "</b> (saída: " + origem + ")";
+        badgeHtml + "Previsão baseada no ônibus das <b>" + hora + "</b> (saída: " + origem + ")";
 
       let rota = obterRota(origem, tipo);
+      let marcouPontoAtual = false;
 
-      rota.forEach(p => {
+      rota.forEach((p, idx) => {
         let min = saida + p.t;
         let h = Math.floor(min / 60);
         let m = min % 60;
@@ -959,6 +1304,17 @@
         let mStr = m < 10 ? "0" + m : m;
 
         let li = document.createElement("li");
+
+        if (emAndamento) {
+          let proxPontoMin = (idx < rota.length - 1) ? (saida + rota[idx + 1].t) : min;
+          if (atualMin >= proxPontoMin && idx < rota.length - 1) {
+            li.classList.add("ponto-concluido");
+          } else if (!marcouPontoAtual && atualMin >= min) {
+            marcouPontoAtual = true;
+            li.classList.add("ponto-atual");
+          }
+        }
+
         li.innerHTML = "<b>" + hStr + ":" + mStr + "</b> - " + p.p;
         lista.appendChild(li);
       });
@@ -971,18 +1327,55 @@
       let agora = new Date();
       let atualMin = agora.getHours() * 60 + agora.getMinutes();
       let horarios = obterHorarios(agora);
+
       let proximo = null;
       let ultimo = null;
+      let proxMoradia = null;
+      let proxCampus = null;
 
       horarios.forEach(h => {
         let min = minutos(h[0]);
-        if (min > atualMin && !proximo) {
-          proximo = {hora: h[0], origem: h[1], min: min, quando: "hoje", tipo: h[2], qtd: h[3]};
+        let item = {hora: h[0], origem: h[1], min: min, quando: "hoje", tipo: h[2], qtd: h[3]};
+
+        if (min > atualMin) {
+          if (!proximo) proximo = item;
+          if (!proxMoradia && h[1].includes("Moradia") && h[2] !== "passagem") proxMoradia = item;
+          if (!proxCampus && h[1].includes("Escola")) proxCampus = item;
         }
         if (min <= atualMin) {
-          ultimo = {hora: h[0], origem: h[1], min: min, tipo: h[2], qtd: h[3]};
+          ultimo = item;
         }
       });
+
+      // Atualiza o painel duplo (Da Moradia / Do Campus)
+      const painelSentidos = document.getElementById("painelSentidos");
+      if (horarios.length > 0 && (proxMoradia || proxCampus)) {
+        painelSentidos.style.display = "grid";
+
+        const boxMoradia = document.getElementById("boxProxMoradia");
+        if (proxMoradia) {
+          document.getElementById("horaProxMoradia").innerText = proxMoradia.hora;
+          document.getElementById("faltaProxMoradia").innerText = "em " + formatarHoraMinuto(proxMoradia.min - atualMin);
+          boxMoradia.onclick = () => simularHorarioNaTimeline(proxMoradia.hora, proxMoradia.origem, proxMoradia.tipo);
+        } else {
+          document.getElementById("horaProxMoradia").innerText = "Encerrado";
+          document.getElementById("faltaProxMoradia").innerText = "Sem saídas hoje";
+          boxMoradia.onclick = null;
+        }
+
+        const boxCampus = document.getElementById("boxProxCampus");
+        if (proxCampus) {
+          document.getElementById("horaProxCampus").innerText = proxCampus.hora;
+          document.getElementById("faltaProxCampus").innerText = "em " + formatarHoraMinuto(proxCampus.min - atualMin);
+          boxCampus.onclick = () => simularHorarioNaTimeline(proxCampus.hora, proxCampus.origem, proxCampus.tipo);
+        } else {
+          document.getElementById("horaProxCampus").innerText = "Encerrado";
+          document.getElementById("faltaProxCampus").innerText = "Sem saídas hoje";
+          boxCampus.onclick = null;
+        }
+      } else {
+        painelSentidos.style.display = "none";
+      }
 
       if (!proximo) {
         let diasNomes = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
@@ -1053,21 +1446,27 @@
         document.getElementById("qtd-onibus").style.display = "none";
       }
 
-      if (ultimo) {
+      // Controle da Timeline de Chegadas
+      if (horarioSimulado) {
+        let rotaSim = obterRota(horarioSimulado.origem, horarioSimulado.tipo);
+        let fimSim = horarioSimulado.min + rotaSim[rotaSim.length - 1].t;
+        let simEmAndamento = (atualMin >= horarioSimulado.min && atualMin <= fimSim);
+        mostrarChegadas(horarioSimulado.min, horarioSimulado.origem, horarioSimulado.hora, horarioSimulado.tipo, simEmAndamento, true);
+      } else if (ultimo) {
         let rotaUltimo = obterRota(ultimo.origem, ultimo.tipo);
         let tempoTotalViagem = rotaUltimo[rotaUltimo.length - 1].t;
         let minutoFimDaViagem = ultimo.min + tempoTotalViagem;
 
         if (atualMin <= minutoFimDaViagem) {
-          mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora, ultimo.tipo);
+          mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora, ultimo.tipo, true, false);
         } else if (proximo && proximo.quando === "hoje") {
-          mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo);
+          mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo, false, false);
         } else {
           document.getElementById("chegadas").innerHTML = "<li>Viagens encerradas no momento.</li>";
           document.getElementById("infoViagem").innerHTML = "";
         }
       } else if (proximo && proximo.quando === "hoje") {
-        mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo);
+        mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo, false, false);
       } else {
         document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens...</li>";
         document.getElementById("infoViagem").innerHTML = "";
@@ -1147,7 +1546,6 @@
     NOTIFICAÇÕES E ALERTAS
     ----------------------------- */
     function agendarAlerta(horaBus, origemBus) {
-      // Se já estiver agendado, cancela o alerta
       if (alertasAgendados[horaBus]) {
         clearTimeout(alertasAgendados[horaBus]);
         delete alertasAgendados[horaBus];
@@ -1184,7 +1582,6 @@
       let esperaMs = (alertaSegundos - atualSegundos) * 1000;
 
       if (esperaMs <= 0) {
-        // Faltam menos de 10 minutos para o ônibus sair: avisa imediatamente
         enviarNotificacao(
           `🚌 Ônibus das ${horaBus} saindo em breve!`,
           `Faltam menos de ${MINUTOS_ANTECEDENCIA_ALERTA} minutos para a saída (${origemBus}).`
@@ -1192,7 +1589,6 @@
         return;
       }
 
-      // Agenda para 10 minutos antes da saída
       alertasAgendados[horaBus] = setTimeout(() => {
         enviarNotificacao(
           `⏰ Alerta: Ônibus das ${horaBus}`,
