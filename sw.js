@@ -1,4 +1,4 @@
-const CACHE_NAME = 'onibus-ufmg-v21';
+const CACHE_NAME = 'onibus-ufmg-v24';
 const ASSETS = [
   './',
   './index.html',
@@ -36,29 +36,43 @@ self.addEventListener('activate', (e) => {
 
 // 3. Interceptação de requisições: Estratégia Network-First (Rede primeiro, Cache como fallback offline)
 self.addEventListener('fetch', (e) => {
-  // Ignora requisições que não sejam GET ou que sejam da API externa de rotas a pé (OSRM)
   if (e.request.method !== 'GET' || e.request.url.includes('router.project-osrm.org')) {
     return;
   }
 
+  // Quando o usuário abre o site (HTML): sempre busca a versão mais recente na rede primeiro
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match('./index.html') || caches.match(e.request))
+    );
+    return;
+  }
+
+  // Demais arquivos (imagens, estilos, scripts externos): usa cache rápido com atualização em segundo plano
   e.respondWith(
-    fetch(e.request)
-      .then((networkResponse) => {
-        // Se a resposta da rede foi válida, atualiza o cache em segundo plano
-        if (networkResponse && networkResponse.status === 200) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, responseClone);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        // Sem internet: entrega a versão salva no cache
-        return caches.match(e.request);
-      })
+    caches.match(e.request).then((cachedResponse) => {
+      return (
+        cachedResponse ||
+        fetch(e.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return networkResponse;
+        })
+      );
+    })
   );
 });
+        
 
 // 4. Recebe comando do index.html para disparar Notificação
 self.addEventListener('message', (event) => {
