@@ -16,7 +16,7 @@
   <title>Ônibus Moradias UFMG</title>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     body {
       font-family: 'Inter', sans-serif;
@@ -29,16 +29,54 @@
       margin-right: auto;
     }
 
-    /* Cabeçalho e barra de ações rápidas */
+    /* Cabeçalho estilo App */
     .header-app {
       text-align: center;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     h1 {
       color: #006633;
       font-size: 24px;
-      margin: 5px 0 12px 0;
+      font-weight: 800;
+      margin: 4px 0 4px 0;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitulo-app {
+      font-size: 13px;
+      color: #666;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    .pilula-relogio {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #e8f5e9;
+      color: #006633;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      border: 1px solid #cce3d6;
+    }
+
+    .ponto-pulsante {
+      width: 8px;
+      height: 8px;
+      background: #006633;
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulsar 2s infinite;
+    }
+
+    @keyframes pulsar {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
     }
 
     .acoes-topo {
@@ -70,6 +108,41 @@
       border-color: #006633;
     }
 
+    /* Barra de Ponto Favorito */
+    .favorito-bar {
+      background: white;
+      border: 1px solid #e1e4e8;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+
+    .favorito-bar label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #444;
+      white-space: nowrap;
+    }
+
+    .favorito-select {
+      flex: 1;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #222;
+      outline: none;
+    }
+
+    /* Cards Gerais e Hero Card */
     .card {
       background: white;
       padding: 20px;
@@ -77,6 +150,11 @@
       border-radius: 14px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       border: 1px solid #e1e4e8;
+    }
+
+    .hero-card {
+      border-top: 4px solid #006633;
+      box-shadow: 0 6px 18px rgba(0,102,51,0.08);
     }
 
     .card-header-flex {
@@ -91,11 +169,13 @@
 
     .card h2 {
       margin: 0;
-      font-size: 18px;
+      font-size: 17px;
       color: #444;
       border-bottom: 2px solid #f0f2f5;
       padding-bottom: 10px;
       margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
 
     .card-header-flex h2 {
@@ -104,35 +184,60 @@
       margin-bottom: 0;
     }
 
+    .hero-main {
+      text-align: center;
+      padding: 6px 0 4px 0;
+    }
+
     #proximo {
-      font-size: 32px;
-      font-weight: 700;
+      font-size: 40px;
+      font-weight: 800;
       color: #006633;
-      margin: 6px 0;
+      margin: 4px 0;
+      line-height: 1.15;
+    }
+
+    #tempo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #e67e22;
+      margin-top: 6px;
+    }
+
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
     }
 
     #origem {
-      font-size: 16px;
+      font-size: 14px;
       color: #666;
-      margin-top: 5px;
     }
 
     #qtd-onibus {
       display: inline-block;
-      margin-top: 10px;
       padding: 4px 10px;
       background: #e8f5e9;
       border-radius: 6px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       color: #006633;
     }
 
-    #tempo {
-      font-size: 16px;
-      font-weight: 600;
-      color: #e67e22;
-      margin-top: 8px;
+    /* Destaque do Ponto Favorito dentro do Hero Card */
+    .box-meu-ponto {
+      margin-top: 14px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      color: #92400e;
+      text-align: center;
     }
 
     /* Painel Duplo: Próximo por Sentido */
@@ -152,6 +257,7 @@
       padding: 10px 12px;
       cursor: pointer;
       transition: transform 0.1s, border-color 0.2s;
+      text-align: center;
     }
 
     .box-sentido:active {
@@ -167,7 +273,7 @@
 
     .box-sentido-hora {
       font-size: 20px;
-      font-weight: 700;
+      font-weight: 800;
       color: #222;
     }
 
@@ -207,16 +313,21 @@
 
     #chegadas li {
       position: relative;
-      padding-bottom: 14px;
+      padding: 6px 8px;
+      margin-bottom: 6px;
       font-size: 15px;
       color: #444;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 8px;
     }
 
     #chegadas li::before {
       content: '';
       position: absolute;
       left: -27px;
-      top: 3px;
+      top: 10px;
       width: 10px;
       height: 10px;
       background: white;
@@ -225,7 +336,7 @@
     }
 
     #chegadas li.ponto-concluido {
-      opacity: 0.5;
+      opacity: 0.45;
     }
 
     #chegadas li.ponto-concluido::before {
@@ -236,6 +347,7 @@
     #chegadas li.ponto-atual {
       font-weight: 700;
       color: #006633;
+      background: #f0fdf4;
     }
 
     #chegadas li.ponto-atual::before {
@@ -244,8 +356,61 @@
       transform: scale(1.2);
     }
 
-    #chegadas li:last-child {
-      padding-bottom: 0;
+    #chegadas li.ponto-favorito-destaque {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      font-weight: 700;
+    }
+
+    .link-maps-ponto {
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 600;
+      color: #006633;
+      background: #f0f2f5;
+      padding: 4px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Seletor de Grade (Dias Úteis / Sábado) */
+    .abas-grade {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      background: #f0f2f5;
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+
+    .btn-aba-grade {
+      margin: 0;
+      padding: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 8px;
+      background: transparent;
+      color: #666;
+      box-shadow: none;
+    }
+
+    .btn-aba-grade.ativa {
+      background: white;
+      color: #006633;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .aviso-grade-diferente {
+      font-size: 12px;
+      background: #e3f2fd;
+      color: #1565c0;
+      padding: 6px 10px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-weight: 600;
+      text-align: center;
     }
 
     /* Lista de horários do dia */
@@ -265,7 +430,6 @@
       align-items: center;
       gap: 10px;
       border-radius: 8px;
-      transition: background 0.2s;
     }
 
     #lista li:last-child {
@@ -393,7 +557,7 @@
       box-shadow: none;
     }
 
-    /* Botão do Sininho (Alarme) */
+    /* Botão do Alarme (Relógio) */
     .btn-alarme {
       width: auto;
       padding: 6px 10px;
@@ -410,6 +574,17 @@
       background: #e8f5e9;
       color: #006633;
       border: 1px solid #006633;
+    }
+
+    /* Caixa de Recomendação de Caminhada ("Quando devo sair?") */
+    .card-caminhada {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 14px;
+      line-height: 1.5;
     }
 
     #gps, #resultadoVolta {
@@ -453,10 +628,34 @@
         color: #e0e0e0;
       }
 
+      .subtitulo-app { color: #aaa; }
+
+      .pilula-relogio {
+        background: #1a3320;
+        color: #4ade80;
+        border-color: #264d30;
+      }
+      .ponto-pulsante { background: #4ade80; }
+
+      .favorito-bar {
+        background: #1e1e1e;
+        border-color: #333;
+      }
+      .favorito-bar label { color: #e0e0e0; }
+      .favorito-select {
+        background: #2a2a2a;
+        border-color: #444;
+        color: #f0f0f0;
+      }
+
       .card {
         background: #1e1e1e;
         border-color: #333;
         box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      }
+
+      .hero-card {
+        border-top-color: #4ade80;
       }
 
       .card h2, .card-header-flex {
@@ -476,22 +675,22 @@
         border-color: #4ade80;
       }
 
-      .resumo-sentidos {
-        border-top-color: #333;
+      .box-meu-ponto {
+        background: #2e2412;
+        border-color: #6b4c1b;
+        color: #fcd34d;
       }
 
+      .resumo-sentidos { border-top-color: #333; }
       .box-sentido {
         background: #262626;
         border-color: #383838;
       }
-
       .box-sentido-titulo { color: #aaa; }
       .box-sentido-hora { color: #f0f0f0; }
       .box-sentido-falta { color: #4ade80; }
 
-      .texto-dia-seguinte {
-        color: #e0e0e0;
-      }
+      .texto-dia-seguinte { color: #e0e0e0; }
 
       h1, #proximo { color: #4ade80; }
       #tempo { color: #fbbf24; }
@@ -514,6 +713,27 @@
       }
       #chegadas li.ponto-atual {
         color: #4ade80;
+        background: #162a1d;
+      }
+      #chegadas li.ponto-favorito-destaque {
+        background: #2e2412;
+        border-color: #6b4c1b;
+        color: #fcd34d;
+      }
+      .link-maps-ponto {
+        background: #2a2a2a;
+        color: #4ade80;
+      }
+
+      .abas-grade { background: #141414; }
+      .btn-aba-grade { color: #999; }
+      .btn-aba-grade.ativa {
+        background: #2a2a2a;
+        color: #4ade80;
+      }
+      .aviso-grade-diferente {
+        background: #0d2a4a;
+        color: #64b5f6;
       }
 
       #lista li { color: #ccc; border-bottom-color: #333; }
@@ -527,6 +747,12 @@
         color: #121212;
       }
 
+      .card-caminhada {
+        background: #262626;
+        border-color: #383838;
+        color: #ddd;
+      }
+
       #mapa, #mapaVolta { border-color: #333; }
 
       #qtd-onibus {
@@ -534,12 +760,10 @@
         color: #4ade80;
       }
 
-      /* Cores escuras para as tags */
       .tag-moradia { background: #1a3320; color: #4ade80; }
       .tag-escola { background: #0d2a4a; color: #64b5f6; }
       .tag-passagem { background: #3e2723; color: #ffb74d; }
 
-      /* Cores escuras para botões secundários */
       .btn-filtro, .btn-alarme, .btn-ocultar-passados { background: #333; color: #ccc; }
       .btn-filtro.ativo { background: #4ade80; color: #121212; }
       .btn-alarme.agendado {
@@ -555,6 +779,13 @@
 
   <div class="header-app">
     <h1>🚌 Ônibus Moradias UFMG</h1>
+    <div class="subtitulo-app">🏠 Ouro Preto ↔ 🎓 Campus Pampulha</div>
+
+    <div class="pilula-relogio">
+      <span class="ponto-pulsante"></span>
+      <span id="relogio">Carregando horário...</span>
+    </div>
+
     <div class="acoes-topo">
       <button id="btnInstalar" class="btn-topo instalar" style="display: none;" onclick="instalarPWA()">
         📥 Instalar App
@@ -565,14 +796,30 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>Próximo ônibus</h2>
-    <div id="proximo"></div>
-    <div id="origem"></div>
-    <div id="qtd-onibus" style="display: none;"></div>
-    <div id="tempo"></div>
+  <!-- Seletor de Ponto Favorito (salvo no celular) -->
+  <div class="favorito-bar">
+    <label for="selectFavorito">⭐ Meu ponto:</label>
+    <select id="selectFavorito" class="favorito-select" onchange="salvarPontoFavorito(this.value)">
+      <option value="">Escolher ponto favorito...</option>
+    </select>
+  </div>
 
-    <!-- Novo Painel Duplo: Próximo de cada sentido -->
+  <!-- HERO CARD: Próximo Ônibus -->
+  <div class="card hero-card">
+    <h2>Próximo ônibus</h2>
+    <div class="hero-main">
+      <div id="proximo"></div>
+      <div id="tempo"></div>
+      <div class="hero-meta">
+        <div id="origem"></div>
+        <div id="qtd-onibus" style="display: none;"></div>
+      </div>
+    </div>
+
+    <!-- Previsão personalizada caso o usuário tenha escolhido um Ponto Favorito -->
+    <div id="boxMeuPonto" class="box-meu-ponto" style="display: none;"></div>
+
+    <!-- Painel Duplo: Próximo de cada sentido -->
     <div id="painelSentidos" class="resumo-sentidos" style="display: none;">
       <div class="box-sentido" id="boxProxMoradia" title="Toque para ver a chegada nos pontos">
         <div class="box-sentido-titulo">🏠 Saindo da Moradia</div>
@@ -587,19 +834,28 @@
     </div>
   </div>
 
+  <!-- CARD: Linha do Tempo de Chegadas -->
   <div class="card" id="cardChegadas">
     <h2>Chegada estimada nos pontos</h2>
     <div id="infoViagem"></div>
     <ul id="chegadas"></ul>
   </div>
 
+  <!-- CARD: Lista de Horários do Dia + Abas Semana/Sábado -->
   <div class="card">
     <div class="card-header-flex">
-      <h2>Horários de hoje</h2>
+      <h2 id="tituloHorariosDia">Horários</h2>
       <button id="btnTogglePassados" class="btn-ocultar-passados" onclick="alternarHorariosPassados()" style="display: none;">
-        👁️ Ocultar anteriores
+        🙈 Ocultar anteriores
       </button>
     </div>
+
+    <div class="abas-grade">
+      <button id="abaSemana" class="btn-aba-grade" onclick="selecionarGrade('semana')">📅 Dias Úteis (Seg-Sex)</button>
+      <button id="abaSabado" class="btn-aba-grade" onclick="selecionarGrade('sabado')">☀️ Sábado</button>
+    </div>
+
+    <div id="avisoGrade" class="aviso-grade-diferente" style="display: none;"></div>
 
     <div class="filtros-container">
       <button class="btn-filtro ativo" onclick="mudarFiltro('todos')">Todos</button>
@@ -611,16 +867,18 @@
     <ul id="lista"></ul>
   </div>
 
+  <!-- CARD: Ponto mais próximo + "Quando devo sair?" -->
   <div class="card">
     <h2>Ponto mais próximo</h2>
     <button id="btnGPS" onclick="usarGPS()">📍 Usar minha localização</button>
-    <div id="gps">Clique no botão para detectar sua posição</div>
+    <div id="gps">Clique no botão para detectar sua posição e saber a hora exata de sair</div>
     <div id="mapa"></div>
   </div>
 
+  <!-- CARD: Como volto pra casa? + "Quando devo sair?" -->
   <div class="card">
     <h2>🏠 Como volto pra casa?</h2>
-    <p class="texto-subtitulo">Descubra onde ir para pegar o ônibus rumo às Moradias.</p>
+    <p class="texto-subtitulo">Descubra onde ir no campus e que horas sair caminhando para pegar o ônibus rumo às Moradias.</p>
     <button id="btnVolta" class="btn-volta" onclick="descobrirVolta()">🧭 Encontrar ponto de volta</button>
     <div id="resultadoVolta"></div>
     <div id="mapaVolta"></div>
@@ -636,11 +894,293 @@
     ----------------------------- */
     const TEMPO_ATUALIZACAO = 10000;
     const MINUTOS_ANTECEDENCIA_ALERTA = 10;
+    const VELOCIDADE_CAMINHADA_METROS_MIN = 75; // ~4,5 km/h
+
     let filtroAtual = 'todos';
     let ocultarPassados = false;
     let alertasAgendados = {};
-    let horarioSimulado = null; // Permite clicar num horário para ver a rota dele
+    let horarioSimulado = null;
+    let gradeVisualizada = null; // 'semana' ou 'sabado'
+    let pontoFavorito = localStorage.getItem('morabus_ponto_favorito') || '';
 
+    /* -----------------------------
+    ROTAS E PONTOS
+    ----------------------------- */
+    const rotaCampus = [
+      {p: "Escola de Música", t: 0},
+      {p: "Belas Artes", t: 1},
+      {p: "FaE", t: 3},
+      {p: "RU 1", t: 4},
+      {p: "FACE", t: 5},
+      {p: "Reitoria", t: 6},
+      {p: "CAD 1", t: 7},
+      {p: "Farmácia", t: 8},
+      {p: "Veterinária", t: 10},
+      {p: "Odonto", t: 11},
+      {p: "Educação Física", t: 12},
+      {p: "Moradia 1", t: 18},
+      {p: "Moradia 2 e 3", t: 20}
+    ];
+
+    const rotaMoradia = [
+      {p: "Moradia 1", t: 0},
+      {p: "Moradia 2 e 3", t: 2},
+      {p: "Educação Física", t: 7},
+      {p: "Odonto", t: 9},
+      {p: "Veterinária", t: 10},
+      {p: "Farmácia", t: 11},
+      {p: "RU 2", t: 12},
+      {p: "Engenharia", t: 14},
+      {p: "IGC", t: 15},
+      {p: "RU 1", t: 16},
+      {p: "FaE", t: 18},
+      {p: "Belas Artes", t: 20},
+      {p: "Escola de Música", t: 22}
+    ];
+
+    const rotaPassagem = [
+      {p: "Moradia 1", t: 0},
+      {p: "Moradia 2 e 3", t: 2},
+      {p: "Unidade Admnistrativa II", t: 7},
+      {p: "Rotatória", t: 8},
+      {p: "Ponto final", t: 9}
+    ];
+
+    const pontos = [
+      {nome: "Moradia 1", lat: -19.8706, lon: -43.9862},
+      {nome: "Moradia 2 e 3", lat: -19.8661, lon: -43.9845},
+      {nome: "Escola de Música", lat: -19.8621, lon: -43.9618},
+      {nome: "Belas Artes", lat: -19.863787, lon: -43.960242},
+      {nome: "FaE", lat: -19.867845, lon: -43.958610},
+      {nome: "RU 1", lat: -19.868928, lon: -43.960290},
+      {nome: "FACE", lat: -19.868211, lon: -43.963662},
+      {nome: "Reitoria", lat: -19.866381, lon: -43.965288},
+      {nome: "CAD 1", lat: -19.867173, lon: -43.967189},
+      {nome: "RU 2", lat: -19.869941, lon: -43.966892},
+      {nome: "Engenharia", lat: -19.869706, lon: -43.964092},
+      {nome: "IGC", lat: -19.868652, lon: -43.962783},
+      {nome: "Farmácia", lat: -19.870094, lon: -43.968643},
+      {nome: "Veterinária", lat: -19.871567, lon: -43.970531},
+      {nome: "Odonto", lat: -19.872823, lon: -43.973524},
+      {nome: "Educação Física", lat: -19.876466, lon: -43.976137},
+      {nome: "Unidade Admnistrativa II", lat: -19.863061, lon: -43.966889},
+      {nome: "Rotatória", lat: -19.863364, lon: -43.964325}
+    ];
+
+    function obterRota(origem, tipo) {
+      if (tipo === "passagem" && origem.includes("Moradia")) {
+        return rotaPassagem;
+      }
+      if (origem.includes("Moradia")) {
+        return rotaMoradia;
+      }
+      return rotaCampus;
+    }
+
+    /* -----------------------------
+    HORÁRIOS E FERIADOS
+    ----------------------------- */
+    const horariosSemana = [
+      ["06:45", "Moradia", null, 3],
+      ["07:20", "Escola de Música", null, 3],
+      ["07:40", "Moradia", null, 3],
+      ["10:00", "Escola de Música", null, 3],
+      ["11:00", "Moradia", null, 3],
+      ["11:50", "Escola de Música", null, 3],
+      ["12:15", "Moradia", null, 3],
+      ["13:10", "Escola de Música", null, 3],
+      ["13:30", "Moradia", null, 3],
+      ["15:00", "Escola de Música", null, 1],
+      ["15:20", "Moradia", null, 1],
+      ["17:00", "Escola de Música", null, 2],
+      ["17:20", "Moradia", null, 2],
+      ["17:50", "Escola de Música", null, 2],
+      ["18:20", "Moradia", null, 2],
+      ["19:00", "Escola de Música", null, 2],
+      ["19:20", "Moradias", "passagem", 2],
+      ["19:40", "Escola de Música", null, 2],
+      ["20:00", "Moradias", "passagem", 2],
+      ["21:00", "Escola de Música", null, 2],
+      ["21:20", "Moradias", "passagem", 2],
+      ["21:35", "Escola de Música", null, 1],
+      ["21:45", "Moradias", "passagem", 1],
+      ["22:15", "Escola de Música", null, 1],
+      ["22:35", "Moradias", "passagem", 1],
+      ["22:50", "Escola de Música", null, 1],
+      ["23:10", "Moradias", "passagem", 1]
+    ];
+
+    const horariosSabado = [
+      ["07:40", "Moradia", null, 1],
+      ["10:00", "Escola de Música", null, 2],
+      ["11:00", "Moradia", null, 2],
+      ["12:00", "Escola de Música", null, 2],
+      ["12:20", "Moradia", null, 2],
+      ["13:30", "Escola de Música", null, 2]
+    ];
+
+    const feriadosBH = [
+      "01/01", "21/04", "01/05", "15/08", "07/09",
+      "12/10", "02/11", "15/11", "08/12", "25/12"
+    ];
+
+    function ehFeriado(dataObj) {
+      let dia = ("0" + dataObj.getDate()).slice(-2);
+      let mes = ("0" + (dataObj.getMonth() + 1)).slice(-2);
+      return feriadosBH.includes(dia + "/" + mes);
+    }
+
+    function obterHorarios(dataObj) {
+      if (ehFeriado(dataObj)) return [];
+      let diaDaSemana = dataObj.getDay();
+      if (diaDaSemana >= 1 && diaDaSemana <= 5) return horariosSemana;
+      if (diaDaSemana === 6) return horariosSabado;
+      return [];
+    }
+
+    function horariosHoje() {
+      return obterHorarios(new Date());
+    }
+
+    /* -----------------------------
+    RELÓGIO AO VIVO E FAVORITOS
+    ----------------------------- */
+    function atualizarRelogio() {
+      const agora = new Date();
+      const dias = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+      const h = ("0" + agora.getHours()).slice(-2);
+      const m = ("0" + agora.getMinutes()).slice(-2);
+      const s = ("0" + agora.getSeconds()).slice(-2);
+
+      let tipoGrade = "Grade de Dias Úteis";
+      if (ehFeriado(agora)) {
+        tipoGrade = "Feriado (Sem ônibus)";
+      } else if (agora.getDay() === 0) {
+        tipoGrade = "Domingo (Sem ônibus)";
+      } else if (agora.getDay() === 6) {
+        tipoGrade = "Grade de Sábado";
+      }
+
+      document.getElementById("relogio").innerText = `${dias[agora.getDay()]} • ${h}:${m}:${s} • ${tipoGrade}`;
+    }
+
+    function inicializarSelectFavorito() {
+      const select = document.getElementById("selectFavorito");
+      pontos.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.nome;
+        opt.textContent = p.nome;
+        if (p.nome === pontoFavorito) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function salvarPontoFavorito(valor) {
+      pontoFavorito = valor;
+      localStorage.setItem('morabus_ponto_favorito', valor);
+      atualizar();
+    }
+
+    /* -----------------------------
+    UTILITÁRIOS E CÁLCULO DE CAMINHADA
+    ----------------------------- */
+    function minutos(hora) {
+      let p = hora.split(":");
+      return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+    }
+
+    function converterMinutosParaHHMM(minTotal) {
+      let h = Math.floor(minTotal / 60) % 24;
+      let m = minTotal % 60;
+      return ("0" + h).slice(-2) + ":" + ("0" + m).slice(-2);
+    }
+
+    function formatarHoraMinuto(min) {
+      let h = Math.floor(min / 60);
+      let m = min % 60;
+      let mStr = m < 10 ? "0" + m : m;
+      if (h > 0) return h + "h" + mStr;
+      return m + " min";
+    }
+
+    function formatarTempo(min) {
+      return "⏳ Faltam " + formatarHoraMinuto(min);
+    }
+
+    function distancia(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function buscarProximoNoPonto(nomeDoPonto, apenasVolta = false) {
+      let agora = new Date();
+      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      let horarios = horariosHoje();
+
+      for (let h of horarios) {
+        let minSaida = minutos(h[0]);
+        let origem = h[1];
+        let tipo = h[2];
+
+        if (apenasVolta && origem.includes("Moradia")) continue;
+
+        let rota = obterRota(origem, tipo);
+        let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
+
+        if (pontoNaRota) {
+          let minChegada = minSaida + pontoNaRota.t;
+          if (minChegada > atualMin) {
+            return {
+              espera: minChegada - atualMin,
+              minChegada: minChegada,
+              horaChegada: converterMinutosParaHHMM(minChegada),
+              horaSaidaOrigem: h[0],
+              origem: origem
+            };
+          }
+        }
+      }
+      return null;
+    }
+
+    // Gera o card "Quando devo sair?" cruzando a distância a pé com o horário do ônibus
+    function gerarCardQuandoSair(distKm, esperaMin) {
+      let metros = Math.round(distKm * 1000);
+      let minCaminhada = Math.max(1, Math.ceil(metros / VELOCIDADE_CAMINHADA_METROS_MIN));
+      let agora = new Date();
+      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+
+      // Margem de segurança de 1 minuto para estar no ponto antes do ônibus
+      let tempoAtePrecisarSair = esperaMin - minCaminhada - 1;
+      let horaIdealSaida = converterMinutosParaHHMM(atualMin + Math.max(0, tempoAtePrecisarSair));
+
+      let statusHtml = "";
+      if (esperaMin < minCaminhada) {
+        statusHtml = `<span style="color:#e53935; font-weight:700;">🏃 Passo apertado!</span> O ônibus passa em ${esperaMin} min e a caminhada leva ~${minCaminhada} min.`;
+      } else if (tempoAtePrecisarSair <= 1) {
+        statusHtml = `<span style="color:#e67e22; font-weight:700;">🚶 Saia agora mesmo!</span> Dá tempo certinho de chegar caminhando.`;
+      } else {
+        statusHtml = `<span style="color:#006633; font-weight:700;">🕒 Saia às ${horaIdealSaida}</span> (daqui a ${formatarHoraMinuto(tempoAtePrecisarSair)}) para chegar com folga.`;
+      }
+
+      return `
+        <div class="card-caminhada">
+          <div>🚶 <b>Caminhada estimada:</b> ~${minCaminhada} min (${metros} m)</div>
+          <div style="margin-top:4px;">${statusHtml}</div>
+        </div>
+      `;
+    }
+
+    /* -----------------------------
+    FILTROS E ABAS DE GRADE
+    ----------------------------- */
     function mudarFiltro(tipo) {
       filtroAtual = tipo;
       document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('ativo'));
@@ -650,6 +1190,11 @@
 
     function alternarHorariosPassados() {
       ocultarPassados = !ocultarPassados;
+      listarHorarios();
+    }
+
+    function selecionarGrade(qual) {
+      gradeVisualizada = qual;
       listarHorarios();
     }
 
@@ -692,185 +1237,6 @@
     }
 
     /* -----------------------------
-    ROTAS
-    ----------------------------- */
-    const rotaCampus = [
-      {p: "Escola de Música", t: 0},
-      {p: "Belas Artes", t: 1},
-      {p: "FaE", t: 3},
-      {p: "RU 1", t: 4},
-      {p: "FACE", t: 5},
-      {p: "Reitoria", t: 6},
-      {p: "CAD 1", t: 7},
-      {p: "Farmácia", t: 8},
-      {p: "Veterinária", t: 10},
-      {p: "Odonto", t: 11},
-      {p: "Educação Física", t: 12},
-      {p: "Moradia 1", t: 18},
-      {p: "Moradia 2 e 3", t: 20}
-    ];
-
-    const rotaMoradia = [
-      {p: "Moradia 1", t: 0},
-      {p: "Moradia 2 e 3", t: 2},
-      {p: "Educação Física", t: 7},
-      {p: "Odonto", t: 9},
-      {p: "Veterinária", t: 10},
-      {p: "Farmácia", t: 11},
-      {p: "RU 2", t: 12},
-      {p: "Engenharia", t: 14},
-      {p: "IGC", t: 15},
-      {p: "RU 1", t: 16},
-      {p: "FaE", t: 18},
-      {p: "Belas Artes", t: 20},
-      {p: "Escola de Música", t: 22}
-    ];
-
-    const rotaPassagem = [
-      {p: "Moradia 1", t: 0},
-      {p: "Moradia 2 e 3", t: 2},
-      {p: "Unidade Admnistrativa II", t: 7},
-      {p: "Rotatória", t: 8},
-      {p: "Ponto final", t: 9}
-    ];
-
-    function obterRota(origem, tipo) {
-      if (tipo === "passagem" && origem.includes("Moradia")) {
-        return rotaPassagem;
-      }
-      if (origem.includes("Moradia")) {
-        return rotaMoradia;
-      }
-      return rotaCampus;
-    }
-
-    /* -----------------------------
-    HORÁRIOS
-    ----------------------------- */
-    const horariosSemana = [
-      ["06:45", "Moradia", null, 3],
-      ["07:20", "Escola de Música", null, 3],
-      ["07:40", "Moradia", null, 3],
-      ["10:00", "Escola de Música", null, 3],
-      ["11:00", "Moradia", null, 3],
-      ["11:50", "Escola de Música", null, 3],
-      ["12:15", "Moradia", null, 3],
-      ["13:10", "Escola de Música", null, 3],
-      ["13:30", "Moradia", null, 3],
-      ["15:00", "Escola de Música", null, 1],
-      ["15:20", "Moradia", null, 1],
-      ["17:00", "Escola de Música", null, 2],
-      ["17:20", "Moradia", null, 2],
-      ["17:50", "Escola de Música", null, 2],
-      ["18:20", "Moradia", null, 2],
-      ["19:00", "Escola de Música", null, 2],
-      ["19:20", "Moradias", "passagem", 2],
-      ["19:40", "Escola de Música", null, 2],
-      ["20:00", "Moradias", "passagem", 2],
-      ["21:00", "Escola de Música", null, 2],
-      ["21:20", "Moradias", "passagem", 2],
-      ["21:35", "Escola de Música", null, 1],
-      ["21:45", "Moradias", "passagem", 1],
-      ["22:15", "Escola de Música", null, 1],
-      ["22:35", "Moradias", "passagem", 1],
-      ["22:50", "Escola de Música", null, 1],
-      ["23:10", "Moradias", "passagem", 1]
-    ];
-
-    const horariosSabado = [
-      ["07:40", "Moradia", null, 1],
-      ["10:00", "Escola de Música", null, 2],
-      ["11:00", "Moradia", null, 2],
-      ["12:00", "Escola de Música", null, 2],
-      ["12:20", "Moradia", null, 2],
-      ["13:30", "Escola de Música", null, 2]
-    ];
-
-    /* -----------------------------
-    PONTOS PARA GPS
-    ----------------------------- */
-    const pontos = [
-      {nome: "Escola de Música", lat: -19.8621, lon: -43.9618},
-      {nome: "Belas Artes", lat: -19.863787, lon: -43.960242},
-      {nome: "FaE", lat: -19.867845, lon: -43.958610},
-      {nome: "RU 1", lat: -19.868928, lon: -43.960290},
-      {nome: "FACE", lat: -19.868211, lon: -43.963662},
-      {nome: "Reitoria", lat: -19.866381, lon: -43.965288},
-      {nome: "CAD 1", lat: -19.867173, lon: -43.967189},
-      {nome: "Farmácia", lat: -19.870094, lon: -43.968643},
-      {nome: "Veterinária", lat: -19.871567, lon: -43.970531},
-      {nome: "Odonto", lat: -19.872823, lon: -43.973524},
-      {nome: "Educação Física", lat: -19.876466, lon: -43.976137},
-      {nome: "Moradia 1", lat: -19.8706, lon: -43.9862},
-      {nome: "Moradia 2 e 3", lat: -19.8661, lon: -43.9845},
-      {nome: "RU 2", lat: -19.869941, lon: -43.966892},
-      {nome: "IGC", lat: -19.868652, lon: -43.962783},
-      {nome: "Unidade Admnistrativa II", lat: -19.863061, lon: -43.966889},
-      {nome: "Rotatória", lat: -19.863364, lon: -43.964325},
-      {nome: "Engenharia", lat: -19.869706, lon: -43.964092}
-    ];
-
-    /* -----------------------------
-    UTILITÁRIOS
-    ----------------------------- */
-    function minutos(hora) {
-      let p = hora.split(":");
-      return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
-    }
-
-    function formatarHoraMinuto(min) {
-      let h = Math.floor(min / 60);
-      let m = min % 60;
-      let mStr = m < 10 ? "0" + m : m;
-
-      if (h > 0) return h + "h" + mStr;
-      return m + " min";
-    }
-
-    function formatarTempo(min) {
-      return "Faltam " + formatarHoraMinuto(min);
-    }
-
-    function distancia(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
-
-    function calcularTempoNoPonto(nomeDoPonto) {
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
-      let horarios = horariosHoje();
-      let menorEspera = null;
-
-      for (let h of horarios) {
-        let minSaida = minutos(h[0]);
-        let origem = h[1];
-        let tipo = h[2];
-
-        let rota = obterRota(origem, tipo);
-        let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
-
-        if (pontoNaRota) {
-          let minChegada = minSaida + pontoNaRota.t;
-          if (minChegada > atualMin) {
-            let espera = minChegada - atualMin;
-            if (menorEspera === null || espera < menorEspera) {
-              menorEspera = espera;
-            }
-          }
-        }
-      }
-      return menorEspera;
-    }
-
-    /* -----------------------------
     GPS E MAPAS
     ----------------------------- */
     function pontoMaisProximo(lat, lon) {
@@ -903,34 +1269,6 @@
         }
       }
       return {ponto: melhor, dist: menor};
-    }
-
-    function calcularTempoVolta(nomeDoPonto) {
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
-      let horarios = horariosHoje();
-      let menorEspera = null;
-
-      for (let h of horarios) {
-        let minSaida = minutos(h[0]);
-        let origem = h[1];
-
-        if (origem.includes("Moradia")) continue;
-
-        let rota = obterRota(origem, h[2]);
-        let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
-
-        if (pontoNaRota) {
-          let minChegada = minSaida + pontoNaRota.t;
-          if (minChegada > atualMin) {
-            let espera = minChegada - atualMin;
-            if (menorEspera === null || espera < menorEspera) {
-              menorEspera = espera;
-            }
-          }
-        }
-      }
-      return menorEspera;
     }
 
     let gpsWatchId = null;
@@ -981,16 +1319,17 @@
             return;
           }
 
-          let espera = calcularTempoVolta(r.ponto.nome);
+          let infoChegada = buscarProximoNoPonto(r.ponto.nome, true);
 
-          if (espera !== null) {
+          if (infoChegada !== null) {
             visor.innerHTML =
-              "Caminhe até o ponto <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m).<br><br>" +
-              "🚌 O próximo ônibus passa lá em: <span style='color:#e67e22; font-size:22px; font-weight:bold;'>" + formatarHoraMinuto(espera) + "</span>";
+              "📍 Ponto de retorno mais próximo: <b>" + r.ponto.nome + "</b><br>" +
+              "🚌 Passa lá às <b>" + infoChegada.horaChegada + "</b> (em <span style='color:#e67e22; font-size:20px; font-weight:bold;'>" + formatarHoraMinuto(infoChegada.espera) + "</span>)" +
+              gerarCardQuandoSair(r.dist, infoChegada.espera);
           } else {
             visor.innerHTML =
-              "Caminhe até o ponto <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m).<br>" +
-              "<span style='color:#e53935;'>🚫 Não há mais ônibus voltando hoje.</span>";
+              "📍 Ponto mais próximo: <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m).<br>" +
+              "<span style='color:#e53935; font-weight:600;'>🚫 Não há mais ônibus voltando hoje.</span>";
           }
 
           divMapaVolta.style.display = "block";
@@ -1110,14 +1449,15 @@
           let lon = pos.coords.longitude;
 
           let r = pontoMaisProximo(lat, lon);
-          let espera = calcularTempoNoPonto(r.ponto.nome);
+          let infoChegada = buscarProximoNoPonto(r.ponto.nome, false);
 
-          let textoEspera = espera !== null
-            ? "<br><br>🚌 Próximo ônibus aqui em:<br><span style='font-size:24px; color:#006633; font-weight:bold;'>" + formatarHoraMinuto(espera) + "</span>"
-            : "<br><br><span style='font-size:16px; color:#e53935;'>🚫 Sem mais ônibus neste ponto hoje</span>";
+          let textoEspera = infoChegada !== null
+            ? "<br>🚌 Passa aqui às <b>" + infoChegada.horaChegada + "</b> (em <span style='font-size:20px; color:#006633; font-weight:bold;'>" + formatarHoraMinuto(infoChegada.espera) + "</span>)" +
+              gerarCardQuandoSair(r.dist, infoChegada.espera)
+            : "<br><span style='font-size:15px; color:#e53935; font-weight:600;'>🚫 Sem mais ônibus neste ponto hoje</span>";
 
           visor.innerHTML =
-            "📍 Ponto mais próximo: <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m)" +
+            "📍 Ponto mais próximo: <b>" + r.ponto.nome + "</b>" +
             textoEspera;
 
           if (marcadorUsuario === null) {
@@ -1150,34 +1490,6 @@
     }
 
     /* -----------------------------
-    HORÁRIOS DO DIA E FERIADOS
-    ----------------------------- */
-    const feriadosBH = [
-      "01/01", "21/04", "01/05", "15/08", "07/09",
-      "12/10", "02/11", "15/11", "08/12", "25/12"
-    ];
-
-    function ehFeriado(dataObj) {
-      let dia = ("0" + dataObj.getDate()).slice(-2);
-      let mes = ("0" + (dataObj.getMonth() + 1)).slice(-2);
-      return feriadosBH.includes(dia + "/" + mes);
-    }
-
-    function obterHorarios(dataObj) {
-      if (ehFeriado(dataObj)) return [];
-
-      let diaDaSemana = dataObj.getDay();
-      if (diaDaSemana >= 1 && diaDaSemana <= 5) return horariosSemana;
-      if (diaDaSemana === 6) return horariosSabado;
-
-      return [];
-    }
-
-    function horariosHoje() {
-      return obterHorarios(new Date());
-    }
-
-    /* -----------------------------
     INTERFACE E LISTAGEM
     ----------------------------- */
     function simularHorarioNaTimeline(hora, origem, tipo) {
@@ -1194,16 +1506,32 @@
     function listarHorarios() {
       let lista = document.getElementById("lista");
       const btnToggle = document.getElementById("btnTogglePassados");
+      const avisoGrade = document.getElementById("avisoGrade");
       lista.innerHTML = "";
-      let horarios = horariosHoje();
-
-      if (horarios.length === 0) {
-        btnToggle.style.display = "none";
-        lista.innerHTML = "<li>🚫 Não há ônibus hoje</li>";
-        return;
-      }
 
       let agora = new Date();
+      let diaHoje = agora.getDay();
+      let gradeRealHoje = (diaHoje === 6) ? 'sabado' : 'semana';
+
+      if (gradeVisualizada === null) {
+        gradeVisualizada = gradeRealHoje;
+      }
+
+      document.getElementById("abaSemana").classList.toggle("ativa", gradeVisualizada === 'semana');
+      document.getElementById("abaSabado").classList.toggle("ativa", gradeVisualizada === 'sabado');
+
+      let visualizandoGradeDeHoje = (gradeVisualizada === gradeRealHoje) && (diaHoje !== 0) && !ehFeriado(agora);
+
+      if (!visualizandoGradeDeHoje) {
+        avisoGrade.style.display = "block";
+        avisoGrade.innerText = gradeVisualizada === 'sabado'
+          ? "ℹ️ Visualizando a grade de Sábado (modo consulta)"
+          : "ℹ️ Visualizando a grade de Dias Úteis (modo consulta)";
+      } else {
+        avisoGrade.style.display = "none";
+      }
+
+      let horarios = (gradeVisualizada === 'sabado') ? horariosSabado : horariosSemana;
       let atualMin = agora.getHours() * 60 + agora.getMinutes();
       let temHorarioNoFiltro = false;
       let qtdPassados = 0;
@@ -1213,8 +1541,9 @@
         let hora = h[0];
         let origem = h[1];
         let tipo = h[2];
+        let qtd = h[3] || 1;
         let minSaida = minutos(hora);
-        let jaPassou = minSaida <= atualMin;
+        let jaPassou = visualizandoGradeDeHoje && (minSaida <= atualMin);
 
         if (jaPassou) qtdPassados++;
 
@@ -1230,26 +1559,27 @@
         let seloProximoHtml = "";
         if (jaPassou) {
           li.classList.add("horario-passado");
-        } else if (!proximoJaMarcado) {
+        } else if (visualizandoGradeDeHoje && !proximoJaMarcado) {
           proximoJaMarcado = true;
           li.classList.add("horario-proximo");
           seloProximoHtml = `<span class="selo-proximo">Próximo</span>`;
         }
 
+        let iconeComboio = "🚌".repeat(qtd);
         let textoHtml = "";
         if (tipo === "passagem" && origem.includes("Moradia")) {
-          textoHtml = `<b>${hora}</b> — <span class="tag-passagem">Passando na Moradia</span> ${seloProximoHtml}`;
+          textoHtml = `<b>${hora}</b> — <span class="tag-passagem">Passando na Moradia</span> <span style="font-size:12px;" title="${qtd} veículo(s)">${iconeComboio}</span> ${seloProximoHtml}`;
         } else if (origem.includes("Moradia")) {
-          textoHtml = `<b>${hora}</b> — Saída <span class="tag-moradia">Moradia</span> ${seloProximoHtml}`;
+          textoHtml = `<b>${hora}</b> — Saída <span class="tag-moradia">Moradia</span> <span style="font-size:12px;" title="${qtd} veículo(s)">${iconeComboio}</span> ${seloProximoHtml}`;
         } else {
-          textoHtml = `<b>${hora}</b> — Saída <span class="tag-escola">${origem}</span> ${seloProximoHtml}`;
+          textoHtml = `<b>${hora}</b> — Saída <span class="tag-escola">${origem}</span> <span style="font-size:12px;" title="${qtd} veículo(s)">${iconeComboio}</span> ${seloProximoHtml}`;
         }
 
         let btnAlarme = "";
-        if (!jaPassou) {
+        if (visualizandoGradeDeHoje && !jaPassou) {
           let estaAgendado = Boolean(alertasAgendados[hora]);
           let classeAgendado = estaAgendado ? "agendado" : "";
-          let iconeBtn = estaAgendado ? "✅ Ativo" : "🔔";
+          let iconeBtn = estaAgendado ? "✅ Ativo" : "⏰";
           btnAlarme = `<button class="btn-alarme ${classeAgendado}" onclick="agendarAlerta('${hora}', '${origem}')">${iconeBtn}</button>`;
         }
 
@@ -1262,7 +1592,7 @@
         lista.appendChild(li);
       });
 
-      if (qtdPassados > 0) {
+      if (visualizandoGradeDeHoje && qtdPassados > 0) {
         btnToggle.style.display = "inline-block";
         btnToggle.innerText = ocultarPassados
           ? `👁️ Mostrar anteriores (${qtdPassados})`
@@ -1272,7 +1602,7 @@
       }
 
       if (!temHorarioNoFiltro) {
-        lista.innerHTML = "<li>Nenhum ônibus restante neste filtro para hoje.</li>";
+        lista.innerHTML = "<li>Nenhum ônibus restante neste filtro.</li>";
       }
     }
 
@@ -1298,10 +1628,7 @@
 
       rota.forEach((p, idx) => {
         let min = saida + p.t;
-        let h = Math.floor(min / 60);
-        let m = min % 60;
-        let hStr = h < 10 ? "0" + h : h;
-        let mStr = m < 10 ? "0" + m : m;
+        let horaPontoStr = converterMinutosParaHHMM(min);
 
         let li = document.createElement("li");
 
@@ -1315,7 +1642,20 @@
           }
         }
 
-        li.innerHTML = "<b>" + hStr + ":" + mStr + "</b> - " + p.p;
+        let ehFavorito = (pontoFavorito && p.p === pontoFavorito);
+        if (ehFavorito) {
+          li.classList.add("ponto-favorito-destaque");
+        }
+
+        let dadosCoord = pontos.find(pt => pt.nome === p.p);
+        let btnMaps = "";
+        if (dadosCoord && dadosCoord.lat && dadosCoord.lon) {
+          let urlMaps = `https://www.google.com/maps/search/?api=1&query=${dadosCoord.lat},${dadosCoord.lon}`;
+          btnMaps = `<a href="${urlMaps}" target="_blank" rel="noopener" class="link-maps-ponto" title="Abrir localização do ponto no Google Maps">📍 Maps</a>`;
+        }
+
+        let estrelaFav = ehFavorito ? "⭐ " : "";
+        li.innerHTML = `<span><b>${horaPontoStr}</b> — ${estrelaFav}${p.p}</span> ${btnMaps}`;
         lista.appendChild(li);
       });
     }
@@ -1346,6 +1686,20 @@
           ultimo = item;
         }
       });
+
+      // Atualiza o box do Ponto Favorito (se o usuário tiver escolhido um)
+      const boxMeuPonto = document.getElementById("boxMeuPonto");
+      if (pontoFavorito) {
+        let infoFav = buscarProximoNoPonto(pontoFavorito, false);
+        boxMeuPonto.style.display = "block";
+        if (infoFav) {
+          boxMeuPonto.innerHTML = `⭐ Passa em <b>${pontoFavorito}</b> às <b>${infoFav.horaChegada}</b> (faltam <b>${formatarHoraMinuto(infoFav.espera)}</b>)`;
+        } else {
+          boxMeuPonto.innerHTML = `⭐ <b>${pontoFavorito}:</b> Sem mais passagens previstas para hoje.`;
+        }
+      } else {
+        boxMeuPonto.style.display = "none";
+      }
 
       // Atualiza o painel duplo (Da Moradia / Do Campus)
       const painelSentidos = document.getElementById("painelSentidos");
@@ -1393,8 +1747,9 @@
       }
 
       if (proximo) {
-        let qtdTexto = proximo.qtd > 1 ? proximo.qtd + " veículos" : proximo.qtd + " veículo";
-        document.getElementById("qtd-onibus").innerHTML = "🚌 " + qtdTexto;
+        let iconesBus = "🚌".repeat(proximo.qtd);
+        let qtdTexto = proximo.qtd > 1 ? `${iconesBus} ${proximo.qtd} veículos` : `${iconesBus} 1 veículo`;
+        document.getElementById("qtd-onibus").innerHTML = qtdTexto;
         document.getElementById("qtd-onibus").style.display = "inline-block";
 
         let tagHtml = "";
@@ -1410,10 +1765,10 @@
           let falta = proximo.min - atualMin;
           let ehOUltimo = (proximo.hora === horarios[horarios.length - 1][0]);
           let etiquetaAviso = ehOUltimo
-            ? "<div style='background:#cc0000; color:white; padding:6px 10px; border-radius:6px; font-size:14px; font-weight:bold; display:inline-block; margin-bottom:8px;'>⚠️ ATENÇÃO: ÚLTIMO ÔNIBUS DE HOJE</div><br>"
+            ? "<div style='background:#cc0000; color:white; padding:6px 10px; border-radius:6px; font-size:13px; font-weight:bold; display:inline-block; margin-bottom:8px;'>⚠️ ATENÇÃO: ÚLTIMO ÔNIBUS DE HOJE</div><br>"
             : "";
 
-          document.getElementById("proximo").innerHTML = etiquetaAviso + "🚌 " + proximo.hora;
+          document.getElementById("proximo").innerHTML = etiquetaAviso + proximo.hora;
           document.getElementById("tempo").innerText = formatarTempo(falta);
 
           if (proximo.tipo === "passagem") {
@@ -1543,12 +1898,48 @@
     }
 
     /* -----------------------------
-    NOTIFICAÇÕES E ALERTAS
+    NOTIFICAÇÕES COM LOCALSTORAGE
     ----------------------------- */
+    function obterChaveDataHoje() {
+      let d = new Date();
+      return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    }
+
+    function salvarAlertasNoStorage() {
+      let dados = {
+        data: obterChaveDataHoje(),
+        horarios: Object.keys(alertasAgendados)
+      };
+      localStorage.setItem('morabus_alertas', JSON.stringify(dados));
+    }
+
+    function restaurarAlertasDoStorage() {
+      try {
+        let bruto = localStorage.getItem('morabus_alertas');
+        if (!bruto) return;
+        let dados = JSON.parse(bruto);
+        if (dados.data !== obterChaveDataHoje() || !Array.isArray(dados.horarios)) {
+          localStorage.removeItem('morabus_alertas');
+          return;
+        }
+
+        let horariosDia = horariosHoje();
+        dados.horarios.forEach(hora => {
+          let item = horariosDia.find(h => h[0] === hora);
+          if (item) {
+            configurarTimerAlerta(item[0], item[1], true);
+          }
+        });
+      } catch (e) {
+        console.log('Erro ao restaurar alertas:', e);
+      }
+    }
+
     function agendarAlerta(horaBus, origemBus) {
       if (alertasAgendados[horaBus]) {
         clearTimeout(alertasAgendados[horaBus]);
         delete alertasAgendados[horaBus];
+        salvarAlertasNoStorage();
         listarHorarios();
         return;
       }
@@ -1559,11 +1950,11 @@
       }
 
       if (Notification.permission === "granted") {
-        configurarTimerAlerta(horaBus, origemBus);
+        configurarTimerAlerta(horaBus, origemBus, false);
       } else if (Notification.permission !== "denied") {
         Notification.requestPermission().then(permission => {
           if (permission === "granted") {
-            configurarTimerAlerta(horaBus, origemBus);
+            configurarTimerAlerta(horaBus, origemBus, false);
           } else {
             alert("Permissão para notificações negada.");
           }
@@ -1573,7 +1964,7 @@
       }
     }
 
-    function configurarTimerAlerta(horaBus, origemBus) {
+    function configurarTimerAlerta(horaBus, origemBus, silencioso = false) {
       let agora = new Date();
       let atualSegundos = (agora.getHours() * 3600) + (agora.getMinutes() * 60) + agora.getSeconds();
       let saidaSegundos = minutos(horaBus) * 60;
@@ -1582,10 +1973,12 @@
       let esperaMs = (alertaSegundos - atualSegundos) * 1000;
 
       if (esperaMs <= 0) {
-        enviarNotificacao(
-          `🚌 Ônibus das ${horaBus} saindo em breve!`,
-          `Faltam menos de ${MINUTOS_ANTECEDENCIA_ALERTA} minutos para a saída (${origemBus}).`
-        );
+        if (!silencioso && (saidaSegundos > atualSegundos)) {
+          enviarNotificacao(
+            `🚌 Ônibus das ${horaBus} saindo em breve!`,
+            `Faltam menos de ${MINUTOS_ANTECEDENCIA_ALERTA} minutos para a saída (${origemBus}).`
+          );
+        }
         return;
       }
 
@@ -1595,14 +1988,19 @@
           `O ônibus (${origemBus}) sai em ${MINUTOS_ANTECEDENCIA_ALERTA} minutos!`
         );
         delete alertasAgendados[horaBus];
+        salvarAlertasNoStorage();
         listarHorarios();
       }, esperaMs);
 
+      salvarAlertasNoStorage();
       listarHorarios();
-      enviarNotificacao(
-        `✅ Alerta ativado (${horaBus})`,
-        `Você receberá um aviso ${MINUTOS_ANTECEDENCIA_ALERTA} minutos antes da saída.`
-      );
+
+      if (!silencioso) {
+        enviarNotificacao(
+          `✅ Alerta ativado (${horaBus})`,
+          `Você receberá um aviso ${MINUTOS_ANTECEDENCIA_ALERTA} minutos antes da saída.`
+        );
+      }
     }
 
     function enviarNotificacao(titulo, mensagem) {
@@ -1620,6 +2018,11 @@
     /* -----------------------------
     INICIALIZAÇÃO
     ----------------------------- */
+    inicializarSelectFavorito();
+    atualizarRelogio();
+    setInterval(atualizarRelogio, 1000);
+
+    restaurarAlertasDoStorage();
     atualizar();
     setInterval(atualizar, TEMPO_ATUALIZACAO);
   </script>
