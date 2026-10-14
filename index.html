@@ -2032,14 +2032,40 @@
     setInterval(atualizar, TEMPO_ATUALIZACAO);
   </script>
 
-  <script>
+<script>
     if ('serviceWorker' in navigator) {
+      let recarregando = false;
+
+      // Se o Service Worker baixar uma versão nova do código, atualiza a tela sozinho
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!recarregando) {
+          recarregando = true;
+          window.location.reload();
+        }
+      });
+
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('App pronto para funcionar offline!'))
+          .then((reg) => {
+            // Força a checagem no GitHub toda vez que a página é aberta
+            reg.update();
+          })
           .catch(err => console.log('Erro no Service Worker:', err));
       });
     }
+
+    // Se o estudante minimizou o app e voltou horas depois, recalcula tudo na hora
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        atualizarRelogio();
+        atualizar();
+      }
+    });
+
+    window.addEventListener('pageshow', () => {
+      atualizarRelogio();
+      atualizar();
+    });
   </script>
 </body>
 </html>
