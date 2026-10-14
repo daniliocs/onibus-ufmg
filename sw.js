@@ -3,7 +3,7 @@ const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icone.png',
+  './Morabus.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
@@ -66,8 +66,8 @@ self.addEventListener('message', (event) => {
     const titulo = event.data.titulo || 'Ônibus Moradias UFMG';
     const opcoes = {
       body: event.data.mensagem,
-      icon: './icone.png',
-      badge: './icone.png',
+      icon: './Morabus.png',
+      badge: './Morabus.png',
       vibrate: [200, 100, 200],
       tag: 'onibus-alerta',
       renotify: true
