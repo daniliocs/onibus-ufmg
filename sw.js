@@ -1,4 +1,4 @@
-const CACHE_NAME = 'onibus-ufmg-v18'; // Atualizado para v18
+const CACHE_NAME = 'onibus-ufmg-v20'; // Atualizado para v18
 const ASSETS = [
   './',
   './index.html',
