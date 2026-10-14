@@ -1,1202 +1,1241 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#006633">
 
-<link rel="manifest" href="./manifest.json">
-  
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-  
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" href="./icone.png">
+  <link rel="apple-touch-icon" href="./icone.png">
 
-  
-<title>Ônibus Moradias UFMG</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  
+  <title>Ônibus Moradias UFMG</title>
 
-<style>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f0f2f5;
+      color: #333;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    h1 {
+      color: #006633;
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 25px;
+    }
 
-body {
-  font-family: 'Inter', sans-serif;
-  margin: 0;
-  padding: 20px;
-  background: #f0f2f5;
-  color: #333;
-}
+    .card {
+      background: white;
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      border: 1px solid #e1e4e8;
+    }
 
-h1 {
-  color: #006633;
-  text-align: center;
-  font-size: 24px;
-  margin-bottom: 25px;
-}
+    .card h2 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #444;
+      border-bottom: 2px solid #f0f2f5;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
 
-.card {
-  background: white;
-  padding: 20px;
-  margin: 15px 0;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  border: 1px solid #e1e4e8;
-}
+    #proximo {
+      font-size: 32px;
+      font-weight: 700;
+      color: #006633;
+      margin: 10px 0;
+    }
 
-.card h2 {
-  margin-top: 0;
-  font-size: 18px;
-  color: #444;
-  border-bottom: 2px solid #f0f2f5;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
-}
+    #origem {
+      font-size: 16px;
+      color: #666;
+      margin-top: 5px;
+    }
 
-#proximo {
-  font-size: 32px;
-  font-weight: 700;
-  color: #006633;
-  margin: 10px 0;
-}
+    #qtd-onibus {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 4px 10px;
+      background: #e8f5e9;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #006633;
+    }
 
-#origem {
-  font-size: 16px;
-  color: #666;
-  margin-top: 5px;
-}
+    #tempo {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e67e22;
+      margin-top: 8px;
+    }
 
-#qtd-onibus {
-  display: inline-block;
-  margin-top: 10px;
-  padding: 4px 10px;
-  background: #e8f5e9;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #006633;
-}
+    #infoViagem {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 12px;
+    }
 
-#tempo {
-  font-size: 16px;
-  font-weight: 600;
-  color: #e67e22;
-  margin-top: 8px;
-}
+    /* Linha do tempo visual para as chegadas */
+    #chegadas {
+      list-style: none;
+      padding-left: 20px;
+      border-left: 3px solid #006633;
+      margin-left: 10px;
+      margin-bottom: 0;
+    }
 
-/* Linha do tempo visual para as chegadas */
-#chegadas {
-  list-style: none;
-  padding-left: 20px;
-  border-left: 3px solid #006633;
-  margin-left: 10px;
-}
+    #chegadas li {
+      position: relative;
+      padding-bottom: 15px;
+      font-size: 15px;
+      color: #444;
+    }
 
-#chegadas li {
-  position: relative;
-  padding-bottom: 15px;
-  font-size: 15px;
-  color: #444;
-}
+    #chegadas li::before {
+      content: '';
+      position: absolute;
+      left: -27px;
+      top: 2px;
+      width: 10px;
+      height: 10px;
+      background: white;
+      border: 3px solid #006633;
+      border-radius: 50%;
+    }
 
-#chegadas li::before {
-  content: '';
-  position: absolute;
-  left: -27px;
-  top: 2px;
-  width: 10px;
-  height: 10px;
-  background: white;
-  border: 3px solid #006633;
-  border-radius: 50%;
-}
+    #chegadas li:last-child {
+      padding-bottom: 0;
+    }
 
-#chegadas li:last-child {
-  padding-bottom: 0;
-}
+    /* Lista de horários do dia */
+    #lista {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
 
-/* Lista de horários do dia */
-#lista {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
+    #lista li {
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+      color: #555;
+      font-size: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
 
-#lista li {
-  padding: 12px 0;
-  border-bottom: 1px solid #eee;
-  color: #555;
-  font-size: 15px;
-}
+    #lista li:last-child {
+      border-bottom: none;
+    }
 
-#lista li:last-child {
-  border-bottom: none;
-}
+    #lista li.horario-passado {
+      opacity: 0.45;
+    }
 
-/* --- NOVAS TAGS DE CORES --- */
-.tag-moradia {
-  font-weight: 700;
-  color: #006633;
-  background: #e8f5e9;
-  padding: 2px 8px;
-  border-radius: 6px;
-  display: inline-block;
-}
+    /* Tags de cores */
+    .tag-moradia {
+      font-weight: 700;
+      color: #006633;
+      background: #e8f5e9;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
 
-.tag-escola {
-  font-weight: 700;
-  color: #1565c0;
-  background: #e3f2fd;
-  padding: 2px 8px;
-  border-radius: 6px;
-  display: inline-block;
-}
+    .tag-escola {
+      font-weight: 700;
+      color: #1565c0;
+      background: #e3f2fd;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
 
-.tag-passagem {
-  font-weight: 700;
-  color: #e65100;
-  background: #ffe0b2;
-  padding: 2px 8px;
-  border-radius: 6px;
-  display: inline-block;
-}
+    .tag-passagem {
+      font-weight: 700;
+      color: #e65100;
+      background: #ffe0b2;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
 
-/* Botão Padrão (GPS e Rota) */
-button {
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  background: #006633;
-  color: white;
-  cursor: pointer;
-  transition: background 0.3s, transform 0.1s;
-  margin-bottom: 15px;
-  box-shadow: 0 4px 6px rgba(0,102,51,0.2);
-}
+    /* Botão Padrão */
+    button {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      background: #006633;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 6px rgba(0,102,51,0.2);
+    }
 
-button:active {
-  transform: scale(0.98);
-}
+    button:active {
+      transform: scale(0.98);
+    }
 
-/* --- NOVOS BOTÕES DE FILTRO --- */
-.filtros-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 15px;
-}
+    .btn-volta {
+      background: #e67e22;
+      box-shadow: 0 4px 6px rgba(230,126,34,0.2);
+    }
 
-.btn-filtro {
-  width: auto;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 16px;
-  background: #f0f2f5;
-  color: #555;
-  margin-bottom: 0;
-  box-shadow: none;
-}
+    /* Botões de Filtro */
+    .filtros-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
 
-.btn-filtro.ativo {
-  background: #006633;
-  color: white;
-}
+    .btn-filtro {
+      width: auto;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 16px;
+      background: #f0f2f5;
+      color: #555;
+      margin-bottom: 0;
+      box-shadow: none;
+    }
 
-#gps {
-  font-size: 14px;
-  line-height: 1.5;
-  color: #555;
-}
+    .btn-filtro.ativo {
+      background: #006633;
+      color: white;
+    }
 
-.texto-dia-seguinte {
-  color: #333;
-}
-  
-#mapa {
-  border: 2px solid #e1e4e8;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-  
+    /* Botão do Sininho (Alarme) */
+    .btn-alarme {
+      width: auto;
+      padding: 6px 10px;
+      margin-bottom: 0;
+      font-size: 14px;
+      background: #f0f2f5;
+      color: #555;
+      border-radius: 8px;
+      box-shadow: none;
+      flex-shrink: 0;
+    }
 
-/* --- MODO ESCURO AUTOMÁTICO --- */
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #121212;
-    color: #e0e0e0;
-  }
-  
-  .card {
-    background: #1e1e1e;
-    border-color: #333;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-  }
+    .btn-alarme.agendado {
+      background: #e8f5e9;
+      color: #006633;
+      border: 1px solid #006633;
+    }
 
-  .card h2 {
-    color: #e0e0e0;
-    border-bottom-color: #333;
-  }
+    #gps, #resultadoVolta {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #555;
+    }
 
-  .texto-dia-seguinte {
-    color: #e0e0e0; 
-  }
-  
-  h1, #proximo { color: #4ade80; } 
-  #tempo { color: #fbbf24; } 
-  #origem, #gps { color: #aaa; }
+    .texto-subtitulo {
+      font-size: 14px;
+      color: #555;
+      margin-top: 0;
+    }
 
-  #chegadas li, #lista li { color: #ccc; }
-  #lista li { border-bottom-color: #333; }
-  #chegadas { border-left-color: #4ade80; }
-  #chegadas li::before {
-    background: #1e1e1e;
-    border-color: #4ade80;
-  }
+    .texto-dia-seguinte {
+      color: #333;
+    }
 
-  #mapa { border-color: #333; }
+    #mapa, #mapaVolta {
+      height: 300px;
+      width: 100%;
+      margin-top: 15px;
+      border-radius: 8px;
+      display: none;
+      z-index: 1;
+      border: 2px solid #e1e4e8;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
 
-  #qtd-onibus {
-    background: #1a3320;
-    color: #4ade80;
-  }
+    /* --- MODO ESCURO AUTOMÁTICO --- */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #121212;
+        color: #e0e0e0;
+      }
 
-  /* Cores escuras para as tags */
-  .tag-moradia { background: #1a3320; color: #4ade80; }
-  .tag-escola { background: #0d2a4a; color: #64b5f6; }
-  .tag-passagem { background: #3e2723; color: #ffb74d; }
+      .card {
+        background: #1e1e1e;
+        border-color: #333;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      }
 
-  /* Cores escuras para os botões de filtro */
-  .btn-filtro { background: #333; color: #ccc; }
-  .btn-filtro.ativo { background: #4ade80; color: #121212; }
-}
+      .card h2 {
+        color: #e0e0e0;
+        border-bottom-color: #333;
+      }
 
-</style>
+      .texto-dia-seguinte {
+        color: #e0e0e0;
+      }
 
+      h1, #proximo { color: #4ade80; }
+      #tempo { color: #fbbf24; }
+      #origem, #gps, #resultadoVolta, #infoViagem, .texto-subtitulo { color: #aaa; }
+
+      #chegadas li, #lista li { color: #ccc; }
+      #lista li { border-bottom-color: #333; }
+      #chegadas { border-left-color: #4ade80; }
+      #chegadas li::before {
+        background: #1e1e1e;
+        border-color: #4ade80;
+      }
+
+      #mapa, #mapaVolta { border-color: #333; }
+
+      #qtd-onibus {
+        background: #1a3320;
+        color: #4ade80;
+      }
+
+      /* Cores escuras para as tags */
+      .tag-moradia { background: #1a3320; color: #4ade80; }
+      .tag-escola { background: #0d2a4a; color: #64b5f6; }
+      .tag-passagem { background: #3e2723; color: #ffb74d; }
+
+      /* Cores escuras para botões secundários */
+      .btn-filtro, .btn-alarme { background: #333; color: #ccc; }
+      .btn-filtro.ativo { background: #4ade80; color: #121212; }
+      .btn-alarme.agendado {
+        background: #1a3320;
+        color: #4ade80;
+        border-color: #4ade80;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<h1>🚌 Ônibus Moradias UFMG</h1>
+  <h1>🚌 Ônibus Moradias UFMG</h1>
 
-<div class="card">
-<h2>Próximo ônibus</h2>
-<div id="proximo"></div>
-<div id="origem"></div>
-<div id="qtd-onibus" style="display: none;"></div>
-<div id="tempo"></div>
-</div>
+  <div class="card">
+    <h2>Próximo ônibus</h2>
+    <div id="proximo"></div>
+    <div id="origem"></div>
+    <div id="qtd-onibus" style="display: none;"></div>
+    <div id="tempo"></div>
+  </div>
 
-<div class="card">
-<h2>Chegada estimada nos pontos</h2>
-<div id="infoViagem"></div>
-<ul id="chegadas"></ul>
-</div>
+  <div class="card">
+    <h2>Chegada estimada nos pontos</h2>
+    <div id="infoViagem"></div>
+    <ul id="chegadas"></ul>
+  </div>
 
-<div class="card">
-<h2>Horários de hoje</h2>
+  <div class="card">
+    <h2>Horários de hoje</h2>
 
-<div class="filtros-container">
-  <button class="btn-filtro ativo" onclick="mudarFiltro('todos')">Todos</button>
-  <button class="btn-filtro" onclick="mudarFiltro('moradia')">Saída Moradia</button>
-  <button class="btn-filtro" onclick="mudarFiltro('escola')">Saída Escola</button>
-  <button class="btn-filtro" onclick="mudarFiltro('passagem')">Passagem</button>
-</div>
+    <div class="filtros-container">
+      <button class="btn-filtro ativo" onclick="mudarFiltro('todos')">Todos</button>
+      <button class="btn-filtro" onclick="mudarFiltro('moradia')">Saída Moradia</button>
+      <button class="btn-filtro" onclick="mudarFiltro('escola')">Saída Escola</button>
+      <button class="btn-filtro" onclick="mudarFiltro('passagem')">Passagem</button>
+    </div>
 
-<ul id="lista"></ul>
-</div>
+    <ul id="lista"></ul>
+  </div>
 
-<div class="card">
-<h2>Ponto mais próximo</h2>
+  <div class="card">
+    <h2>Ponto mais próximo</h2>
+    <button id="btnGPS" onclick="usarGPS()">📍 Usar minha localização</button>
+    <div id="gps">Clique no botão para detectar sua posição</div>
+    <div id="mapa"></div>
+  </div>
 
-<button onclick="usarGPS()" style="
-padding:10px 14px;
-font-size:16px;
-border:none;
-border-radius:8px;
-background:#006633;
-color:white;
-cursor:pointer;
-margin-bottom:10px;
-">
-📍 Usar minha localização
-</button>
+  <div class="card">
+    <h2>🏠 Como volto pra casa?</h2>
+    <p class="texto-subtitulo">Descubra onde ir para pegar o ônibus rumo às Moradias.</p>
+    <button id="btnVolta" class="btn-volta" onclick="descobrirVolta()">🧭 Encontrar ponto de volta</button>
+    <div id="resultadoVolta"></div>
+    <div id="mapaVolta"></div>
+  </div>
 
-<div id="gps">Clique no botão para detectar sua posição</div>
+  <script>
+    /* -----------------------------
+    CONFIGURAÇÕES E ESTADO GLOBAL
+    ----------------------------- */
+    const TEMPO_ATUALIZACAO = 10000;
+    const MINUTOS_ANTECEDENCIA_ALERTA = 10;
+    let filtroAtual = 'todos';
+    let alertasAgendados = {}; // Guarda os timers de notificação por horário
 
-<div id="mapa" style="height: 300px; width: 100%; margin-top: 15px; border-radius: 8px; display: none; z-index: 1;"></div>  
-
-</div>
-
-
-<div class="card">
-  <h2>🏠 Como volto pra casa?</h2>
-  <p style="font-size: 14px; color: #555; margin-top: 0;">Descubra onde ir para pegar o ônibus rumo às Moradias.</p>
-  
-  <button id="btnVolta" onclick="descobrirVolta()" style="
-    padding:10px 14px;
-    font-size:16px;
-    border:none;
-    border-radius:8px;
-    background:#e67e22;
-    color:white;
-    cursor:pointer;
-    margin-bottom:10px;
-    width: 100%;
-    box-shadow: 0 4px 6px rgba(230,126,34,0.2);
-  ">
-  🧭 Encontrar ponto de volta
-  </button>
-
-  <div id="resultadoVolta" style="font-size: 15px; color: #444; margin-top: 10px;"></div>
-  
-  <div id="mapaVolta" style="height: 300px; width: 100%; margin-top: 15px; border-radius: 8px; display: none; z-index: 1; border: 2px solid #e1e4e8;"></div>
-</div>
-
-<script>
-
-/* -----------------------------
-CONFIGURAÇÕES E FILTRO
------------------------------ */
-const TEMPO_ATUALIZACAO = 10000;
-let filtroAtual = 'todos';
-
-function mudarFiltro(tipo) {
-  filtroAtual = tipo;
-  
-  // Atualiza a aparência dos botões
-  document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('ativo'));
-  document.querySelector(`button[onclick="mudarFiltro('${tipo}')"]`).classList.add('ativo');
-  
-  // Refaz a lista com o novo filtro
-  listarHorarios();
-}
-
-
-/* -----------------------------
-ROTAS
------------------------------ */
-const rotaCampus=[
-{p:"Escola de Música",t:0},
-{p:"Belas Artes",t:1},
-{p:"FaE",t:3},
-{p:"RU 1",t:4},
-{p:"FACE",t:5},
-{p:"Reitoria",t:6},
-{p:"CAD 1",t:7},
-{p:"Farmácia",t:8},
-{p:"Veterinária",t:10},
-{p:"Odonto",t:11},
-{p:"Educação Física",t:12},
-{p:"Moradia 1",t:18},
-{p:"Moradia 2 e 3",t:20}
-];
-
-const rotaMoradia=[
-{p:"Moradia 1",t:0},
-{p:"Moradia 2 e 3",t:2},
-{p:"Educação Física",t:7},
-{p:"Odonto",t:9},
-{p:"Veterinária",t:10},
-{p:"Farmácia",t:11},
-{p:"RU 2",t:12},
-{p:"Engenharia",t:14},
-{p:"IGC",t:15},
-{p:"RU 1",t:16},
-{p:"FaE",t:18},
-{p:"Belas Artes",t:20},
-{p:"Escola de Música",t:22}
-];
-
-const rotaPassagem = [
-  {p: "Moradia 1", t: 0},
-  {p: "Moradia 2 e 3", t: 2},
-  {p: "Unidade Admnistrativa II", t:7},
-  {p: "Rotatória", t: 8},
-  {p: "Ponto final", t: 9} 
-];
-
-/* -----------------------------
-HORÁRIOS
------------------------------ */
-
-const horariosSemana=[
-  ["06:45","Moradia", null, 3],
-  ["07:20","Escola de Música", null, 3],
-  ["07:40","Moradia", null, 3],
-  ["10:00","Escola de Música", null, 3],
-  ["11:00","Moradia", null, 3],
-  ["11:50","Escola de Música", null, 3],
-  ["12:15","Moradia", null, 3],
-  ["13:10","Escola de Música", null, 3],
-  ["13:30","Moradia", null, 3],
-  ["15:00","Escola de Música", null, 1],
-  ["15:20","Moradia", null, 1],
-  ["17:00","Escola de Música", null, 2],
-  ["17:20","Moradia", null, 2],
-  ["17:50","Escola de Música", null, 2],
-  ["18:20","Moradia", null, 2],
-  ["19:00","Escola de Música", null, 2],
-  ["19:20","Moradias","passagem", 2], 
-  ["19:40","Escola de Música", null, 2],
-  ["20:00","Moradias","passagem", 2], 
-  ["21:00","Escola de Música", null, 2],
-  ["21:20","Moradias","passagem", 2], 
-  ["21:35","Escola de Música", null, 1],
-  ["21:45","Moradias","passagem", 1], 
-  ["22:15","Escola de Música", null, 1],
-  ["22:35","Moradias","passagem", 1], 
-  ["22:50","Escola de Música", null, 1],
-  ["23:10","Moradias","passagem", 1]  
-];
-
-
-const horariosSabado = [
-  ["07:40", "Moradia", null, 1], 
-  ["10:00", "Escola de Música", null, 2], 
-  ["11:00", "Moradia", null, 2],
-  ["12:00", "Escola de Música", null, 2],
-  ["12:20", "Moradia", null, 2],
-  ["13:30", "Escola de Música","passagem", 2]
-];
-
-
-/* -----------------------------
-PONTOS PARA GPS
------------------------------ */
-
-const pontos=[
-{nome:"Escola de Música",lat:-19.8621,lon:-43.9618},
-{nome:"Belas Artes",lat:-19.863787,lon:-43.960242}, 
-{nome:"FaE",lat:-19.867845,lon:-43.958610},
-{nome:"RU 1",lat:-19.868928,lon:-43.960290},
-{nome:"FACE",lat:-19.868211,lon:-43.963662},
-{nome:"Reitoria",lat:-19.866381,lon:-43.965288},
-{nome:"CAD 1",lat:-19.867173,lon:-43.967189},
-{nome:"Farmácia",lat:-19.870094,lon:-43.968643},
-{nome:"Veterinária",lat:-19.871567,lon:-43.970531},
-{nome:"Odonto",lat:-19.872823,lon:-43.973524},
-{nome:"Educação Física",lat:-19.876466,lon:-43.976137}, 
-{nome:"Moradia 1",lat:-19.8706,lon:-43.9862},
-{nome:"Moradia 2 e 3",lat:-19.8661,lon:-43.9845},
-{nome:"RU 2",lat:-19.869941,lon:-43.966892},
-{nome:"IGC",lat:-19.868652,lon:-43.962783},
-{nome:"Unidade Admnistrativa II",lat:-19.863061,lon:-43.966889},
-{nome:"Rotatória",lat:-19.863364,lon:-43.964325}, 
-{nome:"Engenharia",lat:-19.869706,lon:-43.964092}
-];
-
-/* -----------------------------
-UTILITÁRIOS
------------------------------ */
-
-function minutos(hora){
-  let p=hora.split(":");
-  return parseInt(p[0])*60+parseInt(p[1]);
-}
-
-function formatarHoraMinuto(min) {
-  let h = Math.floor(min / 60);
-  let m = min % 60;
-  let mStr = m < 10 ? "0" + m : m;
-  
-  if (h > 0) return h + "h" + mStr;
-  return m + " min";
-}
-
-function formatarTempo(min){
-  return "Faltam " + formatarHoraMinuto(min);
-}
-  
-function distancia(lat1,lon1,lat2,lon2){
-  const R=6371;
-  const dLat=(lat2-lat1)*Math.PI/180;
-  const dLon=(lon2-lon1)*Math.PI/180;
-  const a=
-  Math.sin(dLat/2)*Math.sin(dLat/2)+
-  Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-  Math.sin(dLon/2)*Math.sin(dLon/2);
-  const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-  return R*c;
-}
-
-function calcularTempoNoPonto(nomeDoPonto) {
-  let agora = new Date();
-  let atualMin = agora.getHours() * 60 + agora.getMinutes();
-  let horarios = horariosHoje(); 
-  let menorEspera = null;
-
-  for (let h of horarios) {
-    let minSaida = minutos(h[0]);
-    let origem = h[1];
-    let tipo = h[2]; 
-    
-    let rota = rotaCampus;
-    if (tipo === "passagem") {
-      rota = rotaPassagem;
-    } else if (origem.includes("Moradia")) {
-      rota = rotaMoradia;
+    function mudarFiltro(tipo) {
+      filtroAtual = tipo;
+      document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('ativo'));
+      document.querySelector(`button[onclick="mudarFiltro('${tipo}')"]`).classList.add('ativo');
+      listarHorarios();
     }
-  
-    let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
-    
-    if (pontoNaRota) {
-      let minChegada = minSaida + pontoNaRota.t;
-      if (minChegada > atualMin) {
-        let espera = minChegada - atualMin;
-        if (menorEspera === null || espera < menorEspera) {
-          menorEspera = espera;
+
+    /* -----------------------------
+    ROTAS
+    ----------------------------- */
+    const rotaCampus = [
+      {p: "Escola de Música", t: 0},
+      {p: "Belas Artes", t: 1},
+      {p: "FaE", t: 3},
+      {p: "RU 1", t: 4},
+      {p: "FACE", t: 5},
+      {p: "Reitoria", t: 6},
+      {p: "CAD 1", t: 7},
+      {p: "Farmácia", t: 8},
+      {p: "Veterinária", t: 10},
+      {p: "Odonto", t: 11},
+      {p: "Educação Física", t: 12},
+      {p: "Moradia 1", t: 18},
+      {p: "Moradia 2 e 3", t: 20}
+    ];
+
+    const rotaMoradia = [
+      {p: "Moradia 1", t: 0},
+      {p: "Moradia 2 e 3", t: 2},
+      {p: "Educação Física", t: 7},
+      {p: "Odonto", t: 9},
+      {p: "Veterinária", t: 10},
+      {p: "Farmácia", t: 11},
+      {p: "RU 2", t: 12},
+      {p: "Engenharia", t: 14},
+      {p: "IGC", t: 15},
+      {p: "RU 1", t: 16},
+      {p: "FaE", t: 18},
+      {p: "Belas Artes", t: 20},
+      {p: "Escola de Música", t: 22}
+    ];
+
+    const rotaPassagem = [
+      {p: "Moradia 1", t: 0},
+      {p: "Moradia 2 e 3", t: 2},
+      {p: "Unidade Admnistrativa II", t: 7},
+      {p: "Rotatória", t: 8},
+      {p: "Ponto final", t: 9}
+    ];
+
+    function obterRota(origem, tipo) {
+      if (tipo === "passagem" && origem.includes("Moradia")) {
+        return rotaPassagem;
+      }
+      if (origem.includes("Moradia")) {
+        return rotaMoradia;
+      }
+      return rotaCampus;
+    }
+
+    /* -----------------------------
+    HORÁRIOS
+    ----------------------------- */
+    const horariosSemana = [
+      ["06:45", "Moradia", null, 3],
+      ["07:20", "Escola de Música", null, 3],
+      ["07:40", "Moradia", null, 3],
+      ["10:00", "Escola de Música", null, 3],
+      ["11:00", "Moradia", null, 3],
+      ["11:50", "Escola de Música", null, 3],
+      ["12:15", "Moradia", null, 3],
+      ["13:10", "Escola de Música", null, 3],
+      ["13:30", "Moradia", null, 3],
+      ["15:00", "Escola de Música", null, 1],
+      ["15:20", "Moradia", null, 1],
+      ["17:00", "Escola de Música", null, 2],
+      ["17:20", "Moradia", null, 2],
+      ["17:50", "Escola de Música", null, 2],
+      ["18:20", "Moradia", null, 2],
+      ["19:00", "Escola de Música", null, 2],
+      ["19:20", "Moradias", "passagem", 2],
+      ["19:40", "Escola de Música", null, 2],
+      ["20:00", "Moradias", "passagem", 2],
+      ["21:00", "Escola de Música", null, 2],
+      ["21:20", "Moradias", "passagem", 2],
+      ["21:35", "Escola de Música", null, 1],
+      ["21:45", "Moradias", "passagem", 1],
+      ["22:15", "Escola de Música", null, 1],
+      ["22:35", "Moradias", "passagem", 1],
+      ["22:50", "Escola de Música", null, 1],
+      ["23:10", "Moradias", "passagem", 1]
+    ];
+
+    const horariosSabado = [
+      ["07:40", "Moradia", null, 1],
+      ["10:00", "Escola de Música", null, 2],
+      ["11:00", "Moradia", null, 2],
+      ["12:00", "Escola de Música", null, 2],
+      ["12:20", "Moradia", null, 2],
+      ["13:30", "Escola de Música", null, 2] // Sai da Escola de Música e encerra nas Moradias (rotaCampus)
+    ];
+
+    /* -----------------------------
+    PONTOS PARA GPS
+    ----------------------------- */
+    const pontos = [
+      {nome: "Escola de Música", lat: -19.8621, lon: -43.9618},
+      {nome: "Belas Artes", lat: -19.863787, lon: -43.960242},
+      {nome: "FaE", lat: -19.867845, lon: -43.958610},
+      {nome: "RU 1", lat: -19.868928, lon: -43.960290},
+      {nome: "FACE", lat: -19.868211, lon: -43.963662},
+      {nome: "Reitoria", lat: -19.866381, lon: -43.965288},
+      {nome: "CAD 1", lat: -19.867173, lon: -43.967189},
+      {nome: "Farmácia", lat: -19.870094, lon: -43.968643},
+      {nome: "Veterinária", lat: -19.871567, lon: -43.970531},
+      {nome: "Odonto", lat: -19.872823, lon: -43.973524},
+      {nome: "Educação Física", lat: -19.876466, lon: -43.976137},
+      {nome: "Moradia 1", lat: -19.8706, lon: -43.9862},
+      {nome: "Moradia 2 e 3", lat: -19.8661, lon: -43.9845},
+      {nome: "RU 2", lat: -19.869941, lon: -43.966892},
+      {nome: "IGC", lat: -19.868652, lon: -43.962783},
+      {nome: "Unidade Admnistrativa II", lat: -19.863061, lon: -43.966889},
+      {nome: "Rotatória", lat: -19.863364, lon: -43.964325},
+      {nome: "Engenharia", lat: -19.869706, lon: -43.964092}
+    ];
+
+    /* -----------------------------
+    UTILITÁRIOS
+    ----------------------------- */
+    function minutos(hora) {
+      let p = hora.split(":");
+      return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+    }
+
+    function formatarHoraMinuto(min) {
+      let h = Math.floor(min / 60);
+      let m = min % 60;
+      let mStr = m < 10 ? "0" + m : m;
+
+      if (h > 0) return h + "h" + mStr;
+      return m + " min";
+    }
+
+    function formatarTempo(min) {
+      return "Faltam " + formatarHoraMinuto(min);
+    }
+
+    function distancia(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function calcularTempoNoPonto(nomeDoPonto) {
+      let agora = new Date();
+      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      let horarios = horariosHoje();
+      let menorEspera = null;
+
+      for (let h of horarios) {
+        let minSaida = minutos(h[0]);
+        let origem = h[1];
+        let tipo = h[2];
+
+        let rota = obterRota(origem, tipo);
+        let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
+
+        if (pontoNaRota) {
+          let minChegada = minSaida + pontoNaRota.t;
+          if (minChegada > atualMin) {
+            let espera = minChegada - atualMin;
+            if (menorEspera === null || espera < menorEspera) {
+              menorEspera = espera;
+            }
+          }
         }
       }
+      return menorEspera;
     }
-  }
-  return menorEspera;
-}  
 
-/* -----------------------------
-GPS
------------------------------ */
-
-function pontoMaisProximo(lat,lon){
-  let melhor=null;
-  let menor=999;
-  for(let p of pontos){
-    if(p.lat==null) continue;
-    const d=distancia(lat,lon,p.lat,p.lon);
-    if(d<menor){
-      menor=d;
-      melhor=p;
-    }
-  }
-  return {ponto:melhor,dist:menor};
-}
-
-function pontoMaisProximoVolta(lat, lon) {
-  let melhor = null;
-  let menor = 999;
-  let paradasDeVolta = rotaCampus.map(p => p.p).filter(nome => !nome.includes("Moradia"));
-
-  for(let p of pontos) {
-    if(p.lat == null) continue;
-    if(!paradasDeVolta.includes(p.nome)) continue;
-
-    const d = distancia(lat, lon, p.lat, p.lon);
-    if(d < menor){
-      menor = d;
-      melhor = p;
-    }
-  }
-  return {ponto: melhor, dist: menor};
-}
-
-function calcularTempoVolta(nomeDoPonto) {
-  let agora = new Date();
-  let atualMin = agora.getHours() * 60 + agora.getMinutes();
-  let horarios = horariosHoje(); 
-  let menorEspera = null;
-
-  for (let h of horarios) {
-    let minSaida = minutos(h[0]);
-    let origem = h[1];
-    
-    if (origem.includes("Moradia")) continue; 
-    
-    let rota = (h[2] === "passagem") ? rotaPassagem : rotaCampus;
-    let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
-    
-    if (pontoNaRota) {
-      let minChegada = minSaida + pontoNaRota.t;
-      if (minChegada > atualMin) {
-        let espera = minChegada - atualMin;
-        if (menorEspera === null || espera < menorEspera) {
-          menorEspera = espera;
+    /* -----------------------------
+    GPS E MAPAS
+    ----------------------------- */
+    function pontoMaisProximo(lat, lon) {
+      let melhor = null;
+      let menor = 999;
+      for (let p of pontos) {
+        if (p.lat == null) continue;
+        const d = distancia(lat, lon, p.lat, p.lon);
+        if (d < menor) {
+          menor = d;
+          melhor = p;
         }
       }
+      return {ponto: melhor, dist: menor};
     }
-  }
-  return menorEspera;
-}
 
-function descobrirVolta() {
-  const btn = document.getElementById("btnVolta");
-  const visor = document.getElementById("resultadoVolta");
-  const divMapaVolta = document.getElementById("mapaVolta");
+    function pontoMaisProximoVolta(lat, lon) {
+      let melhor = null;
+      let menor = 999;
+      let paradasDeVolta = rotaCampus.map(p => p.p).filter(nome => !nome.includes("Moradia"));
 
-  if(!navigator.geolocation){
-    visor.innerText = "GPS não suportado pelo seu navegador.";
-    return;
-  }
+      for (let p of pontos) {
+        if (p.lat == null) continue;
+        if (!paradasDeVolta.includes(p.nome)) continue;
 
-  btn.innerText = "⏳ Buscando sua posição...";
-
-  navigator.geolocation.getCurrentPosition(
-    function(pos){
-      btn.innerText = "🧭 Atualizar ponto de volta";
-      
-      let lat = pos.coords.latitude;
-      let lon = pos.coords.longitude;
-
-      let moradia1 = pontos.find(p => p.nome === "Moradia 1");
-      let moradia23 = pontos.find(p => p.nome === "Moradia 2 e 3");
-      let distM1 = distancia(lat, lon, moradia1.lat, moradia1.lon);
-      let distM23 = distancia(lat, lon, moradia23.lat, moradia23.lon);
-
-      if (distM1 < 0.3 || distM23 < 0.3) {
-        visor.innerHTML = "<span style='color:#006633; font-weight:bold; font-size:18px;'>🏠 Você já se encontra na Moradia!</span>";
-        btn.innerText = "🧭 Encontrar ponto de volta";
-        divMapaVolta.style.display = "none";
-        return; // Para a execução por aqui
+        const d = distancia(lat, lon, p.lat, p.lon);
+        if (d < menor) {
+          menor = d;
+          melhor = p;
+        }
       }
-      // --- FIM DA VERIFICAÇÃO ---
+      return {ponto: melhor, dist: menor};
+    }
 
-      let r = pontoMaisProximoVolta(lat, lon);
-      
-      if(!r.ponto) {
-        visor.innerHTML = "Não foi possível calcular as rotas de volta.";
+    function calcularTempoVolta(nomeDoPonto) {
+      let agora = new Date();
+      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      let horarios = horariosHoje();
+      let menorEspera = null;
+
+      for (let h of horarios) {
+        let minSaida = minutos(h[0]);
+        let origem = h[1];
+
+        if (origem.includes("Moradia")) continue;
+
+        let rota = obterRota(origem, h[2]);
+        let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
+
+        if (pontoNaRota) {
+          let minChegada = minSaida + pontoNaRota.t;
+          if (minChegada > atualMin) {
+            let espera = minChegada - atualMin;
+            if (menorEspera === null || espera < menorEspera) {
+              menorEspera = espera;
+            }
+          }
+        }
+      }
+      return menorEspera;
+    }
+
+    let gpsWatchId = null;
+    let meuMapa = null;
+    let marcadorUsuario = null;
+    let primeiraLeituraGPS = true;
+
+    let mapaVolta = null;
+    let controleRotaVolta = null;
+    let marcadorUsuarioVolta = null;
+    let marcadorDestinoVolta = null;
+
+    function descobrirVolta() {
+      const btn = document.getElementById("btnVolta");
+      const visor = document.getElementById("resultadoVolta");
+      const divMapaVolta = document.getElementById("mapaVolta");
+
+      if (!navigator.geolocation) {
+        visor.innerText = "GPS não suportado pelo seu navegador.";
         return;
       }
 
-      let espera = calcularTempoVolta(r.ponto.nome);
+      btn.innerText = "⏳ Buscando sua posição...";
 
-      if(espera !== null) {
-        visor.innerHTML = 
-          "Caminhe até o ponto <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m).<br><br>" +
-          "🚌 O próximo ônibus passa lá em: <span style='color:#e67e22; font-size:22px; font-weight:bold;'>" + formatarHoraMinuto(espera) + "</span>";
-      } else {
-        visor.innerHTML = 
-          "Caminhe até o ponto <b>" + r.ponto.nome + "</b>.<br>" +
-          "<span style='color:red;'>🚫 Não há mais ônibus voltando hoje.</span>";
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          btn.innerText = "🧭 Atualizar ponto de volta";
+
+          let lat = pos.coords.latitude;
+          let lon = pos.coords.longitude;
+
+          let moradia1 = pontos.find(p => p.nome === "Moradia 1");
+          let moradia23 = pontos.find(p => p.nome === "Moradia 2 e 3");
+          let distM1 = distancia(lat, lon, moradia1.lat, moradia1.lon);
+          let distM23 = distancia(lat, lon, moradia23.lat, moradia23.lon);
+
+          if (distM1 < 0.3 || distM23 < 0.3) {
+            visor.innerHTML = "<span style='color:#006633; font-weight:bold; font-size:18px;'>🏠 Você já se encontra na Moradia!</span>";
+            btn.innerText = "🧭 Encontrar ponto de volta";
+            divMapaVolta.style.display = "none";
+            return;
+          }
+
+          let r = pontoMaisProximoVolta(lat, lon);
+
+          if (!r.ponto) {
+            visor.innerHTML = "Não foi possível calcular as rotas de volta.";
+            return;
+          }
+
+          let espera = calcularTempoVolta(r.ponto.nome);
+
+          if (espera !== null) {
+            visor.innerHTML =
+              "Caminhe até o ponto <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m).<br><br>" +
+              "🚌 O próximo ônibus passa lá em: <span style='color:#e67e22; font-size:22px; font-weight:bold;'>" + formatarHoraMinuto(espera) + "</span>";
+          } else {
+            visor.innerHTML =
+              "Caminhe até o ponto <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m).<br>" +
+              "<span style='color:#e53935;'>🚫 Não há mais ônibus voltando hoje.</span>";
+          }
+
+          divMapaVolta.style.display = "block";
+
+          if (mapaVolta === null) {
+            mapaVolta = L.map('mapaVolta').setView([lat, lon], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 18,
+              attribution: '© OpenStreetMap'
+            }).addTo(mapaVolta);
+          }
+
+          setTimeout(() => {
+            mapaVolta.invalidateSize();
+          }, 200);
+
+          if (controleRotaVolta !== null) {
+            mapaVolta.removeLayer(controleRotaVolta);
+            controleRotaVolta = null;
+          }
+
+          if (marcadorUsuarioVolta === null) {
+            marcadorUsuarioVolta = L.circleMarker([lat, lon], {
+              color: 'blue', fillColor: '#3388ff', fillOpacity: 0.8, radius: 8
+            }).addTo(mapaVolta).bindPopup("Você está aqui").openPopup();
+          } else {
+            marcadorUsuarioVolta.setLatLng([lat, lon]);
+          }
+
+          if (marcadorDestinoVolta === null) {
+            marcadorDestinoVolta = L.circleMarker([r.ponto.lat, r.ponto.lon], {
+              color: 'red', fillColor: '#f03', fillOpacity: 0.8, radius: 8
+            }).addTo(mapaVolta);
+          } else {
+            marcadorDestinoVolta.setLatLng([r.ponto.lat, r.ponto.lon]);
+          }
+          marcadorDestinoVolta.bindPopup("Destino: " + r.ponto.nome);
+
+          let urlRota = `https://router.project-osrm.org/route/v1/foot/${lon},${lat};${r.ponto.lon},${r.ponto.lat}?geometries=geojson`;
+
+          fetch(urlRota)
+            .then(res => res.json())
+            .then(data => {
+              if (data.routes && data.routes.length > 0) {
+                let coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                controleRotaVolta = L.polyline(coords, {color: '#e67e22', weight: 6, opacity: 0.8}).addTo(mapaVolta);
+                mapaVolta.fitBounds(controleRotaVolta.getBounds(), {padding: [30, 30]});
+              }
+            })
+            .catch(() => {
+              // Fallback caso a API de rota falhe no 3G/4G
+              let grupo = new L.featureGroup([marcadorUsuarioVolta, marcadorDestinoVolta]);
+              mapaVolta.fitBounds(grupo.getBounds(), {padding: [30, 30]});
+            });
+        },
+        function(err) {
+          btn.innerText = "🧭 Encontrar ponto de volta";
+          if (err.code === 1) {
+            visor.innerHTML = "<span style='color:#e53935;'>Permissão negada. Ative a localização no seu navegador.</span>";
+          } else {
+            visor.innerHTML = "<span style='color:#e53935;'>Não foi possível obter a localização.</span>";
+          }
+        },
+        { enableHighAccuracy: true }
+      );
+    }
+
+    function usarGPS() {
+      const botao = document.getElementById("btnGPS");
+      const visor = document.getElementById("gps");
+      const divMapa = document.getElementById("mapa");
+
+      if (!navigator.geolocation) {
+        visor.innerText = "GPS não suportado";
+        return;
       }
 
-      divMapaVolta.style.display = "block";
-      
-      if(mapaVolta === null) {
-        mapaVolta = L.map('mapaVolta').setView([lat, lon], 15); 
+      if (gpsWatchId !== null) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+        botao.innerHTML = "📍 Usar minha localização";
+        botao.style.background = "#006633";
+        visor.innerHTML = "Atualização do GPS pausada.";
+        divMapa.style.display = "none";
+        return;
+      }
+
+      visor.innerText = "Obtendo localização e carregando mapa...";
+      botao.innerHTML = "🛑 Parar localização";
+      botao.style.background = "#cc0000";
+      divMapa.style.display = "block";
+      primeiraLeituraGPS = true;
+
+      if (meuMapa === null) {
+        meuMapa = L.map('mapa').setView([-19.8690, -43.9664], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 18,
           attribution: '© OpenStreetMap'
-        }).addTo(mapaVolta);
+        }).addTo(meuMapa);
+
+        pontos.forEach(p => {
+          if (p.lat !== null && p.lon !== null) {
+            L.marker([p.lat, p.lon])
+              .addTo(meuMapa)
+              .bindPopup("<b>" + p.nome + "</b>");
+          }
+        });
       }
 
       setTimeout(() => {
-        mapaVolta.invalidateSize();
+        meuMapa.invalidateSize();
+        atualizar(); // Atualiza para já desenhar o ônibus no mapa se houver viagem ativa
       }, 200);
 
-     // Remove a rota (linha) anterior se existir
-      if (controleRotaVolta !== null) {
-        mapaVolta.removeLayer(controleRotaVolta);
-      }
+      gpsWatchId = navigator.geolocation.watchPosition(
+        function(pos) {
+          let lat = pos.coords.latitude;
+          let lon = pos.coords.longitude;
 
-      // Faz uma requisição direta para a API gratuita de rotas a pé
-      let urlRota = `https://router.project-osrm.org/route/v1/foot/${lon},${lat};${r.ponto.lon},${r.ponto.lat}?geometries=geojson`;
-      
-      fetch(urlRota)
-        .then(res => res.json())
-        .then(data => {
-          if(data.routes && data.routes.length > 0) {
-            // Inverte as coordenadas que vêm da API para o padrão do Leaflet
-            let coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-            
-            // Desenha a linha da rota
-            controleRotaVolta = L.polyline(coords, {color: '#e67e22', weight: 6, opacity: 0.8}).addTo(mapaVolta);
-            
-            // Coloca um marcador vermelho no ponto de ônibus de destino
-            L.circleMarker([r.ponto.lat, r.ponto.lon], {
-              color: 'red', fillColor: '#f03', fillOpacity: 0.8, radius: 8
-            }).addTo(mapaVolta).bindPopup("Destino: " + r.ponto.nome);
-            
-            // Centraliza o mapa para mostrar o caminho todo
-            mapaVolta.fitBounds(controleRotaVolta.getBounds(), {padding: [30, 30]});
+          let r = pontoMaisProximo(lat, lon);
+          let espera = calcularTempoNoPonto(r.ponto.nome);
+
+          let textoEspera = espera !== null
+            ? "<br><br>🚌 Próximo ônibus aqui em:<br><span style='font-size:24px; color:#006633; font-weight:bold;'>" + formatarHoraMinuto(espera) + "</span>"
+            : "<br><br><span style='font-size:16px; color:#e53935;'>🚫 Sem mais ônibus neste ponto hoje</span>";
+
+          visor.innerHTML =
+            "📍 Ponto mais próximo: <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m)" +
+            textoEspera;
+
+          if (marcadorUsuario === null) {
+            marcadorUsuario = L.circleMarker([lat, lon], {
+              color: 'blue', fillColor: '#3388ff', fillOpacity: 0.8, radius: 8
+            }).addTo(meuMapa).bindPopup("Você está aqui").openPopup();
+          } else {
+            marcadorUsuario.setLatLng([lat, lon]);
           }
-        })
-        .catch(err => console.log("Erro ao desenhar rota:", err));
-      
-      if(marcadorUsuarioVolta === null){
-        marcadorUsuarioVolta = L.circleMarker([lat, lon], {
-          color: 'blue', fillColor: '#3388ff', fillOpacity: 0.8, radius: 8
-        }).addTo(mapaVolta).bindPopup("Você está aqui").openPopup();
-      } else {
-        marcadorUsuarioVolta.setLatLng([lat, lon]);
+
+          // Centraliza apenas na primeira leitura para não travar o zoom manual do usuário
+          if (primeiraLeituraGPS) {
+            primeiraLeituraGPS = false;
+            if (r.ponto.lat !== null) {
+              let limites = L.latLngBounds([[lat, lon], [r.ponto.lat, r.ponto.lon]]);
+              meuMapa.fitBounds(limites, {padding: [30, 30]});
+            } else {
+              meuMapa.setView([lat, lon], 16);
+            }
+          }
+        },
+        function() {
+          visor.innerText = "Não foi possível obter a localização";
+          navigator.geolocation.clearWatch(gpsWatchId);
+          gpsWatchId = null;
+          botao.innerHTML = "📍 Usar minha localização";
+          botao.style.background = "#006633";
+        },
+        { enableHighAccuracy: true }
+      );
+    }
+
+    /* -----------------------------
+    HORÁRIOS DO DIA E FERIADOS
+    ----------------------------- */
+    const feriadosBH = [
+      "01/01", "21/04", "01/05", "15/08", "07/09",
+      "12/10", "02/11", "15/11", "08/12", "25/12"
+    ];
+
+    function ehFeriado(dataObj) {
+      let dia = ("0" + dataObj.getDate()).slice(-2);
+      let mes = ("0" + (dataObj.getMonth() + 1)).slice(-2);
+      return feriadosBH.includes(dia + "/" + mes);
+    }
+
+    function obterHorarios(dataObj) {
+      if (ehFeriado(dataObj)) return [];
+
+      let diaDaSemana = dataObj.getDay();
+      if (diaDaSemana >= 1 && diaDaSemana <= 5) return horariosSemana;
+      if (diaDaSemana === 6) return horariosSabado;
+
+      return [];
+    }
+
+    function horariosHoje() {
+      return obterHorarios(new Date());
+    }
+
+    /* -----------------------------
+    INTERFACE E LISTAGEM
+    ----------------------------- */
+    function listarHorarios() {
+      let lista = document.getElementById("lista");
+      lista.innerHTML = "";
+      let horarios = horariosHoje();
+
+      if (horarios.length === 0) {
+        lista.innerHTML = "<li>🚫 Não há ônibus hoje</li>";
+        return;
       }
 
-    },
-    function(err){
-      btn.innerText = "🧭 Encontrar ponto de volta";
-      if(err.code === 1) {
-        visor.innerHTML = "<span style='color:red;'>Permissão negada. Ative a localização no seu navegador.</span>";
-      } else {
-        visor.innerHTML = "<span style='color:red;'>Não foi possível obter a localização.</span>";
-      }
-    },
-    { enableHighAccuracy: true }
-  );
-}
+      let agora = new Date();
+      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      let temHorarioNoFiltro = false;
 
-let gpsWatchId = null;
-let meuMapa = null;
-let marcadorUsuario = null;
+      horarios.forEach(h => {
+        let hora = h[0];
+        let origem = h[1];
+        let tipo = h[2];
+        let minSaida = minutos(hora);
 
-let mapaVolta = null;
-let controleRotaVolta = null;
-let marcadorUsuarioVolta = null;
+        if (filtroAtual === 'passagem' && tipo !== 'passagem') return;
+        if (filtroAtual === 'moradia' && (tipo === 'passagem' || !origem.includes('Moradia'))) return;
+        if (filtroAtual === 'escola' && !origem.includes('Escola')) return;
 
-function usarGPS(){
-  const botao = document.querySelector("button[onclick='usarGPS()']");
-  const visor = document.getElementById("gps");
-  const divMapa = document.getElementById("mapa");
+        temHorarioNoFiltro = true;
+        let li = document.createElement("li");
 
-  if(!navigator.geolocation){
-    visor.innerText = "GPS não suportado";
-    return;
-  }
+        let jaPassou = minSaida <= atualMin;
+        if (jaPassou) {
+          li.classList.add("horario-passado");
+        }
 
-  if(gpsWatchId !== null){
-    navigator.geolocation.clearWatch(gpsWatchId);
-    gpsWatchId = null;
-    botao.innerHTML = "📍 Usar minha localização";
-    botao.style.background = "#006633";
-    visor.innerHTML = "Atualização do GPS pausada.";
-    divMapa.style.display = "none"; 
-    return;
-  }
+        let textoHtml = "";
+        if (tipo === "passagem" && origem.includes("Moradia")) {
+          textoHtml = `<b>${hora}</b> — <span class="tag-passagem">Passando na Moradia</span>`;
+        } else if (origem.includes("Moradia")) {
+          textoHtml = `<b>${hora}</b> — Saída <span class="tag-moradia">Moradia</span>`;
+        } else {
+          textoHtml = `<b>${hora}</b> — Saída <span class="tag-escola">${origem}</span>`;
+        }
 
-  visor.innerText = "Obtendo localização e carregando mapa...";
-  botao.innerHTML = "🛑 Parar localização";
-  botao.style.background = "#cc0000";
-  divMapa.style.display = "block"; 
+        let btnAlarme = "";
+        if (!jaPassou) {
+          let estaAgendado = Boolean(alertasAgendados[hora]);
+          let classeAgendado = estaAgendado ? "agendado" : "";
+          let iconeBtn = estaAgendado ? "✅ Ativo" : "🔔";
+          btnAlarme = `<button class="btn-alarme ${classeAgendado}" onclick="agendarAlerta('${hora}', '${origem}')">${iconeBtn}</button>`;
+        }
 
-  if(meuMapa === null) {
-    meuMapa = L.map('mapa').setView([-19.8690, -43.9664], 14); 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '© OpenStreetMap'
-    }).addTo(meuMapa);
-
-    pontos.forEach(p => {
-      if(p.lat !== null && p.lon !== null){
-        L.marker([p.lat, p.lon])
-         .addTo(meuMapa)
-         .bindPopup("<b>" + p.nome + "</b>");
-      }
-    });
-  }
-
-  gpsWatchId = navigator.geolocation.watchPosition(
-    function(pos){
-      let lat = pos.coords.latitude;
-      let lon = pos.coords.longitude;
-
-      let r = pontoMaisProximo(lat,lon);
-      let espera = calcularTempoNoPonto(r.ponto.nome);
-      
-      let textoEspera = espera !== null 
-        ? "<br><br>🚌 Próximo ônibus aqui em:<br><span style='font-size:24px; color:#006633; font-weight:bold;'>" + formatarHoraMinuto(espera) + "</span>" 
-        : "<br><br><span style='font-size:16px; color:red;'>🚫 Sem mais ônibus neste ponto hoje</span>";
-
-      visor.innerHTML =
-        "📍 Ponto mais próximo: <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m)" + 
-        textoEspera;
-
-      if(marcadorUsuario === null){
-        marcadorUsuario = L.circleMarker([lat, lon], {
-          color: 'blue', fillColor: '#3388ff', fillOpacity: 0.8, radius: 8
-        }).addTo(meuMapa).bindPopup("Você está aqui").openPopup();
-      } else {
-        marcadorUsuario.setLatLng([lat, lon]);
-      }
-      
-      if(r.ponto.lat !== null) {
-        let grupo = new L.featureGroup([marcadorUsuario, L.marker([r.ponto.lat, r.ponto.lon])]);
-        meuMapa.fitBounds(grupo.getBounds(), {padding: [30, 30]});
-      } else {
-        meuMapa.setView([lat, lon], 16);
-      }
-    },
-    function(){
-      visor.innerText = "Não foi possível obter a localização";
-      navigator.geolocation.clearWatch(gpsWatchId);
-      gpsWatchId = null;
-      botao.innerHTML = "📍 Usar minha localização";
-      botao.style.background = "#006633";
-    },
-    { enableHighAccuracy: true }
-  );
-}
-
-/* -----------------------------
-HORÁRIOS DO DIA E PRÓXIMOS
------------------------------ */
-
-const feriadosBH = [
-  "01/01", "21/04", "01/05", "15/08", "07/09", 
-  "12/10", "02/11", "15/11", "08/12", "25/12"  
-];
-
-function ehFeriado(dataObj) {
-  let dia = ("0" + dataObj.getDate()).slice(-2);
-  let mes = ("0" + (dataObj.getMonth() + 1)).slice(-2);
-  return feriadosBH.includes(dia + "/" + mes);
-}
-
-function obterHorarios(dataObj){
-  if (ehFeriado(dataObj)) return []; 
-
-  let diaDaSemana = dataObj.getDay();
-  if(diaDaSemana >= 1 && diaDaSemana <= 5) return horariosSemana;
-  if(diaDaSemana == 6) return horariosSabado;
-  
-  return []; 
-}
-
-function horariosHoje(){
-  return obterHorarios(new Date());
-}
-
-/* -----------------------------
-INTERFACE
------------------------------ */
-
-
-
-  function listarHorarios(){
-  let lista = document.getElementById("lista");
-  lista.innerHTML = "";
-  let horarios = horariosHoje();
-
-  if(horarios.length == 0){
-    lista.innerHTML="<li>🚫 Não há ônibus hoje</li>";
-    return;
-  }
-
-  // Filtragem e criação da lista
-  let temHorarioNoFiltro = false;
-
-  horarios.forEach(h => {
-    let hora = h[0];
-    let origem = h[1];
-    let tipo = h[2];
-    
-    // Lógica do filtro
-    if (filtroAtual === 'passagem' && tipo !== 'passagem') return;
-    if (filtroAtual === 'moradia' && (tipo === 'passagem' || !origem.includes('Moradia'))) return;
-    if (filtroAtual === 'escola' && !origem.includes('Escola')) return;
-
-    temHorarioNoFiltro = true;
-    let li = document.createElement("li");
-    
-    // NOVO: Criando o container para alinhar o texto e o botão de alarme
-    li.style.display = "flex";
-    li.style.justifyContent = "space-between";
-    li.style.alignItems = "center";
-
-    // O texto do ônibus (mantendo as suas tags coloridas)
-    let textoHtml = "";
-    if(tipo === "passagem" && origem.includes("Moradia")){
-      textoHtml = `<b>${hora}</b> — <span class="tag-passagem">Passando na Moradia</span>`;
-    } else if (origem.includes("Moradia")) {
-      textoHtml = `<b>${hora}</b> — Saída <span class="tag-moradia">Moradia</span>`;
-    } else {
-      textoHtml = `<b>${hora}</b> — Saída <span class="tag-escola">${origem}</span>`;
-    }
-
-    // NOVO: O botão de notificação (o "Sininho")
-    let btnAlarme = `<button onclick="agendarAlerta('${hora}', '${origem}')" style="
-        width: auto;
-        padding: 6px 10px;
-        margin-bottom: 0;
-        font-size: 14px;
-        background: #f0f2f5;
-        color: #555;
-        border-radius: 8px;
-        box-shadow: none;
-    ">🔔</button>`;
-
-    // Junta o texto e o botão
-    li.innerHTML = `<div>${textoHtml}</div> ${btnAlarme}`;
-
-    lista.appendChild(li);
-  });
-
-  // Caso o usuário clique no filtro e não tenha mais nenhum ônibus daquele tipo pro dia
-  if (!temHorarioNoFiltro) {
-    lista.innerHTML = "<li>Nenhum ônibus desta rota cadastrado para hoje.</li>";
-  }
-}
-
-  
-
-function mostrarChegadas(saida, origem, hora, tipo) { 
-  let lista = document.getElementById("chegadas");
-  lista.innerHTML = "";
-
-  document.getElementById("infoViagem").innerHTML =
-    "Previsão baseada no ônibus das " + hora + " (saída: " + origem + ")";
-
-  let rota = rotaCampus;
-  if (tipo === "passagem") {
-    rota = rotaPassagem;
-  } else if (origem.includes("Moradia")) {
-    rota = rotaMoradia;
-  }
-  
-  rota.forEach(p => {
-    let min = saida + p.t;
-    let h = Math.floor(min / 60);
-    let m = min % 60;
-    if(m < 10) m = "0" + m;
-
-    let li = document.createElement("li");
-    li.innerHTML = "<b>" + h + ":" + m + "</b> - " + p.p;
-    lista.appendChild(li);
-  });
-}
-
-/* -----------------------------
-PRÓXIMO ÔNIBUS
------------------------------ */
-
-function atualizar(){
-  let agora = new Date();
-  let atualMin = agora.getHours() * 60 + agora.getMinutes();
-  let horarios = obterHorarios(agora);
-  let proximo = null;
-  let ultimo = null;
-
-  horarios.forEach(h => {
-    let min = minutos(h[0]);
-    if(min > atualMin && !proximo){
-      proximo = {hora: h[0], origem: h[1], min: min, quando: "hoje", tipo: h[2], qtd: h[3]};
-    }
-    if(min <= atualMin){
-      ultimo = {hora: h[0], origem: h[1], min: min, tipo: h[2], qtd: h[3]};
-    }
-  });
-
-  if(!proximo){
-    let diasNomes = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-    for(let i = 1; i <= 7; i++){
-      let dataFutura = new Date();
-      dataFutura.setDate(agora.getDate() + i);
-      let horariosFuturos = obterHorarios(dataFutura);
-      if(horariosFuturos.length > 0){
-        let h = horariosFuturos[0]; 
-        let textoDia = (i === 1) ? "Amanhã" : diasNomes[dataFutura.getDay()];
-        proximo = {hora: h[0], origem: h[1], quando: textoDia, tipo: h[2], qtd: h[3]};
-        break; 
-      }
-    }
-  }
-
-  if (proximo) {
-    let qtdTexto = proximo.qtd > 1 ? proximo.qtd + " veículos" : proximo.qtd + " veículo";
-    document.getElementById("qtd-onibus").innerHTML = "🚌 " + qtdTexto;
-    document.getElementById("qtd-onibus").style.display = "inline-block";
-
-    // Criando a tag colorida para o "Próximo ônibus" também
-    let tagHtml = "";
-    if (proximo.tipo === "passagem" && proximo.origem.includes("Moradia")) {
-      tagHtml = `<span class="tag-passagem">Passando na Moradia</span>`;
-    } else if (proximo.origem.includes("Moradia")) {
-      tagHtml = `<span class="tag-moradia">Moradia</span>`;
-    } else {
-      tagHtml = `<span class="tag-escola">${proximo.origem}</span>`;
-    }
-
-    if (proximo.quando === "hoje") {
-      let falta = proximo.min - atualMin;
-      let ehOUltimo = (proximo.hora === horarios[horarios.length - 1][0]);
-      let etiquetaAviso = ehOUltimo 
-        ? "<div style='background:#cc0000; color:white; padding:6px 10px; border-radius:6px; font-size:14px; font-weight:bold; display:inline-block; margin-bottom:8px;'>⚠️ ATENÇÃO: ÚLTIMO ÔNIBUS DE HOJE</div><br>" 
-        : "";
-
-      document.getElementById("proximo").innerHTML = etiquetaAviso + "🚌 " + proximo.hora;
-      document.getElementById("tempo").innerText = formatarTempo(falta);
-      
-      // Aplica a tag aqui
-      if (proximo.tipo === "passagem") {
-        document.getElementById("origem").innerHTML = tagHtml;
-      } else {
-        document.getElementById("origem").innerHTML = "Saída: " + tagHtml;
-      }
-      
-    } else {
-      let tinhaOnibusHoje = horarios.length > 0;
-      let msgErro = tinhaOnibusHoje 
-        ? "⚠️ Último ônibus do dia já saiu" 
-        : "🚫 Não há ônibus hoje (Domingo/Feriado)";
-
-      document.getElementById("proximo").innerHTML = 
-        "<span style='font-size: 20px; color: #cc0000;'>" + msgErro + "</span><br>"+
-        "<span class='texto-dia-seguinte' style='font-size: 22px; margin-top: 10px; display: block;'>Próximo: " + proximo.quando.toLowerCase() + " às " + proximo.hora + "</span>";
-      
-      if (proximo.tipo === "passagem") {
-        document.getElementById("origem").innerHTML = tagHtml;
-      } else {
-        document.getElementById("origem").innerHTML = "Saída: " + tagHtml;
-      }
-      
-      document.getElementById("tempo").innerText = ""; 
-    }
-  } else {
-    document.getElementById("proximo").innerHTML = "🚫 Sem previsão de ônibus";
-    document.getElementById("origem").innerText = "";
-    document.getElementById("tempo").innerText = "";
-    document.getElementById("qtd-onibus").style.display = "none";
-  }
-
-  if (ultimo) {
-    let rotaUltimo = (ultimo.origem.includes("Moradia")) ? rotaMoradia : rotaCampus;
-    let tempoTotalViagem = rotaUltimo[rotaUltimo.length - 1].t; 
-    let minutoFimDaViagem = ultimo.min + tempoTotalViagem;
-
-    if (atualMin <= minutoFimDaViagem) {
-      mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora, ultimo.tipo);
-    } 
-    else if (proximo && proximo.quando === "hoje") {
-      mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo);
-    } 
-    else {
-      document.getElementById("chegadas").innerHTML = "<li>Viagens encerradas no momento.</li>";
-      document.getElementById("infoViagem").innerHTML = "";
-    }
-  } 
-  else if (proximo && proximo.quando === "hoje") {
-    mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo); 
-  } else {
-    document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens...</li>";
-    document.getElementById("infoViagem").innerHTML = "";
-  }
-
-  estimarPosicaoOnibus();
-} 
-
-let marcadorOnibus = null;
-
-function estimarPosicaoOnibus() {
-  if (meuMapa === null) return; 
-
-  let agora = new Date();
-  let atualMin = agora.getHours() * 60 + agora.getMinutes();
-  
-  if (!ultimo) return; 
-
-  let rota = rotaCampus;
-  if (ultimo.tipo === "passagem") {
-    rota = rotaPassagem;
-  } else if (ultimo.origem.includes("Moradia")) {
-    rota = rotaMoradia;
-  }
-  
-  let tempoTotal = rota[rota.length - 1].t;
-  let minutoFim = ultimo.min + tempoTotal;
-
-  if (atualMin > minutoFim) {
-    if (marcadorOnibus) {
-      meuMapa.removeLayer(marcadorOnibus);
-      marcadorOnibus = null;
-    }
-    return;
-  }
-
-  let tempoDecorrido = atualMin - ultimo.min;
-  let pontoAnterior = rota[0];
-  let pontoProximo = rota[rota.length - 1];
-
-  for (let i = 0; i < rota.length - 1; i++) {
-    if (tempoDecorrido >= rota[i].t && tempoDecorrido < rota[i+1].t) {
-      pontoAnterior = rota[i];
-      pontoProximo = rota[i+1];
-      break;
-    }
-  }
-
-  let coordAnt = pontos.find(p => p.nome === pontoAnterior.p);
-  let coordProx = pontos.find(p => p.nome === pontoProximo.p);
-
-  if (coordAnt && coordProx && coordAnt.lat !== null && coordProx.lat !== null) {
-    let tempoTrecho = pontoProximo.t - pontoAnterior.t;
-    let tempoAndadoTrecho = tempoDecorrido - pontoAnterior.t;
-    let porcentagem = tempoAndadoTrecho / tempoTrecho;
-
-    let latAtual = coordAnt.lat + ((coordProx.lat - coordAnt.lat) * porcentagem);
-    let lonAtual = coordAnt.lon + ((coordProx.lon - coordAnt.lon) * porcentagem);
-
-    if (!marcadorOnibus) {
-      let iconeBus = L.divIcon({
-        html: '🚌',
-        className: '',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        li.innerHTML = `<div>${textoHtml}</div> ${btnAlarme}`;
+        lista.appendChild(li);
       });
-      marcadorOnibus = L.marker([latAtual, lonAtual], {icon: iconeBus}).addTo(meuMapa);
-      marcadorOnibus.bindPopup("<b>Ônibus das " + ultimo.hora + "</b><br>Estimativa em tempo real");
-    } else {
-      marcadorOnibus.setLatLng([latAtual, lonAtual]);
-    }
-  }
-}
 
-// NOVO: Função para lidar com o clique no sininho
-function agendarAlerta(horaBus, origemBus) {
-  // 1. Verifica se o navegador suporta notificações
-  if (!("Notification" in window)) {
-    alert("Este navegador não suporta notificações do sistema.");
-    return;
-  }
-
-  // 2. Verifica se já temos permissão
-  if (Notification.permission === "granted") {
-    dispararTeste(horaBus, origemBus);
-  } 
-  // 3. Se não temos permissão e também não foi bloqueada, pedimos
-  else if (Notification.permission !== "denied") {
-    Notification.requestPermission().then((permission) => {
-      if (permission === "granted") {
-        dispararTeste(horaBus, origemBus);
-      } else {
-        alert("Permissão para notificações negada. Não poderei avisar você.");
+      if (!temHorarioNoFiltro) {
+        lista.innerHTML = "<li>Nenhum ônibus desta rota cadastrado para hoje.</li>";
       }
-    });
-  } else {
-      alert("As notificações estão bloqueadas nas configurações do seu navegador.");
-  }
-}
+    }
 
-// NOVO: Função que manda a mensagem pro Service Worker exibir a notificação
-function dispararTeste(horaBus, origemBus) {
-  // Envia uma mensagem para o Service Worker ativo
-  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'SHOW_NOTIFICATION',
-        titulo: `Teste Alerta: Ônibus ${horaBus}`,
-        mensagem: `Atenção, o ônibus da rota ${origemBus} vai sair em breve!`
+    function mostrarChegadas(saida, origem, hora, tipo) {
+      let lista = document.getElementById("chegadas");
+      lista.innerHTML = "";
+
+      document.getElementById("infoViagem").innerHTML =
+        "Previsão baseada no ônibus das <b>" + hora + "</b> (saída: " + origem + ")";
+
+      let rota = obterRota(origem, tipo);
+
+      rota.forEach(p => {
+        let min = saida + p.t;
+        let h = Math.floor(min / 60);
+        let m = min % 60;
+        let hStr = h < 10 ? "0" + h : h;
+        let mStr = m < 10 ? "0" + m : m;
+
+        let li = document.createElement("li");
+        li.innerHTML = "<b>" + hStr + ":" + mStr + "</b> - " + p.p;
+        lista.appendChild(li);
       });
-  } else {
-      alert("Service Worker não está controlando a página. Recarregue a página e tente de novo.");
-  }
-}
+    }
 
-  
-/* -----------------------------
-INICIALIZAÇÃO
------------------------------ */
-listarHorarios();
-atualizar();
-setInterval(atualizar, TEMPO_ATUALIZACAO);
+    /* -----------------------------
+    PRÓXIMO ÔNIBUS E TEMPO REAL
+    ----------------------------- */
+    function atualizar() {
+      let agora = new Date();
+      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      let horarios = obterHorarios(agora);
+      let proximo = null;
+      let ultimo = null;
 
-</script>
+      horarios.forEach(h => {
+        let min = minutos(h[0]);
+        if (min > atualMin && !proximo) {
+          proximo = {hora: h[0], origem: h[1], min: min, quando: "hoje", tipo: h[2], qtd: h[3]};
+        }
+        if (min <= atualMin) {
+          ultimo = {hora: h[0], origem: h[1], min: min, tipo: h[2], qtd: h[3]};
+        }
+      });
 
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(() => console.log('App pronto para funcionar offline!'))
-        .catch(err => console.log('Erro no Service Worker:', err));
-    });
-  }
-</script>  
+      if (!proximo) {
+        let diasNomes = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+        for (let i = 1; i <= 7; i++) {
+          let dataFutura = new Date();
+          dataFutura.setDate(agora.getDate() + i);
+          let horariosFuturos = obterHorarios(dataFutura);
+          if (horariosFuturos.length > 0) {
+            let h = horariosFuturos[0];
+            let textoDia = (i === 1) ? "Amanhã" : diasNomes[dataFutura.getDay()];
+            proximo = {hora: h[0], origem: h[1], quando: textoDia, tipo: h[2], qtd: h[3]};
+            break;
+          }
+        }
+      }
+
+      if (proximo) {
+        let qtdTexto = proximo.qtd > 1 ? proximo.qtd + " veículos" : proximo.qtd + " veículo";
+        document.getElementById("qtd-onibus").innerHTML = "🚌 " + qtdTexto;
+        document.getElementById("qtd-onibus").style.display = "inline-block";
+
+        let tagHtml = "";
+        if (proximo.tipo === "passagem" && proximo.origem.includes("Moradia")) {
+          tagHtml = `<span class="tag-passagem">Passando na Moradia</span>`;
+        } else if (proximo.origem.includes("Moradia")) {
+          tagHtml = `<span class="tag-moradia">Moradia</span>`;
+        } else {
+          tagHtml = `<span class="tag-escola">${proximo.origem}</span>`;
+        }
+
+        if (proximo.quando === "hoje") {
+          let falta = proximo.min - atualMin;
+          let ehOUltimo = (proximo.hora === horarios[horarios.length - 1][0]);
+          let etiquetaAviso = ehOUltimo
+            ? "<div style='background:#cc0000; color:white; padding:6px 10px; border-radius:6px; font-size:14px; font-weight:bold; display:inline-block; margin-bottom:8px;'>⚠️ ATENÇÃO: ÚLTIMO ÔNIBUS DE HOJE</div><br>"
+            : "";
+
+          document.getElementById("proximo").innerHTML = etiquetaAviso + "🚌 " + proximo.hora;
+          document.getElementById("tempo").innerText = formatarTempo(falta);
+
+          if (proximo.tipo === "passagem") {
+            document.getElementById("origem").innerHTML = tagHtml;
+          } else {
+            document.getElementById("origem").innerHTML = "Saída: " + tagHtml;
+          }
+        } else {
+          let tinhaOnibusHoje = horarios.length > 0;
+          let msgErro = tinhaOnibusHoje
+            ? "⚠️ Último ônibus do dia já saiu"
+            : "🚫 Não há ônibus hoje (Domingo/Feriado)";
+
+          document.getElementById("proximo").innerHTML =
+            "<span style='font-size: 20px; color: #e53935;'>" + msgErro + "</span><br>" +
+            "<span class='texto-dia-seguinte' style='font-size: 22px; margin-top: 10px; display: block;'>Próximo: " + proximo.quando.toLowerCase() + " às " + proximo.hora + "</span>";
+
+          if (proximo.tipo === "passagem") {
+            document.getElementById("origem").innerHTML = tagHtml;
+          } else {
+            document.getElementById("origem").innerHTML = "Saída: " + tagHtml;
+          }
+
+          document.getElementById("tempo").innerText = "";
+        }
+      } else {
+        document.getElementById("proximo").innerHTML = "🚫 Sem previsão de ônibus";
+        document.getElementById("origem").innerText = "";
+        document.getElementById("tempo").innerText = "";
+        document.getElementById("qtd-onibus").style.display = "none";
+      }
+
+      if (ultimo) {
+        let rotaUltimo = obterRota(ultimo.origem, ultimo.tipo);
+        let tempoTotalViagem = rotaUltimo[rotaUltimo.length - 1].t;
+        let minutoFimDaViagem = ultimo.min + tempoTotalViagem;
+
+        if (atualMin <= minutoFimDaViagem) {
+          mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora, ultimo.tipo);
+        } else if (proximo && proximo.quando === "hoje") {
+          mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo);
+        } else {
+          document.getElementById("chegadas").innerHTML = "<li>Viagens encerradas no momento.</li>";
+          document.getElementById("infoViagem").innerHTML = "";
+        }
+      } else if (proximo && proximo.quando === "hoje") {
+        mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo);
+      } else {
+        document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens...</li>";
+        document.getElementById("infoViagem").innerHTML = "";
+      }
+
+      estimarPosicaoOnibus(ultimo);
+      listarHorarios();
+    }
+
+    let marcadorOnibus = null;
+
+    function estimarPosicaoOnibus(ultimo) {
+      if (meuMapa === null) return;
+
+      if (!ultimo) {
+        if (marcadorOnibus) {
+          meuMapa.removeLayer(marcadorOnibus);
+          marcadorOnibus = null;
+        }
+        return;
+      }
+
+      let agora = new Date();
+      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+
+      let rota = obterRota(ultimo.origem, ultimo.tipo);
+      let tempoTotal = rota[rota.length - 1].t;
+      let minutoFim = ultimo.min + tempoTotal;
+
+      if (atualMin > minutoFim) {
+        if (marcadorOnibus) {
+          meuMapa.removeLayer(marcadorOnibus);
+          marcadorOnibus = null;
+        }
+        return;
+      }
+
+      let tempoDecorrido = atualMin - ultimo.min;
+      let pontoAnterior = rota[0];
+      let pontoProximo = rota[rota.length - 1];
+
+      for (let i = 0; i < rota.length - 1; i++) {
+        if (tempoDecorrido >= rota[i].t && tempoDecorrido < rota[i + 1].t) {
+          pontoAnterior = rota[i];
+          pontoProximo = rota[i + 1];
+          break;
+        }
+      }
+
+      let coordAnt = pontos.find(p => p.nome === pontoAnterior.p);
+      let coordProx = pontos.find(p => p.nome === pontoProximo.p);
+
+      if (coordAnt && coordProx && coordAnt.lat !== null && coordProx.lat !== null) {
+        let tempoTrecho = pontoProximo.t - pontoAnterior.t;
+        let tempoAndadoTrecho = tempoDecorrido - pontoAnterior.t;
+        let porcentagem = tempoTrecho > 0 ? (tempoAndadoTrecho / tempoTrecho) : 0;
+
+        let latAtual = coordAnt.lat + ((coordProx.lat - coordAnt.lat) * porcentagem);
+        let lonAtual = coordAnt.lon + ((coordProx.lon - coordAnt.lon) * porcentagem);
+
+        if (!marcadorOnibus) {
+          let iconeBus = L.divIcon({
+            html: '<div style="font-size: 22px;">🚌</div>',
+            className: '',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          });
+          marcadorOnibus = L.marker([latAtual, lonAtual], {icon: iconeBus}).addTo(meuMapa);
+          marcadorOnibus.bindPopup("<b>Ônibus das " + ultimo.hora + "</b><br>Estimativa em tempo real");
+        } else {
+          marcadorOnibus.setLatLng([latAtual, lonAtual]);
+        }
+      }
+    }
+
+    /* -----------------------------
+    NOTIFICAÇÕES E ALERTAS
+    ----------------------------- */
+    function agendarAlerta(horaBus, origemBus) {
+      // Se já estiver agendado, cancela o alerta
+      if (alertasAgendados[horaBus]) {
+        clearTimeout(alertasAgendados[horaBus]);
+        delete alertasAgendados[horaBus];
+        listarHorarios();
+        return;
+      }
+
+      if (!("Notification" in window)) {
+        alert("Este navegador não suporta notificações do sistema.");
+        return;
+      }
+
+      if (Notification.permission === "granted") {
+        configurarTimerAlerta(horaBus, origemBus);
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            configurarTimerAlerta(horaBus, origemBus);
+          } else {
+            alert("Permissão para notificações negada.");
+          }
+        });
+      } else {
+        alert("As notificações estão bloqueadas nas configurações do seu navegador.");
+      }
+    }
+
+    function configurarTimerAlerta(horaBus, origemBus) {
+      let agora = new Date();
+      let atualSegundos = (agora.getHours() * 3600) + (agora.getMinutes() * 60) + agora.getSeconds();
+      let saidaSegundos = minutos(horaBus) * 60;
+      let alertaSegundos = saidaSegundos - (MINUTOS_ANTECEDENCIA_ALERTA * 60);
+
+      let esperaMs = (alertaSegundos - atualSegundos) * 1000;
+
+      if (esperaMs <= 0) {
+        // Faltam menos de 10 minutos para o ônibus sair: avisa imediatamente
+        enviarNotificacao(
+          `🚌 Ônibus das ${horaBus} saindo em breve!`,
+          `Faltam menos de ${MINUTOS_ANTECEDENCIA_ALERTA} minutos para a saída (${origemBus}).`
+        );
+        return;
+      }
+
+      // Agenda para 10 minutos antes da saída
+      alertasAgendados[horaBus] = setTimeout(() => {
+        enviarNotificacao(
+          `⏰ Alerta: Ônibus das ${horaBus}`,
+          `O ônibus (${origemBus}) sai em ${MINUTOS_ANTECEDENCIA_ALERTA} minutos!`
+        );
+        delete alertasAgendados[horaBus];
+        listarHorarios();
+      }, esperaMs);
+
+      listarHorarios();
+      enviarNotificacao(
+        `✅ Alerta ativado (${horaBus})`,
+        `Você receberá um aviso ${MINUTOS_ANTECEDENCIA_ALERTA} minutos antes da saída.`
+      );
+    }
+
+    function enviarNotificacao(titulo, mensagem) {
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'SHOW_NOTIFICATION',
+          titulo: titulo,
+          mensagem: mensagem
+        });
+      } else {
+        new Notification(titulo, { body: mensagem, icon: './icone.png' });
+      }
+    }
+
+    /* -----------------------------
+    INICIALIZAÇÃO
+    ----------------------------- */
+    atualizar();
+    setInterval(atualizar, TEMPO_ATUALIZACAO);
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(() => console.log('App pronto para funcionar offline!'))
+          .catch(err => console.log('Erro no Service Worker:', err));
+      });
+    }
+  </script>
 </body>
 </html>
