@@ -1106,7 +1106,12 @@
     function formatarTempo(min) {
       return "⏳ Faltam " + formatarHoraMinuto(min);
     }
-
+    
+    function preposicaoPonto(nome) {
+      const masculinos = ["RU 1", "RU 2", "CAD 1", "IGC", "Ponto final"];
+      return masculinos.includes(nome) ? "no" : "na";
+    }
+    
     function distancia(lat1, lon1, lat2, lon2) {
       const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1565,7 +1570,7 @@
           seloProximoHtml = `<span class="selo-proximo">Próximo</span>`;
         }
 
-        let iconeComboio = "🚌".repeat(qtd);
+        let iconeComboio = `<span style="letter-spacing: 4px;">${"🚌".repeat(qtd)}</span>`;
         let textoHtml = "";
         if (tipo === "passagem" && origem.includes("Moradia")) {
           textoHtml = `<b>${hora}</b> — <span class="tag-passagem">Passando na Moradia</span> <span style="font-size:12px;" title="${qtd} veículo(s)">${iconeComboio}</span> ${seloProximoHtml}`;
@@ -1693,7 +1698,7 @@
         let infoFav = buscarProximoNoPonto(pontoFavorito, false);
         boxMeuPonto.style.display = "block";
         if (infoFav) {
-          boxMeuPonto.innerHTML = `⭐ Passa em <b>${pontoFavorito}</b> às <b>${infoFav.horaChegada}</b> (faltam <b>${formatarHoraMinuto(infoFav.espera)}</b>)`;
+          boxMeuPonto.innerHTML = `⭐ Passa ${preposicaoPonto(pontoFavorito)} <b>${pontoFavorito}</b> às <b>${infoFav.horaChegada}</b> (faltam <b>${formatarHoraMinuto(infoFav.espera)}</b>)`;
         } else {
           boxMeuPonto.innerHTML = `⭐ <b>${pontoFavorito}:</b> Sem mais passagens previstas para hoje.`;
         }
@@ -1747,7 +1752,7 @@
       }
 
       if (proximo) {
-        let iconesBus = "🚌".repeat(proximo.qtd);
+        let iconesBus = `<span style="letter-spacing: 4px; margin-right: 2px;">${"🚌".repeat(proximo.qtd)}</span>`;
         let qtdTexto = proximo.qtd > 1 ? `${iconesBus} ${proximo.qtd} veículos` : `${iconesBus} 1 veículo`;
         document.getElementById("qtd-onibus").innerHTML = qtdTexto;
         document.getElementById("qtd-onibus").style.display = "inline-block";
