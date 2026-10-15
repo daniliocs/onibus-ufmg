@@ -1,4 +1,4 @@
-const CACHE_NAME = 'onibus-ufmg-v24';
+const CACHE_NAME = 'onibus-ufmg-v25';
 const ASSETS = [
   './',
   './index.html',
@@ -36,10 +36,16 @@ self.addEventListener('activate', (e) => {
 
 // 3. Interceptação de requisições: Estratégia Network-First (Rede primeiro, Cache como fallback offline)
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET' || e.request.url.includes('router.project-osrm.org')) {
+  // Ignora requisições que não sejam GET ou que sejam de APIs em tempo real (Rotas, Firebase e Clima)
+  if (
+    e.request.method !== 'GET' ||
+    e.request.url.includes('router.project-osrm.org') ||
+    e.request.url.includes('firebaseio.com') ||
+    e.request.url.includes('open-meteo.com')
+  ) {
     return;
   }
-
+  
   // Quando o usuário abre o site (HTML): sempre busca a versão mais recente na rede primeiro
   if (e.request.mode === 'navigate') {
     e.respondWith(
