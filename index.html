@@ -888,6 +888,7 @@
     <div class="hero-main">
       <div id="proximo"></div>
       <div id="tempo"></div>
+      
       <div class="hero-meta">
         <div id="origem"></div>
         <div id="qtd-onibus" style="display: none;"></div>
@@ -934,10 +935,12 @@
     <div style="font-size: 12px; font-weight: 600; color: #666; margin-top: 10px;">
       Avisar condição da viagem agora:
     </div>
-    <div class="botoes-ocorrencia">
-      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('🚗 Trânsito lento no trajeto')">🚗 Trânsito</button>
+    <div class="botoes-ocorrencia" style="grid-template-columns: 1fr 1fr;">
+      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('🚗 Trânsito lento / Engarrafamento')">🚗 Trânsito</button>
       <button class="btn-ocorrencia" onclick="enviarAlertaRapido('🌧️ Chuva forte / Alagamento')">🌧️ Chuva/Alag.</button>
-      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('👥 Ônibus muito lotado')">👥 Lotado</button>
+      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('🔧 Ônibus com defeito (pneu/mecânico)')">🔧 Com defeito</button>
+      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('🚨 Acidente / Via interditada')">🚨 Acidente</button>
+      <button class="btn-ocorrencia" style="grid-column: span 2;" onclick="enviarAlertaRapido('👥 Ônibus muito lotado')">👥 Ônibus muito lotado</button>
     </div>
   </div>
 
@@ -1069,7 +1072,7 @@
       {nome: "Farmácia", lat: -19.870094, lon: -43.968643},
       {nome: "Veterinária", lat: -19.871567, lon: -43.970531},
       {nome: "Odonto", lat: -19.872823, lon: -43.973524},
-      {nome: "Educação Física", lat: -19.876466, lon: -43.976137},
+      {nome: "Educação Física", lat: -19.874950, lon: -43.974250},
       {nome: "Unidade Admnistrativa II", lat: -19.863061, lon: -43.966889},
       {nome: "Rotatória", lat: -19.863364, lon: -43.964325}
     ];
@@ -2183,12 +2186,12 @@
 
 
 /* =================================================================
-    SISTEMA DE RASTREAMENTO EM TEMPO REAL + CLIMA + DIAGNÓSTICO DE ATRASO
+    SISTEMA DE RASTREAMENTO EM TEMPO REAL + CASCATA + RETENÇÃO DE GPS
     ================================================================= */
-    // 👇 COLE AQUI A URL DO SEU FIREBASE REALTIME DATABASE (sem barra no final)
     const FIREBASE_DB_URL = "https://morabus-ufmg-default-rtdb.firebaseio.com";
 
     let transmitindoWatchId = null;
+    let wakeLockAtivo = null;
     let idSessaoColaborador = localStorage.getItem('morabus_uid') || ('usr_' + Math.random().toString(36).substring(2, 9));
     localStorage.setItem('morabus_uid', idSessaoColaborador);
 
@@ -2206,7 +2209,65 @@
       qtdColaboradores: 0
     };
 
-    // 0. Guarda o clima real da Pampulha (atualizado a cada 10 min via Open-Meteo)
+    // Guarda atrasos do dia por horário (ex: {"06:45": 12}) para propagar atraso em cascata
+    let historicoAtrasosHoje = JSON.parse(localStorage.getItem('morabus_atrasos_dia') || '{}');
+
+    function registrarAtrasoDoHorario(horaStr, atrasoMin) {
+      let chaveHoje = obterChaveDataHoje();
+      if (historicoAtrasosHoje.data !== chaveHoje) {
+        historicoAtrasosHoje = { data: chaveHoje, mapa: {} };
+      }
+      if (!historicoAtrasosHoje.mapa) historicoAtrasosHoje.mapa = {};
+      historicoAtrasosHoje.mapa[horaStr] = Math.max(0, atrasoMin);
+      localStorage.setItem('morabus_atrasos_dia', JSON.stringify(historicoAtrasosHoje));
+    }
+
+    // Calcula se um horário futuro vai atrasar por cascata do ônibus anterior (< 30 min de intervalo)
+    function obterAtrasoPropagado(horaAlvoStr) {
+      let horarios = horariosHoje();
+      let idx = horarios.findIndex(h => h[0] === horaAlvoStr);
+      if (idx < 0) return 0;
+
+      // 1. Se este próprio horário é o que está ao vivo agora com atraso:
+      if (estadoAoVivoGlobal.ativo && estadoAoVivoGlobal.horarioViagem === horaAlvoStr) {
+        return Math.max(0, estadoAoVivoGlobal.atrasoMinutos);
+      }
+
+      // 2. Verifica o horário imediatamente anterior na tabela de hoje
+      if (idx > 0) {
+        let hAnterior = horarios[idx - 1];
+        let minAnterior = minutos(hAnterior[0]);
+        let minAlvo = minutos(horaAlvoStr);
+        let intervaloEntreSaidas = minAlvo - minAnterior;
+
+        // Só propaga se o horário seguinte for próximo (até 30 minutos depois)
+        if (intervaloEntreSaidas > 0 && intervaloEntreSaidas <= 30) {
+          let atrasoDoAnterior = 0;
+          if (estadoAoVivoGlobal.ativo && estadoAoVivoGlobal.horarioViagem === hAnterior[0]) {
+            atrasoDoAnterior = estadoAoVivoGlobal.atrasoMinutos;
+          } else if (historicoAtrasosHoje.data === obterChaveDataHoje() && historicoAtrasosHoje.mapa && historicoAtrasosHoje.mapa[hAnterior[0]]) {
+            atrasoDoAnterior = historicoAtrasosHoje.mapa[hAnterior[0]];
+          }
+
+          if (atrasoDoAnterior > 2) {
+            let rotaAnt = obterRota(hAnterior[1], hAnterior[2]);
+            let duracaoViagemAnt = rotaAnt[rotaAnt.length - 1].t; // ~20 a 22 min
+            let chegadaRealDoAnterior = minAnterior + duracaoViagemAnt + atrasoDoAnterior;
+
+            // Se o ônibus anterior vai terminar a rota depois (ou muito em cima) do horário de saída deste:
+            if (chegadaRealDoAnterior > minAlvo) {
+              return chegadaRealDoAnterior - minAlvo + 2; // +2 min de manobra/embarque
+            } else if (atrasoDoAnterior >= 5) {
+              // Propagação amortecida quando o intervalo absorve parte do atraso
+              return Math.max(0, atrasoDoAnterior - Math.max(0, intervaloEntreSaidas - duracaoViagemAnt));
+            }
+          }
+        }
+      }
+      return 0;
+    }
+
+    // 0. Clima real da Pampulha (Open-Meteo)
     let climaPampulha = { chovendo: false, chuvaForte: false, mm: 0 };
 
     function atualizarClimaPampulha() {
@@ -2225,39 +2286,33 @@
         .catch(() => {});
     }
 
-    // Diagnóstico inteligente do motivo do atraso (Chuva vs Rush vs Acidente)
     function diagnosticarCausaAtraso(atrasoMin, velocidadeKmh) {
       if (estadoAoVivoGlobal.alertaComunidade) {
         return estadoAoVivoGlobal.alertaComunidade.texto;
       }
       if (climaPampulha.chuvaForte) {
-        return `🌧️ Chuva forte na Pampulha (${climaPampulha.mm} mm) — atenção para retenções/alagamentos`;
+        return `🌧️ Chuva forte na Pampulha (${climaPampulha.mm} mm) — retenção na via`;
       }
       if (climaPampulha.chovendo) {
         return `🌦️ Pista molhada / Chuva na região causando lentidão`;
       }
 
       let agora = new Date();
-      let dia = agora.getDay(); // 5 = Sexta-feira
+      let dia = agora.getDay();
       let min = agora.getHours() * 60 + agora.getMinutes();
-      let picoManha = (min >= 410 && min <= 520); // 06:50 às 08:40
-      let picoTarde = (min >= 1000 && min <= 1170); // 16:40 às 19:30
+      let picoManha = (min >= 405 && min <= 520);
+      let picoTarde = (min >= 1000 && min <= 1170);
 
-      if (dia === 5 && picoTarde) {
-        return "🚗 Engarrafamento típico de sexta-feira no fim da tarde";
-      }
-      if (picoManha || picoTarde) {
-        return "🚗 Trânsito intenso de horário de pico no trajeto";
-      }
+      if (dia === 5 && picoTarde) return "🚗 Engarrafamento típico de sexta-feira à tarde";
+      if (picoManha || picoTarde) return "🚗 Trânsito intenso de horário de pico";
       if (velocidadeKmh > 0 && velocidadeKmh <= 6 && atrasoMin >= 6) {
-        return "🚨 Trânsito parado fora de hora (possível acidente ou via obstruída)";
+        return "🚨 Trânsito parado fora de hora (possível acidente ou defeito)";
       }
-
       return "⚠️ Trânsito lento no trajeto";
     }
 
-    // 1. Descobre qual viagem está acontecendo agora para comparar o atraso
-    function identificarViagemAtivaParaRastreio(lat, lon) {
+    // 1. Descobre qual viagem está acontecendo agora
+    function identificarViagemAtivaParaRastreio() {
       let agora = new Date();
       let atualMin = agora.getHours() * 60 + agora.getMinutes();
       let horarios = horariosHoje();
@@ -2265,15 +2320,39 @@
 
       for (let h of horarios) {
         let minSaida = minutos(h[0]);
-        if (atualMin >= (minSaida - 5) && atualMin <= (minSaida + 40)) {
+        if (atualMin >= (minSaida - 5) && atualMin <= (minSaida + 45)) {
           candidata = { hora: h[0], origem: h[1], tipo: h[2], minSaida: minSaida };
         }
       }
       return candidata;
     }
 
-    // 2. Calcula o atraso real comparando o ponto onde o ônibus está com o minuto previsto na rota
-    function calcularAtrasoReal(viagem, nomePontoAtual, distKm) {
+    // 2. CORREÇÃO DO BUG DO MCDONALD'S / CARLOS LUZ:
+    // Filtra os pontos da rota atual e evita pular para "Odonto" quando está na Av. Carlos Luz / Noraldino
+    function identificarPontoCorretoDoTrajeto(lat, lon, viagem) {
+      // Se o ônibus está no corredor externo (Fleming / Noraldino / McDonald's Carlos Luz)
+      // antes de entrar no campus (latitude mais ao sul que -19.8732 e a oeste de -43.9715, ou entre Moradia e Campus):
+      let distMoradia23 = distancia(lat, lon, -19.8661, -43.9845);
+      let distMcDonaldsCarlosLuz = distancia(lat, lon, -19.8742, -43.9722);
+      let distEdFisica = distancia(lat, lon, -19.87495, -43.97425);
+
+      // Se está próximo ao McDonald's da Carlos Luz ou na Rua Noraldino indo para a entrada da Educação Física:
+      if (distMcDonaldsCarlosLuz < 0.45 && lat < -19.8729) {
+        return { ponto: pontos.find(p => p.nome === "Educação Física"), dist: distEdFisica };
+      }
+
+      // Se está no meio do caminho pelo bairro Ouro Preto (entre Moradia e Carlos Luz, lon < -43.9765)
+      if (lon < -43.9765 && distMoradia23 > 0.35) {
+        // Se a viagem saiu da Moradia rumo ao campus, o próximo ponto é Educação Física
+        if (!viagem || viagem.origem.includes("Moradia")) {
+          return { ponto: pontos.find(p => p.nome === "Educação Física"), dist: distEdFisica };
+        }
+      }
+
+      return pontoMaisProximo(lat, lon);
+    }
+
+    function calcularAtrasoReal(viagem, nomePontoAtual) {
       if (!viagem) return 0;
       let rota = obterRota(viagem.origem, viagem.tipo);
       let itemRota = rota.find(r => r.p === nomePontoAtual);
@@ -2286,22 +2365,46 @@
       return atualMin - minutoPrevistoNestePonto;
     }
 
-    // 3. Liga / Desliga o compartilhamento de GPS de quem está no ônibus
-    function alternarTransmissaoOnibus() {
+    // Mantém o celular acordado em segundo plano enquanto compartilha o GPS (WakeLock API)
+    async function ativarWakeLock() {
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLockAtivo = await navigator.wakeLock.request('screen');
+        } catch (e) {}
+      }
+    }
+
+    function liberarWakeLock() {
+      if (wakeLockAtivo !== null) {
+        wakeLockAtivo.release().catch(() => {});
+        wakeLockAtivo = null;
+      }
+    }
+
+    // 3. Liga / Desliga o compartilhamento de GPS (e lembra no localStorage se der F5!)
+    function alternarTransmissaoOnibus(iniciarSilencioso = false) {
       const btn = document.getElementById("btnTransmitirOnibus");
 
-      if (transmitindoWatchId !== null) {
+      if (transmitindoWatchId !== null && !iniciarSilencioso) {
         pararTransmissaoOnibus();
         return;
       }
 
       if (!navigator.geolocation) {
-        alert("Seu navegador não suporta GPS.");
+        if (!iniciarSilencioso) alert("Seu navegador não suporta GPS.");
         return;
       }
 
+      localStorage.setItem('morabus_transmitindo_ativo', 'sim');
+      localStorage.setItem('morabus_transmitindo_inicio', String(Date.now()));
+      ativarWakeLock();
+
       btn.classList.add("transmitindo");
       btn.innerText = "🛑 Parar compartilhamento (Você está ao vivo)";
+
+      if (transmitindoWatchId !== null) {
+        navigator.geolocation.clearWatch(transmitindoWatchId);
+      }
 
       transmitindoWatchId = navigator.geolocation.watchPosition(
         (pos) => {
@@ -2309,28 +2412,35 @@
           let lon = pos.coords.longitude;
           let velKmh = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
 
-          let maisProx = pontoMaisProximo(lat, lon);
-          if (!maisProx.ponto || maisProx.dist > 3.0) {
-            alert("Você parece estar longe da rota das Moradias/UFMG. Transmissão encerrada.");
+          let viagem = identificarViagemAtivaParaRastreio();
+          let maisProx = identificarPontoCorretoDoTrajeto(lat, lon, viagem);
+
+          if (!maisProx.ponto || maisProx.dist > 3.5) {
             pararTransmissaoOnibus();
             return;
           }
 
-          let viagem = identificarViagemAtivaParaRastreio(lat, lon);
-          let atraso = calcularAtrasoReal(viagem, maisProx.ponto.nome, maisProx.dist);
+          let atraso = calcularAtrasoReal(viagem, maisProx.ponto.nome);
+          if (viagem && atraso > 0) {
+            registrarAtrasoDoHorario(viagem.hora, atraso);
+          }
+
+          // Encerra automaticamente após 40 minutos ou ao chegar no ponto final da rota
+          let inicioMs = Number(localStorage.getItem('morabus_transmitindo_inicio') || Date.now());
+          if (Date.now() - inicioMs > 40 * 60 * 1000) {
+            pararTransmissaoOnibus();
+            return;
+          }
 
           if (viagem) {
             let rota = obterRota(viagem.origem, viagem.tipo);
             let ultimoPontoRota = rota[rota.length - 1].p;
             let minAgora = new Date().getHours() * 60 + new Date().getMinutes();
-            if (maisProx.ponto.nome === ultimoPontoRota && maisProx.dist < 0.12 && minAgora > viagem.minSaida + 8) {
+            if (maisProx.ponto.nome === ultimoPontoRota && maisProx.dist < 0.10 && minAgora > viagem.minSaida + 10) {
               pararTransmissaoOnibus();
-              alert("🏁 Fim da rota detectado! Obrigado por compartilhar a viagem com a Moradia.");
               return;
             }
           }
-
-          if (FIREBASE_DB_URL.includes("SEU-PROJETO")) return;
 
           let payload = {
             lat: lat,
@@ -2348,19 +2458,24 @@
           fetch(`${FIREBASE_DB_URL}/telemetria/${idSessaoColaborador}.json`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          }).catch(() => {});
+            body: JSON.stringify(payload),
+            keepalive: true
+          }).then(() => lerDadosTempoRealDaNuvem()).catch(() => {});
         },
         () => {
-          alert("Não foi possível acessar o GPS do celular.");
+          if (!iniciarSilencioso) alert("Não foi possível acessar o GPS. Verifique se a localização está ativa.");
           pararTransmissaoOnibus();
         },
-        { enableHighAccuracy: true, maximumAge: 5000 }
+        { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
       );
     }
 
     function pararTransmissaoOnibus() {
       const btn = document.getElementById("btnTransmitirOnibus");
+      localStorage.removeItem('morabus_transmitindo_ativo');
+      localStorage.removeItem('morabus_transmitindo_inicio');
+      liberarWakeLock();
+
       if (transmitindoWatchId !== null) {
         navigator.geolocation.clearWatch(transmitindoWatchId);
         transmitindoWatchId = null;
@@ -2368,18 +2483,35 @@
       btn.classList.remove("transmitindo");
       btn.innerText = "🚌 Estou no ônibus (Compartilhar rota)";
 
-      if (!FIREBASE_DB_URL.includes("SEU-PROJETO")) {
-        fetch(`${FIREBASE_DB_URL}/telemetria/${idSessaoColaborador}.json`, { method: 'DELETE' }).catch(() => {});
+      fetch(`${FIREBASE_DB_URL}/telemetria/${idSessaoColaborador}.json`, { method: 'DELETE', keepalive: true })
+        .then(() => lerDadosTempoRealDaNuvem())
+        .catch(() => {});
+    }
+
+    // Se o usuário estava transmitindo e atualizou a página (F5) ou reabriu o app em menos de 35 min, religa sozinho!
+    function restaurarTransmissaoSeAtiva() {
+      let estavaAtivo = localStorage.getItem('morabus_transmitindo_ativo') === 'sim';
+      let inicioMs = Number(localStorage.getItem('morabus_transmitindo_inicio') || 0);
+      if (estavaAtivo && (Date.now() - inicioMs < 35 * 60 * 1000)) {
+        alternarTransmissaoOnibus(true);
+      } else if (estavaAtivo) {
+        pararTransmissaoOnibus();
       }
     }
 
-    // 4. Envia um alerta rápido (Trânsito, Chuva/Alagamento, Acidente, Lotado) válido por 25 minutos
-    function enviarAlertaRapido(textoAlerta) {
-      if (FIREBASE_DB_URL.includes("SEU-PROJETO")) {
-        alert("Configure a URL do Firebase na constante FIREBASE_DB_URL para ativar os alertas em nuvem!");
-        return;
+    // Quando o app volta do segundo plano, reativa o WakeLock e força atualização do GPS
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        if (localStorage.getItem('morabus_transmitindo_ativo') === 'sim') {
+          ativarWakeLock();
+          alternarTransmissaoOnibus(true);
+        }
+        lerDadosTempoRealDaNuvem();
       }
+    });
 
+    // 4. Envia alerta rápido (Trânsito, Chuva, Defeito, Acidente, Lotado)
+    function enviarAlertaRapido(textoAlerta) {
       let dadosAlerta = {
         texto: textoAlerta,
         horaEnvio: converterMinutosParaHHMM(new Date().getHours() * 60 + new Date().getMinutes()),
@@ -2396,10 +2528,8 @@
       });
     }
 
-    // 5. Lê a posição em tempo real e alertas da nuvem a cada 10 segundos para todos os usuários
+    // 5. Lê a nuvem a cada 10 segundos e atualiza atrasos e previsões
     function lerDadosTempoRealDaNuvem() {
-      if (FIREBASE_DB_URL.includes("SEU-PROJETO")) return;
-
       fetch(`${FIREBASE_DB_URL}/.json`)
         .then(r => r.json())
         .then(dados => {
@@ -2408,7 +2538,8 @@
 
           if (dados && dados.telemetria) {
             Object.values(dados.telemetria).forEach(t => {
-              if (t && t.timestamp && (agoraMs - t.timestamp < 90000)) {
+              // Aceita sinais dos últimos 2 minutos (120s) para aguentar oscilações de segundo plano
+              if (t && t.timestamp && (agoraMs - t.timestamp < 120000)) {
                 colaboradoresValidos.push(t);
               }
             });
@@ -2417,7 +2548,7 @@
           let alertaRecente = null;
           if (dados && dados.alertas_comunidade && dados.alertas_comunidade.ultimo) {
             let al = dados.alertas_comunidade.ultimo;
-            if (al.timestamp && (agoraMs - al.timestamp < 25 * 60 * 1000)) {
+            if (al.timestamp && (agoraMs - al.timestamp < 30 * 60 * 1000)) {
               alertaRecente = al;
             }
           }
@@ -2440,6 +2571,10 @@
               alertaComunidade: alertaRecente,
               qtdColaboradores: colaboradoresValidos.length
             };
+
+            if (maisRecente.horarioViagem && maisRecente.atrasoMinutos > 0) {
+              registrarAtrasoDoHorario(maisRecente.horarioViagem, maisRecente.atrasoMinutos);
+            }
           } else {
             estadoAoVivoGlobal.ativo = false;
             estadoAoVivoGlobal.alertaComunidade = alertaRecente;
@@ -2447,11 +2582,41 @@
           }
 
           renderizarBannerTempoReal();
+          aplicarAtrasosNosCardsPrincipais();
         })
         .catch(() => {});
     }
 
-    // 6. Atualiza a interface (Banner de Atraso + Diagnóstico + Pino Ao Vivo no Mapa)
+    // 6. Ajusta dinamicamente os horários de saída na Moradia e na Escola de Música se houver atraso/cascata!
+    function aplicarAtrasosNosCardsPrincipais() {
+      let agora = new Date();
+      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      let horarios = obterHorarios(agora);
+      if (horarios.length === 0) return;
+
+      let proxMoradia = horarios.find(h => minutos(h[0]) > atualMin && h[1].includes("Moradia") && h[2] !== "passagem");
+      let proxCampus = horarios.find(h => minutos(h[0]) > atualMin && h[1].includes("Escola"));
+
+      if (proxMoradia) {
+        let atrM = obterAtrasoPropagado(proxMoradia[0]);
+        if (atrM >= 2) {
+          let novaHoraM = converterMinutosParaHHMM(minutos(proxMoradia[0]) + atrM);
+          document.getElementById("horaProxMoradia").innerHTML = `<span style="text-decoration:line-through; opacity:0.5; font-size:14px;">${proxMoradia[0]}</span> ${novaHoraM}`;
+          document.getElementById("faltaProxMoradia").innerHTML = `<span style="color:#e67e22;">⚠️ +${atrM} min (em ${formatarHoraMinuto(minutos(proxMoradia[0]) + atrM - atualMin)})</span>`;
+        }
+      }
+
+      if (proxCampus) {
+        let atrC = obterAtrasoPropagado(proxCampus[0]);
+        if (atrC >= 2) {
+          let novaHoraC = converterMinutosParaHHMM(minutos(proxCampus[0]) + atrC);
+          document.getElementById("horaProxCampus").innerHTML = `<span style="text-decoration:line-through; opacity:0.5; font-size:14px;">${proxCampus[0]}</span> ${novaHoraC}`;
+          document.getElementById("faltaProxCampus").innerHTML = `<span style="color:#e67e22;">⚠️ +${atrC} min (em ${formatarHoraMinuto(minutos(proxCampus[0]) + atrC - atualMin)})</span>`;
+        }
+      }
+    }
+
+    // 7. Atualiza o Banner Ao Vivo + Mapa
     function renderizarBannerTempoReal() {
       const banner = document.getElementById("bannerTempoReal");
       const contador = document.getElementById("contadorColaboradores");
@@ -2511,15 +2676,16 @@
       }
     }
 
-    // Inicia o clima da Pampulha (a cada 10 min) e a leitura da nuvem (a cada 10 seg)
+    // Inicializações do rastreio inteligente
     atualizarClimaPampulha();
     setInterval(atualizarClimaPampulha, 600000);
 
+    restaurarTransmissaoSeAtiva();
     lerDadosTempoRealDaNuvem();
     setInterval(lerDadosTempoRealDaNuvem, TEMPO_ATUALIZACAO);
-  
 
 
+    
   </script>
 </body>
 </html>
