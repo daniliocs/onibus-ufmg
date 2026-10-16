@@ -882,6 +882,21 @@
     </select>
   </div>
 
+<!-- Painel de Monitoramento Inteligente e Notificação Ao Vivo (Estilo One UI / Live Activity) -->
+  <div class="favorito-bar" style="flex-direction: column; align-items: stretch; gap: 8px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 13px; font-weight: 700;">🛰️ Radares & Notificação Ao Vivo (One UI)</span>
+      <span id="statusRadarPermanente" style="font-size: 11px; font-weight: 700; color: #777;">Desativado</span>
+    </div>
+    <div style="font-size: 12px; color: #666; line-height: 1.35;">
+      Acompanha seu GPS na Moradia/UFMG, avisa sozinho se o ônibus do seu ponto atrasar e mostra a <b>barra de aproximação ao vivo</b> na tela de bloqueio.
+    </div>
+    <button id="btnRadarPermanente" onclick="alternarRadarPermanente()" style="margin-bottom: 0; padding: 9px 12px; font-size: 13px;">
+      🔔 Ativar GPS Contínuo e Barra Ao Vivo
+    </button>
+  </div>
+
+
   <!-- HERO CARD: Próximo Ônibus -->
   <div class="card hero-card">
     <h2>Próximo ônibus</h2>
@@ -2685,7 +2700,284 @@
     setInterval(lerDadosTempoRealDaNuvem, TEMPO_ATUALIZACAO);
 
 
-    
+
+/* =================================================================
+    RADAR PERMANENTE DE GPS + ALERTAS INTELIGENTES + BARRA AO VIVO (ONE UI)
+    ================================================================= */
+    let radarPermanenteWatchId = null;
+    let posicaoUsuarioRadar = { lat: null, lon: null, naRegiaoUFMGMoradia: false, naMoradia: false };
+    let alertasJaDisparadosHoje = JSON.parse(localStorage.getItem('morabus_alertas_auto_disp') || '{}');
+
+    function marcarAlertaAutomaticoDisparado(chaveUnica) {
+      let hoje = obterChaveDataHoje();
+      if (alertasJaDisparadosHoje.data !== hoje) {
+        alertasJaDisparadosHoje = { data: hoje, lista: [] };
+      }
+      if (!alertasJaDisparadosHoje.lista.includes(chaveUnica)) {
+        alertasJaDisparadosHoje.lista.push(chaveUnica);
+        localStorage.setItem('morabus_alertas_auto_disp', JSON.stringify(alertasJaDisparadosHoje));
+      }
+    }
+
+    function jaDisparouAlertaAutomatico(chaveUnica) {
+      let hoje = obterChaveDataHoje();
+      if (alertasJaDisparadosHoje.data !== hoje || !alertasJaDisparadosHoje.lista) return false;
+      return alertasJaDisparadosHoje.lista.includes(chaveUnica);
+    }
+
+    // Liga ou desliga o acompanhamento permanente de GPS + Notificação Ao Vivo
+    async function alternarRadarPermanente(iniciarSilencioso = false) {
+      const btn = document.getElementById("btnRadarPermanente");
+      const lbl = document.getElementById("statusRadarPermanente");
+
+      if (radarPermanenteWatchId !== null && !iniciarSilencioso) {
+        navigator.geolocation.clearWatch(radarPermanenteWatchId);
+        radarPermanenteWatchId = null;
+        localStorage.removeItem('morabus_radar_permanente');
+        btn.style.background = "#006633";
+        btn.innerText = "🔔 Ativar GPS Contínuo e Barra Ao Vivo";
+        lbl.innerText = "Desativado";
+        lbl.style.color = "#777";
+        fecharNotificacaoAoVivo();
+        return;
+      }
+
+      if (!("Notification" in window) || !navigator.geolocation) {
+        if (!iniciarSilencioso) alert("Seu navegador não suporta GPS ou Notificações em tempo real.");
+        return;
+      }
+
+      if (Notification.permission !== "granted") {
+        let perm = await Notification.requestPermission();
+        if (perm !== "granted") {
+          if (!iniciarSilencioso) alert("Permita as notificações para receber alertas de atraso e a barra ao vivo.");
+          return;
+        }
+      }
+
+      localStorage.setItem('morabus_radar_permanente', 'ativo');
+      ativarWakeLock();
+
+      btn.style.background = "#1565c0";
+      btn.innerText = "🛰️ Radar e Barra Ao Vivo Ativos (Toque p/ desligar)";
+      lbl.innerText = "🟢 Monitorando";
+      lbl.style.color = "#006633";
+
+      if (radarPermanenteWatchId !== null) {
+        navigator.geolocation.clearWatch(radarPermanenteWatchId);
+      }
+
+      radarPermanenteWatchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          let lat = pos.coords.latitude;
+          let lon = pos.coords.longitude;
+          posicaoUsuarioRadar.lat = lat;
+          posicaoUsuarioRadar.lon = lon;
+
+          let maisProx = pontoMaisProximo(lat, lon);
+          let distM1 = distancia(lat, lon, -19.8706, -43.9862);
+          let distM23 = distancia(lat, lon, -19.8661, -43.9845);
+
+          // Verifica se o estudante está nas Moradias ou dentro da UFMG (até 2,5 km de qualquer ponto)
+          posicaoUsuarioRadar.naMoradia = (distM1 < 0.35 || distM23 < 0.35);
+          posicaoUsuarioRadar.naRegiaoUFMGMoradia = (maisProx.ponto && maisProx.dist <= 2.5);
+
+          avaliarGatilhosInteligentesEBarraAoVivo();
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+      );
+    }
+
+    // Desenha a barra visual estilo Uber / Google Maps [━━━🚌━━━━⭕] para a One UI
+    function montarBarraProgressoVisual(porcentagem) {
+      const tamanhoTotal = 10;
+      let pos = Math.min(tamanhoTotal - 1, Math.max(0, Math.round((porcentagem / 100) * (tamanhoTotal - 1))));
+      let antes = "━".repeat(pos);
+      let depois = "─".repeat((tamanhoTotal - 1) - pos);
+      return `🟢${antes}🚌${depois}🏁`;
+    }
+
+    function fecharNotificacaoAoVivo() {
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'CLOSE_LIVE_NOTIFICATION' });
+      }
+    }
+
+    // Avalia atrasos, proximidade e atualiza a Notificação Ao Vivo a cada ciclo
+    function avaliarGatilhosInteligentesEBarraAoVivo() {
+      if (localStorage.getItem('morabus_radar_permanente') !== 'ativo') return;
+      if (!posicaoUsuarioRadar.naRegiaoUFMGMoradia) {
+        fecharNotificacaoAoVivo();
+        return;
+      }
+
+      let agora = new Date();
+      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      let horarios = horariosHoje();
+      if (horarios.length === 0) return;
+
+      // Define qual é o ponto-alvo do aluno (Ponto Favorito ou, se não tiver, o Ponto Mais Próximo do GPS)
+      let pontoAlvo = pontoFavorito;
+      if (!pontoAlvo && posicaoUsuarioRadar.lat) {
+        let mp = pontoMaisProximo(posicaoUsuarioRadar.lat, posicaoUsuarioRadar.lon);
+        if (mp.ponto) pontoAlvo = mp.ponto.nome;
+      }
+      if (!pontoAlvo) return;
+
+      let infoProx = buscarProximoNoPonto(pontoAlvo, false);
+
+      // GATILHO 1: Alerta de Atraso no Ponto Favorito (quando você está na UFMG ou na Moradia)
+      if (infoProx) {
+        let atrasoDaViagem = obterAtrasoPropagado(infoProx.horaSaidaOrigem);
+        if (estadoAoVivoGlobal.ativo && estadoAoVivoGlobal.horarioViagem === infoProx.horaSaidaOrigem) {
+          atrasoDaViagem = Math.max(atrasoDaViagem, estadoAoVivoGlobal.atrasoMinutos);
+        }
+
+        if (atrasoDaViagem >= 4 && infoProx.espera <= 35) {
+          let chaveAtraso = `atraso_${infoProx.horaSaidaOrigem}_${pontoAlvo}`;
+          if (!jaDisparouAlertaAutomatico(chaveAtraso)) {
+            marcarAlertaAutomaticoDisparado(chaveAtraso);
+            let novaHora = converterMinutosParaHHMM(infoProx.minChegada + atrasoDaViagem);
+            let motivo = diagnosticarCausaAtraso(atrasoDaViagem, estadoAoVivoGlobal.velocidadeKmh);
+            enviarNotificacao(
+              `⚠️ Ônibus atrasado (+${atrasoDaViagem} min)`,
+              `Previsão ${preposicaoPonto(pontoAlvo)}${pontoAlvo} mudou para ${novaHora}. Motivo: ${motivo}`
+            );
+          }
+        }
+
+        // GATILHO 2: Hora exata de sair caminhando (baseado na distância GPS real até o pontoAlvo)
+        let coordAlvo = pontos.find(p => p.nome === pontoAlvo);
+        if (coordAlvo && posicaoUsuarioRadar.lat) {
+          let distKm = distancia(posicaoUsuarioRadar.lat, posicaoUsuarioRadar.lon, coordAlvo.lat, coordAlvo.lon);
+          let minCaminhada = Math.max(1, Math.ceil((distKm * 1000) / VELOCIDADE_CAMINHADA_METROS_MIN));
+          let esperaComAtraso = infoProx.espera + atrasoDaViagem;
+
+          // Se faltam entre (minCaminhada + 1) e (minCaminhada + 3) minutos e o aluno está a mais de 80m do ponto:
+          if (distKm >= 0.08 && distKm <= 1.8 && esperaComAtraso >= minCaminhada && esperaComAtraso <= (minCaminhada + 2)) {
+            let chaveSaida = `sair_${infoProx.horaSaidaOrigem}_${pontoAlvo}`;
+            if (!jaDisparouAlertaAutomatico(chaveSaida)) {
+              marcarAlertaAutomaticoDisparado(chaveSaida);
+              enviarNotificacao(
+                `🚶 Hora de sair para o ponto!`,
+                `O ônibus passa ${preposicaoPonto(pontoAlvo)} ${pontoAlvo} em${esperaComAtraso} min (sua caminhada leva ~${minCaminhada} min).`
+              );
+            }
+          }
+        }
+      }
+
+      // GATILHO 3: Alerta crítico da comunidade (Ônibus com defeito / pneu furado / acidente / alagamento)
+      if (estadoAoVivoGlobal.alertaComunidade) {
+        let txt = estadoAoVivoGlobal.alertaComunidade.texto;
+        let chaveCom = `com_${estadoAoVivoGlobal.alertaComunidade.horaEnvio}_${txt}`;
+        if ((txt.includes("defeito") || txt.includes("Acidente") || txt.includes("Alagamento")) && !jaDisparouAlertaAutomatico(chaveCom)) {
+          marcarAlertaAutomaticoDisparado(chaveCom);
+          enviarNotificacao(
+            `🚨 Aviso Importante na Rota (${estadoAoVivoGlobal.alertaComunidade.horaEnvio})`,
+            txt
+          );
+        }
+      }
+
+      // GATILHO 4: Aviso de Último Ônibus da Noite (se o aluno estiver no Campus e não na Moradia)
+      let ultimoHorarioDia = horarios[horarios.length - 1];
+      if (ultimoHorarioDia && !posicaoUsuarioRadar.naMoradia) {
+        let minUlt = minutos(ultimoHorarioDia[0]);
+        let faltaUlt = minUlt - atualMin;
+        if (faltaUlt > 0 && faltaUlt <= 20) {
+          let chaveUlt = `ultimo_onibus_${ultimoHorarioDia[0]}`;
+          if (!jaDisparouAlertaAutomatico(chaveUlt)) {
+            marcarAlertaAutomaticoDisparado(chaveUlt);
+            enviarNotificacao(
+              `⚠️ Último ônibus saindo em ${faltaUlt} min!`,
+              `Você ainda está no campus. O último ônibus (${ultimoHorarioDia[0]}) sairá em breve!`
+            );
+          }
+        }
+      }
+
+      // ==============================================================
+      // BARRA AO VIVO ESTILO ONE UI / LIVE ACTIVITY (UBER / GOOGLE MAPS)
+      // ==============================================================
+      // Ativa quando há um ônibus em andamento ou faltando <= 15 min para chegar no ponto do aluno
+      if (infoProx && infoProx.espera <= 22) {
+        let atraso = obterAtrasoPropagado(infoProx.horaSaidaOrigem);
+        if (estadoAoVivoGlobal.ativo && estadoAoVivoGlobal.horarioViagem === infoProx.horaSaidaOrigem) {
+          atraso = Math.max(atraso, estadoAoVivoGlobal.atrasoMinutos);
+        }
+
+        let esperaReal = Math.max(0, infoProx.espera + atraso);
+        let horaRealChegada = converterMinutosParaHHMM(infoProx.minChegada + atraso);
+
+        // Calcula a porcentagem do trajeto concluído até o ponto do aluno
+        let progressoPct = Math.min(100, Math.max(5, Math.round(((22 - esperaReal) / 22) * 100)));
+        let barraVisual = montarBarraProgressoVisual(progressoPct);
+
+        let ondeEstaTexto = estadoAoVivoGlobal.ativo
+          ? `📍 Próx. ${preposicaoPonto(estadoAoVivoGlobal.pontoMaisProximo)} ${estadoAoVivoGlobal.pontoMaisProximo} (${estadoAoVivoGlobal.velocidadeKmh} km/h)`
+          : `🕒 Saída ${infoProx.origem}:${infoProx.horaSaidaOrigem}`;
+
+        let tagAtrasoTitulo = atraso >= 3 ? ` (+${atraso} min atraso)` : ``;
+        let tituloLive = esperaReal === 0
+          ? `🚌 Chegando agora ${preposicaoPonto(pontoAlvo)} ${pontoAlvo}!`
+          : `🚌 Chega em ${esperaReal} min • ${pontoAlvo}${tagAtrasoTitulo}`;
+
+        let corpoLive = `Chegada: ${horaRealChegada} • ${ondeEstaTexto}\n${barraVisual}`;
+
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type: 'UPDATE_LIVE_NOTIFICATION',
+            titulo: tituloLive,
+            corpo: corpoLive
+          });
+        }
+      } else {
+        fecharNotificacaoAoVivo();
+      }
+    }
+
+    // Restaura automaticamente o Radar Permanente sempre que o usuário abre o app
+    if (localStorage.getItem('morabus_radar_permanente') === 'ativo') {
+      alternarRadarPermanente(true);
+    }
+
+    setInterval(avaliarGatilhosInteligentesEBarraAoVivo, TEMPO_ATUALIZACAO);
+
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      let recarregando = false;
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!recarregando) {
+          recarregando = true;
+          window.location.reload();
+        }
+      });
+
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => {
+            reg.update();
+          })
+          .catch(err => console.log('Erro no Service Worker:', err));
+      });
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        atualizarRelogio();
+        atualizar();
+      }
+    });
+
+    window.addEventListener('pageshow', () => {
+      atualizarRelogio();
+      atualizar();
+    });
   </script>
 </body>
 </html>

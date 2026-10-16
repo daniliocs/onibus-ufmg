@@ -1,4 +1,4 @@
-const CACHE_NAME = 'onibus-ufmg-v26';
+const CACHE_NAME = 'onibus-ufmg-v27';
 const ASSETS = [
   './',
   './index.html',
@@ -80,25 +80,57 @@ self.addEventListener('fetch', (e) => {
 });
         
 
-// 4. Recebe comando do index.html para disparar Notificação
+// 4. Recebe comando do index.html para disparar Notificação Normal ou Notificação Ao Vivo (One UI)
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+  if (!event.data) return;
+
+  // CASO A: Notificação de Alerta Padrão (Vibra e faz som)
+  if (event.data.type === 'SHOW_NOTIFICATION') {
     const titulo = event.data.titulo || 'Ônibus Moradias UFMG';
     const opcoes = {
       body: event.data.mensagem,
       icon: './Morabus.png',
       badge: './Morabus.png',
       vibrate: [200, 100, 200],
-      tag: 'onibus-alerta',
+      tag: event.data.tag || 'onibus-alerta',
       renotify: true
     };
-
     self.registration.showNotification(titulo, opcoes);
+  }
+
+  // CASO B: Notificação Ao Vivo com Barra de Progresso (Atualiza em silêncio na tela de bloqueio / One UI)
+  if (event.data.type === 'UPDATE_LIVE_NOTIFICATION') {
+    const opcoesLive = {
+      body: event.data.corpo,
+      icon: './Morabus.png',
+      badge: './Morabus.png',
+      tag: 'morabus-live-activity',
+      renotify: false,
+      silent: true, // Atualiza o progresso a cada 10s sem tocar som nem vibrar
+      requireInteraction: true, // Mantém fixada na tela de bloqueio igual Uber/Maps
+      actions: [
+        { action: 'abrir', title: '🗺️ Ver Mapa' },
+        { action: 'parar_live', title: '✖️ Fechar barra' }
+      ]
+    };
+    self.registration.showNotification(event.data.titulo, opcoesLive);
+  }
+
+  // CASO C: Encerrar a Notificação Ao Vivo quando o ônibus chega
+  if (event.data.type === 'CLOSE_LIVE_NOTIFICATION') {
+    self.registration.getNotifications({ tag: 'morabus-live-activity' }).then((notifs) => {
+      notifs.forEach((n) => n.close());
+    });
   }
 });
 
-// 5. Ao tocar na notificação, fecha o alerta e abre/foca o app
+// 5. Ao tocar na notificação ou nos botões de ação
 self.addEventListener('notificationclick', (event) => {
+  if (event.action === 'parar_live') {
+    event.notification.close();
+    return;
+  }
+
   event.notification.close();
 
   event.waitUntil(
@@ -114,3 +146,4 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
