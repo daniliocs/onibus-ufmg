@@ -5,50 +5,43 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#006633">
+  <meta name="description" content="Horários em tempo real do ônibus das Moradias UFMG (Ouro Preto ↔ Campus Pampulha)">
 
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./Morabus.png">
   <link rel="apple-touch-icon" href="./Morabus.png">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 
   <title>Ônibus Moradias UFMG</title>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
     body {
       font-family: 'Inter', sans-serif;
-      margin: 0;
+      margin: 0 auto;
       padding: 16px;
       background: #f0f2f5;
       color: #333;
       max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
     }
 
     /* Cabeçalho estilo App */
-    .header-app {
-      text-align: center;
-      margin-bottom: 16px;
-    }
+    .header-app { text-align: center; margin-bottom: 16px; }
 
     h1 {
       color: #006633;
       font-size: 24px;
       font-weight: 800;
-      margin: 4px 0 4px 0;
+      margin: 4px 0;
       letter-spacing: -0.5px;
     }
 
-    .subtitulo-app {
-      font-size: 13px;
-      color: #666;
-      font-weight: 500;
-      margin-bottom: 10px;
-    }
+    .subtitulo-app { font-size: 13px; color: #666; font-weight: 500; margin-bottom: 10px; }
 
     .pilula-relogio {
       display: inline-flex;
@@ -79,12 +72,7 @@
       100% { opacity: 1; transform: scale(1); }
     }
 
-    .acoes-topo {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
+    .acoes-topo { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 
     .btn-topo {
       width: auto;
@@ -102,11 +90,7 @@
       gap: 6px;
     }
 
-    .btn-topo.instalar {
-      background: #006633;
-      color: white;
-      border-color: #006633;
-    }
+    .btn-topo.instalar { background: #006633; color: white; border-color: #006633; }
 
     /* Barra de Ponto Favorito */
     .favorito-bar {
@@ -122,12 +106,7 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
 
-    .favorito-bar label {
-      font-size: 13px;
-      font-weight: 700;
-      color: #444;
-      white-space: nowrap;
-    }
+    .favorito-bar label { font-size: 13px; font-weight: 700; color: #444; white-space: nowrap; }
 
     .favorito-select {
       flex: 1;
@@ -142,6 +121,23 @@
       outline: none;
     }
 
+    .radar-bar { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px; }
+    .radar-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .radar-titulo { font-size: 14px; font-weight: 700; white-space: nowrap; }
+    .radar-descricao { font-size: 12px; color: #888; line-height: 1.4; }
+
+    #statusRadarPermanente {
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      background: rgba(128,128,128,0.15);
+      padding: 4px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+
+    #statusRadarPermanente.ativo { color: #16a34a; background: rgba(74, 222, 128, 0.15); }
+
     /* Cards Gerais e Hero Card */
     .card {
       background: white;
@@ -152,10 +148,7 @@
       border: 1px solid #e1e4e8;
     }
 
-    .hero-card {
-      border-top: 4px solid #006633;
-      box-shadow: 0 6px 18px rgba(0,102,51,0.08);
-    }
+    .hero-card { border-top: 4px solid #006633; box-shadow: 0 6px 18px rgba(0,102,51,0.08); }
 
     .card-header-flex {
       display: flex;
@@ -168,40 +161,31 @@
     }
 
     .card h2 {
-      margin: 0;
+      margin: 0 0 15px 0;
       font-size: 17px;
       color: #444;
       border-bottom: 2px solid #f0f2f5;
       padding-bottom: 10px;
-      margin-bottom: 15px;
       text-transform: uppercase;
       letter-spacing: 0.4px;
     }
 
-    .card-header-flex h2 {
-      border-bottom: none;
-      padding-bottom: 0;
-      margin-bottom: 0;
-    }
+    .card-header-flex h2 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
 
-    .hero-main {
-      text-align: center;
-      padding: 6px 0 4px 0;
-    }
+    .hero-main { text-align: center; padding: 6px 0 4px 0; }
 
-    #proximo {
-      font-size: 40px;
-      font-weight: 800;
-      color: #006633;
-      margin: 4px 0;
-      line-height: 1.15;
-    }
+    #proximo { font-size: 40px; font-weight: 800; color: #006633; margin: 4px 0; line-height: 1.15; }
+    #tempo { font-size: 18px; font-weight: 700; color: #e67e22; margin-top: 6px; }
 
-    #tempo {
-      font-size: 18px;
-      font-weight: 700;
-      color: #e67e22;
-      margin-top: 6px;
+    .etiqueta-ultimo {
+      background: #cc0000;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 8px;
     }
 
     .hero-meta {
@@ -213,10 +197,7 @@
       margin-top: 10px;
     }
 
-    #origem {
-      font-size: 14px;
-      color: #666;
-    }
+    #origem { font-size: 14px; color: #666; }
 
     #qtd-onibus {
       display: inline-block;
@@ -228,7 +209,6 @@
       color: #006633;
     }
 
-    /* Destaque do Ponto Favorito dentro do Hero Card */
     .box-meu-ponto {
       margin-top: 14px;
       background: #fffbeb;
@@ -260,37 +240,18 @@
       text-align: center;
     }
 
-    .box-sentido:active {
-      transform: scale(0.98);
-    }
+    .box-sentido:active { transform: scale(0.98); }
+    .box-sentido:focus-visible { outline: 2px solid #006633; outline-offset: 2px; }
 
-    .box-sentido-titulo {
-      font-size: 12px;
-      font-weight: 600;
-      color: #666;
-      margin-bottom: 4px;
-    }
+    .box-sentido-titulo { font-size: 12px; font-weight: 600; color: #666; margin-bottom: 4px; }
+    .box-sentido-hora { font-size: 20px; font-weight: 800; color: #222; }
+    .box-sentido-falta { font-size: 12px; font-weight: 600; color: #006633; margin-top: 2px; }
 
-    .box-sentido-hora {
-      font-size: 20px;
-      font-weight: 800;
-      color: #222;
-    }
-
-    .box-sentido-falta {
-      font-size: 12px;
-      font-weight: 600;
-      color: #006633;
-      margin-top: 2px;
-    }
+    .hora-riscada { text-decoration: line-through; opacity: 0.5; font-size: 14px; }
+    .texto-atraso { color: #e67e22; }
 
     /* Linha do tempo visual para as chegadas */
-    #infoViagem {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 14px;
-      line-height: 1.4;
-    }
+    #infoViagem { font-size: 14px; color: #666; margin-bottom: 14px; line-height: 1.4; }
 
     .badge-andamento {
       display: inline-block;
@@ -302,6 +263,8 @@
       border-radius: 12px;
       margin-bottom: 6px;
     }
+
+    .badge-andamento.simulado { background: #e3f2fd; color: #1565c0; }
 
     #chegadas {
       list-style: none;
@@ -335,32 +298,11 @@
       border-radius: 50%;
     }
 
-    #chegadas li.ponto-concluido {
-      opacity: 0.45;
-    }
-
-    #chegadas li.ponto-concluido::before {
-      background: #006633;
-      border-color: #006633;
-    }
-
-    #chegadas li.ponto-atual {
-      font-weight: 700;
-      color: #006633;
-      background: #f0fdf4;
-    }
-
-    #chegadas li.ponto-atual::before {
-      background: #e67e22;
-      border-color: #e67e22;
-      transform: scale(1.2);
-    }
-
-    #chegadas li.ponto-favorito-destaque {
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      font-weight: 700;
-    }
+    #chegadas li.ponto-concluido { opacity: 0.45; }
+    #chegadas li.ponto-concluido::before { background: #006633; border-color: #006633; }
+    #chegadas li.ponto-atual { font-weight: 700; color: #006633; background: #f0fdf4; }
+    #chegadas li.ponto-atual::before { background: #e67e22; border-color: #e67e22; transform: scale(1.2); }
+    #chegadas li.ponto-favorito-destaque { background: #fffbeb; border: 1px solid #fde68a; font-weight: 700; }
 
     .link-maps-ponto {
       text-decoration: none;
@@ -373,6 +315,8 @@
       white-space: nowrap;
       flex-shrink: 0;
     }
+
+    .link-acao { font-size: 12px; color: #006633; font-weight: 600; margin-left: 6px; }
 
     /* Seletor de Grade (Dias Úteis / Sábado) */
     .abas-grade {
@@ -396,11 +340,7 @@
       box-shadow: none;
     }
 
-    .btn-aba-grade.ativa {
-      background: white;
-      color: #006633;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-    }
+    .btn-aba-grade.ativa { background: white; color: #006633; box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
 
     .aviso-grade-diferente {
       font-size: 12px;
@@ -414,11 +354,7 @@
     }
 
     /* Lista de horários do dia */
-    #lista {
-      list-style-type: none;
-      padding: 0;
-      margin: 0;
-    }
+    #lista { list-style-type: none; padding: 0; margin: 0; }
 
     #lista li {
       padding: 12px 8px;
@@ -432,13 +368,8 @@
       border-radius: 8px;
     }
 
-    #lista li:last-child {
-      border-bottom: none;
-    }
-
-    #lista li.horario-passado {
-      opacity: 0.42;
-    }
+    #lista li:last-child { border-bottom: none; }
+    #lista li.horario-passado { opacity: 0.42; }
 
     #lista li.horario-proximo {
       background: #f0fdf4;
@@ -459,41 +390,21 @@
       vertical-align: middle;
     }
 
-    .info-horario-clicavel {
-      cursor: pointer;
-      flex: 1;
-    }
+    .info-horario-clicavel { cursor: pointer; flex: 1; }
+    .icones-comboio { font-size: 12px; letter-spacing: 4px; }
 
     /* Tags de cores */
-    .tag-moradia {
+    .tag-moradia, .tag-escola, .tag-passagem {
       font-weight: 700;
-      color: #006633;
-      background: #e8f5e9;
       padding: 2px 8px;
       border-radius: 6px;
       display: inline-block;
       font-size: 13px;
     }
 
-    .tag-escola {
-      font-weight: 700;
-      color: #1565c0;
-      background: #e3f2fd;
-      padding: 2px 8px;
-      border-radius: 6px;
-      display: inline-block;
-      font-size: 13px;
-    }
-
-    .tag-passagem {
-      font-weight: 700;
-      color: #e65100;
-      background: #ffe0b2;
-      padding: 2px 8px;
-      border-radius: 6px;
-      display: inline-block;
-      font-size: 13px;
-    }
+    .tag-moradia { color: #006633; background: #e8f5e9; }
+    .tag-escola { color: #1565c0; background: #e3f2fd; }
+    .tag-passagem { color: #e65100; background: #ffe0b2; }
 
     /* Botão Padrão */
     button {
@@ -501,6 +412,7 @@
       padding: 12px 14px;
       font-size: 16px;
       font-weight: 600;
+      font-family: inherit;
       border: none;
       border-radius: 8px;
       background: #006633;
@@ -511,22 +423,15 @@
       box-shadow: 0 4px 6px rgba(0,102,51,0.2);
     }
 
-    button:active {
-      transform: scale(0.98);
-    }
+    button:active { transform: scale(0.98); }
+    button.perigo { background: #cc0000; }
+    button.radar-ativo { background: #1565c0; }
 
-    .btn-volta {
-      background: #e67e22;
-      box-shadow: 0 4px 6px rgba(230,126,34,0.2);
-    }
+    #btnRadarPermanente { margin-bottom: 0; padding: 10px 12px; font-size: 14px; }
 
-    /* Botões de Filtro e Ocultar Passados */
-    .filtros-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 15px;
-    }
+    .btn-volta { background: #e67e22; box-shadow: 0 4px 6px rgba(230,126,34,0.2); }
+
+    .filtros-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
 
     .btn-filtro {
       width: auto;
@@ -540,10 +445,7 @@
       box-shadow: none;
     }
 
-    .btn-filtro.ativo {
-      background: #006633;
-      color: white;
-    }
+    .btn-filtro.ativo { background: #006633; color: white; }
 
     .btn-ocultar-passados {
       width: auto;
@@ -557,7 +459,6 @@
       box-shadow: none;
     }
 
-    /* Botão do Alarme (Relógio) */
     .btn-alarme {
       width: auto;
       padding: 6px 10px;
@@ -570,13 +471,8 @@
       flex-shrink: 0;
     }
 
-    .btn-alarme.agendado {
-      background: #e8f5e9;
-      color: #006633;
-      border: 1px solid #006633;
-    }
+    .btn-alarme.agendado { background: #e8f5e9; color: #006633; border: 1px solid #006633; }
 
-    /* Caixa de Recomendação de Caminhada ("Quando devo sair?") */
     .card-caminhada {
       margin-top: 12px;
       padding: 12px;
@@ -587,21 +483,17 @@
       line-height: 1.5;
     }
 
-    #gps, #resultadoVolta {
-      font-size: 14px;
-      line-height: 1.5;
-      color: #555;
-    }
+    .txt-erro { color: #e53935; font-weight: 600; }
+    .txt-alerta { color: #e67e22; font-weight: 700; }
+    .txt-ok { color: #006633; font-weight: 700; }
+    .destaque-espera { font-size: 20px; font-weight: bold; color: #e67e22; }
+    .destaque-espera.verde { color: #006633; }
 
-    .texto-subtitulo {
-      font-size: 14px;
-      color: #555;
-      margin-top: 0;
-    }
+    #gps, #resultadoVolta { font-size: 14px; line-height: 1.5; color: #555; }
 
-    .texto-dia-seguinte {
-      color: #333;
-    }
+    .texto-subtitulo { font-size: 14px; color: #555; margin-top: 0; }
+    .texto-dia-seguinte { color: #333; font-size: 22px; margin-top: 10px; display: block; }
+    .msg-sem-onibus { font-size: 20px; color: #e53935; }
 
     #mapa, #mapaVolta {
       height: 300px;
@@ -614,17 +506,13 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    .rodape-compartilhar {
-      text-align: center;
-      padding: 15px 10px 25px 10px;
-      font-size: 13px;
-      color: #777;
-    }
-/* --- CARD COLABORATIVO (WAZE DO MORABUS) --- */
-    .card-waze {
-      border: 2px solid #006633;
-      background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
-    }
+    .rodape-compartilhar { text-align: center; padding: 15px 10px 25px 10px; font-size: 13px; color: #777; }
+    .rodape-compartilhar a { color: #006633; font-weight: 600; }
+
+    /* --- CARD COLABORATIVO --- */
+    .card-waze { border: 2px solid #006633; background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%); }
+
+    #contadorColaboradores { font-size: 12px; font-weight: 700; color: #006633; }
 
     .status-ao-vivo-banner {
       display: none;
@@ -636,27 +524,13 @@
       line-height: 1.4;
     }
 
-    .status-no-horario {
-      background: #e8f5e9;
-      color: #006633;
-      border: 1px solid #a7f3d0;
-    }
+    .status-ao-vivo-banner hr { border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 6px 0; }
 
-    .status-atrasado {
-      background: #fef2f2;
-      color: #b91c1c;
-      border: 1px solid #fecaca;
-    }
+    .status-no-horario { background: #e8f5e9; color: #006633; border: 1px solid #a7f3d0; }
+    .status-atrasado { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 
-    .btn-transmitir {
-      background: #006633;
-      margin-bottom: 8px;
-    }
-
-    .btn-transmitir.transmitindo {
-      background: #dc2626;
-      animation: pulsarBotao 2s infinite;
-    }
+    .btn-transmitir { background: #006633; margin-bottom: 8px; }
+    .btn-transmitir.transmitindo { background: #dc2626; animation: pulsarBotao 2s infinite; }
 
     @keyframes pulsarBotao {
       0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5); }
@@ -664,12 +538,9 @@
       100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
     }
 
-    .botoes-ocorrencia {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 6px;
-      margin-top: 8px;
-    }
+    .rotulo-ocorrencia { font-size: 12px; font-weight: 600; color: #666; margin-top: 10px; }
+
+    .botoes-ocorrencia { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
 
     .btn-ocorrencia {
       padding: 8px 6px;
@@ -683,172 +554,69 @@
       box-shadow: none;
     }
 
+    .btn-ocorrencia.largo { grid-column: span 2; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ponto-pulsante, .btn-transmitir.transmitindo { animation: none; }
+    }
+
     /* --- MODO ESCURO AUTOMÁTICO --- */
     @media (prefers-color-scheme: dark) {
-      body {
-        background: #121212;
-        color: #e0e0e0;
-      }
-
+      body { background: #121212; color: #e0e0e0; }
       .subtitulo-app { color: #aaa; }
-
-      .pilula-relogio {
-        background: #1a3320;
-        color: #4ade80;
-        border-color: #264d30;
-      }
+      .pilula-relogio { background: #1a3320; color: #4ade80; border-color: #264d30; }
       .ponto-pulsante { background: #4ade80; }
-
-      .favorito-bar {
-        background: #1e1e1e;
-        border-color: #333;
-      }
+      .favorito-bar { background: #1e1e1e; border-color: #333; }
       .favorito-bar label { color: #e0e0e0; }
-      .favorito-select {
-        background: #2a2a2a;
-        border-color: #444;
-        color: #f0f0f0;
-      }
-
-      .card {
-        background: #1e1e1e;
-        border-color: #333;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      }
-
-      .hero-card {
-        border-top-color: #4ade80;
-      }
-
-      .card h2, .card-header-flex {
-        color: #e0e0e0;
-        border-bottom-color: #333;
-      }
-
-      .btn-topo {
-        background: #1e1e1e;
-        color: #4ade80;
-        border-color: #333;
-      }
-
-      .btn-topo.instalar {
-        background: #4ade80;
-        color: #121212;
-        border-color: #4ade80;
-      }
-
-      .box-meu-ponto {
-        background: #2e2412;
-        border-color: #6b4c1b;
-        color: #fcd34d;
-      }
-
+      .favorito-select { background: #2a2a2a; border-color: #444; color: #f0f0f0; }
+      #statusRadarPermanente.ativo { color: #4ade80; }
+      .card { background: #1e1e1e; border-color: #333; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+      .hero-card { border-top-color: #4ade80; }
+      .card h2, .card-header-flex { color: #e0e0e0; border-bottom-color: #333; }
+      .btn-topo { background: #1e1e1e; color: #4ade80; border-color: #333; }
+      .btn-topo.instalar { background: #4ade80; color: #121212; border-color: #4ade80; }
+      .box-meu-ponto { background: #2e2412; border-color: #6b4c1b; color: #fcd34d; }
       .resumo-sentidos { border-top-color: #333; }
-      .box-sentido {
-        background: #262626;
-        border-color: #383838;
-      }
+      .box-sentido { background: #262626; border-color: #383838; }
       .box-sentido-titulo { color: #aaa; }
       .box-sentido-hora { color: #f0f0f0; }
       .box-sentido-falta { color: #4ade80; }
-
       .texto-dia-seguinte { color: #e0e0e0; }
-
       h1, #proximo { color: #4ade80; }
       #tempo { color: #fbbf24; }
-      #origem, #gps, #resultadoVolta, #infoViagem, .texto-subtitulo { color: #aaa; }
-
-      .badge-andamento {
-        background: #1a3320;
-        color: #4ade80;
-      }
-
+      #origem, #gps, #resultadoVolta, #infoViagem, .texto-subtitulo, .rotulo-ocorrencia { color: #aaa; }
+      .txt-ok, .destaque-espera.verde, .link-acao, .rodape-compartilhar a { color: #4ade80; }
+      .badge-andamento { background: #1a3320; color: #4ade80; }
+      .badge-andamento.simulado { background: #0d2a4a; color: #64b5f6; }
       #chegadas { border-left-color: #444; }
       #chegadas li { color: #ccc; }
-      #chegadas li::before {
-        background: #1e1e1e;
-        border-color: #666;
-      }
-      #chegadas li.ponto-concluido::before {
-        background: #4ade80;
-        border-color: #4ade80;
-      }
-      #chegadas li.ponto-atual {
-        color: #4ade80;
-        background: #162a1d;
-      }
-      #chegadas li.ponto-favorito-destaque {
-        background: #2e2412;
-        border-color: #6b4c1b;
-        color: #fcd34d;
-      }
-      .link-maps-ponto {
-        background: #2a2a2a;
-        color: #4ade80;
-      }
-
+      #chegadas li::before { background: #1e1e1e; border-color: #666; }
+      #chegadas li.ponto-concluido::before { background: #4ade80; border-color: #4ade80; }
+      #chegadas li.ponto-atual { color: #4ade80; background: #162a1d; }
+      #chegadas li.ponto-favorito-destaque { background: #2e2412; border-color: #6b4c1b; color: #fcd34d; }
+      .link-maps-ponto { background: #2a2a2a; color: #4ade80; }
       .abas-grade { background: #141414; }
       .btn-aba-grade { color: #999; }
-      .btn-aba-grade.ativa {
-        background: #2a2a2a;
-        color: #4ade80;
-      }
-      .aviso-grade-diferente {
-        background: #0d2a4a;
-        color: #64b5f6;
-      }
-
+      .btn-aba-grade.ativa { background: #2a2a2a; color: #4ade80; }
+      .aviso-grade-diferente { background: #0d2a4a; color: #64b5f6; }
       #lista li { color: #ccc; border-bottom-color: #333; }
-      #lista li.horario-proximo {
-        background: #162a1d;
-        border-left-color: #4ade80;
-      }
-
-      .selo-proximo {
-        background: #4ade80;
-        color: #121212;
-      }
-
-      .card-caminhada {
-        background: #262626;
-        border-color: #383838;
-        color: #ddd;
-      }
-
+      #lista li.horario-proximo { background: #162a1d; border-left-color: #4ade80; }
+      .selo-proximo { background: #4ade80; color: #121212; }
+      .card-caminhada { background: #262626; border-color: #383838; color: #ddd; }
       #mapa, #mapaVolta { border-color: #333; }
-
-      #qtd-onibus {
-        background: #1a3320;
-        color: #4ade80;
-      }
-
+      #qtd-onibus { background: #1a3320; color: #4ade80; }
       .tag-moradia { background: #1a3320; color: #4ade80; }
       .tag-escola { background: #0d2a4a; color: #64b5f6; }
       .tag-passagem { background: #3e2723; color: #ffb74d; }
-
       .btn-filtro, .btn-alarme, .btn-ocultar-passados { background: #333; color: #ccc; }
       .btn-filtro.ativo { background: #4ade80; color: #121212; }
-      .btn-alarme.agendado {
-        background: #1a3320;
-        color: #4ade80;
-        border-color: #4ade80;
-      }
-
-      .card-waze { 
-        background: #18241b; border-color: #4ade80; 
-      }
-
-      .status-no-horario { 
-        background: #1a3320; color: #4ade80; border-color: #264d30; 
-      }
-
-      .status-atrasado { 
-        background: #3b1818; color: #fca5a5; border-color: #7f1d1d;
-       }
-
-      .btn-ocorrencia { 
-        background: #2a2a2a; color: #e0e0e0; border-color: #444; 
-      }
+      .btn-alarme.agendado { background: #1a3320; color: #4ade80; border-color: #4ade80; }
+      .card-waze { background: #18241b; border-color: #4ade80; }
+      #contadorColaboradores { color: #4ade80; }
+      .status-no-horario { background: #1a3320; color: #4ade80; border-color: #264d30; }
+      .status-atrasado { background: #3b1818; color: #fca5a5; border-color: #7f1d1d; }
+      .status-ao-vivo-banner hr { border-top-color: rgba(255,255,255,0.15); }
+      .btn-ocorrencia { background: #2a2a2a; color: #e0e0e0; border-color: #444; }
     }
   </style>
 </head>
@@ -882,47 +650,43 @@
     </select>
   </div>
 
-<!-- Painel de Monitoramento Inteligente e Notificação Ao Vivo -->
-  <div class="favorito-bar" style="flex-direction: column; align-items: stretch; gap: 10px; padding: 14px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-      <span style="font-size: 14px; font-weight: 700; white-space: nowrap;">🛰️ Radar & Barra Ao Vivo</span>
-      <span id="statusRadarPermanente" style="font-size: 11px; font-weight: 700; color: #888; background: rgba(128,128,128,0.15); padding: 4px 10px; border-radius: 12px; white-space: nowrap;">
-        ⚪ Desativado
-      </span>
+  <!-- Painel de Monitoramento Inteligente e Notificação Ao Vivo -->
+  <div class="favorito-bar radar-bar">
+    <div class="radar-topo">
+      <span class="radar-titulo">🛰️ Radar & Barra Ao Vivo</span>
+      <span id="statusRadarPermanente">⚪ Desativado</span>
     </div>
-    <div style="font-size: 12px; color: #888; line-height: 1.4;">
-      Acompanha seu GPS na Moradia/UFMG, avisa sozinho se o ônibus do seu ponto atrasar e mostra a <b>barra de aproximação ao vivo</b> na tela de bloqueio.
+    <div class="radar-descricao">
+      Enquanto o app estiver <b>aberto na tela</b>, acompanha seu GPS, avisa se o ônibus do seu ponto atrasar,
+      quando sair caminhando e mostra uma <b>notificação de aproximação ao vivo</b>.
     </div>
-    <button id="btnRadarPermanente" onclick="alternarRadarPermanente()" style="margin-bottom: 0; padding: 10px 12px; font-size: 14px;">
-      🔔 Ativar GPS Contínuo e Barra Ao Vivo
+    <button id="btnRadarPermanente" onclick="alternarRadarPermanente()">
+      🔔 Ativar Radar e Barra Ao Vivo
     </button>
   </div>
-
 
   <!-- HERO CARD: Próximo Ônibus -->
   <div class="card hero-card">
     <h2>Próximo ônibus</h2>
-    <div class="hero-main">
+    <div class="hero-main" aria-live="polite">
       <div id="proximo"></div>
       <div id="tempo"></div>
-      
+
       <div class="hero-meta">
         <div id="origem"></div>
         <div id="qtd-onibus" style="display: none;"></div>
       </div>
     </div>
 
-    <!-- Previsão personalizada caso o usuário tenha escolhido um Ponto Favorito -->
     <div id="boxMeuPonto" class="box-meu-ponto" style="display: none;"></div>
 
-    <!-- Painel Duplo: Próximo de cada sentido -->
     <div id="painelSentidos" class="resumo-sentidos" style="display: none;">
-      <div class="box-sentido" id="boxProxMoradia" title="Toque para ver a chegada nos pontos">
+      <div class="box-sentido" id="boxProxMoradia" role="button" tabindex="0" title="Toque para ver a chegada nos pontos">
         <div class="box-sentido-titulo">🏠 Saindo da Moradia</div>
         <div class="box-sentido-hora" id="horaProxMoradia">--:--</div>
         <div class="box-sentido-falta" id="faltaProxMoradia"></div>
       </div>
-      <div class="box-sentido" id="boxProxCampus" title="Toque para ver a chegada nos pontos">
+      <div class="box-sentido" id="boxProxCampus" role="button" tabindex="0" title="Toque para ver a chegada nos pontos">
         <div class="box-sentido-titulo">🎓 Saindo do Campus</div>
         <div class="box-sentido-hora" id="horaProxCampus">--:--</div>
         <div class="box-sentido-falta" id="faltaProxCampus"></div>
@@ -930,34 +694,30 @@
     </div>
   </div>
 
-
-  <!-- CARD COLABORATIVO: Rastreamento em Tempo Real e Alertas de Trânsito/Chuva -->
+  <!-- CARD COLABORATIVO -->
   <div class="card card-waze">
     <div class="card-header-flex">
       <h2>📡 GPS Colaborativo Ao Vivo</h2>
-      <span id="contadorColaboradores" style="font-size: 12px; font-weight: 700; color: #006633;"></span>
+      <span id="contadorColaboradores"></span>
     </div>
 
-    <!-- Banner que aparece para TODOS os 1000 alunos quando alguém está compartilhando ou reportou atraso -->
-    <div id="bannerTempoReal" class="status-ao-vivo-banner"></div>
+    <div id="bannerTempoReal" class="status-ao-vivo-banner" aria-live="polite"></div>
 
     <p class="texto-subtitulo" style="margin-bottom: 10px;">
-      Está dentro do ônibus agora? Compartilhe a posição para ajudar a calcular atrasos para o pessoal nos pontos!
+      Está dentro do ônibus agora? Compartilhe a posição (mantenha o app aberto) para ajudar o pessoal nos pontos!
     </p>
 
     <button id="btnTransmitirOnibus" class="btn-transmitir" onclick="alternarTransmissaoOnibus()">
       🚌 Estou no ônibus (Compartilhar rota)
     </button>
 
-    <div style="font-size: 12px; font-weight: 600; color: #666; margin-top: 10px;">
-      Avisar condição da viagem agora:
-    </div>
-    <div class="botoes-ocorrencia" style="grid-template-columns: 1fr 1fr;">
-      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('🚗 Trânsito lento / Engarrafamento')">🚗 Trânsito</button>
-      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('🌧️ Chuva forte / Alagamento')">🌧️ Chuva/Alag.</button>
-      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('🔧 Ônibus com defeito (pneu/mecânico)')">🔧 Com defeito</button>
-      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('🚨 Acidente / Via interditada')">🚨 Acidente</button>
-      <button class="btn-ocorrencia" style="grid-column: span 2;" onclick="enviarAlertaRapido('👥 Ônibus muito lotado')">👥 Ônibus muito lotado</button>
+    <div class="rotulo-ocorrencia">Avisar condição da viagem agora:</div>
+    <div class="botoes-ocorrencia">
+      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('transito')">🚗 Trânsito</button>
+      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('chuva')">🌧️ Chuva/Alag.</button>
+      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('defeito')">🔧 Com defeito</button>
+      <button class="btn-ocorrencia" onclick="enviarAlertaRapido('acidente')">🚨 Acidente</button>
+      <button class="btn-ocorrencia largo" onclick="enviarAlertaRapido('lotado')">👥 Ônibus muito lotado</button>
     </div>
   </div>
 
@@ -968,7 +728,7 @@
     <ul id="chegadas"></ul>
   </div>
 
-  <!-- CARD: Lista de Horários do Dia + Abas Semana/Sábado -->
+  <!-- CARD: Lista de Horários do Dia -->
   <div class="card">
     <div class="card-header-flex">
       <h2 id="tituloHorariosDia">Horários</h2>
@@ -985,16 +745,16 @@
     <div id="avisoGrade" class="aviso-grade-diferente" style="display: none;"></div>
 
     <div class="filtros-container">
-      <button class="btn-filtro ativo" onclick="mudarFiltro('todos')">Todos</button>
-      <button class="btn-filtro" onclick="mudarFiltro('moradia')">Saída Moradia</button>
-      <button class="btn-filtro" onclick="mudarFiltro('escola')">Saída Escola</button>
-      <button class="btn-filtro" onclick="mudarFiltro('passagem')">Passagem</button>
+      <button class="btn-filtro ativo" data-filtro="todos" onclick="mudarFiltro('todos')">Todos</button>
+      <button class="btn-filtro" data-filtro="moradia" onclick="mudarFiltro('moradia')">Saída Moradia</button>
+      <button class="btn-filtro" data-filtro="escola" onclick="mudarFiltro('escola')">Saída Escola</button>
+      <button class="btn-filtro" data-filtro="passagem" onclick="mudarFiltro('passagem')">Passagem</button>
     </div>
 
     <ul id="lista"></ul>
   </div>
 
-  <!-- CARD: Ponto mais próximo + "Quando devo sair?" -->
+  <!-- CARD: Ponto mais próximo -->
   <div class="card">
     <h2>Ponto mais próximo</h2>
     <button id="btnGPS" onclick="usarGPS()">📍 Usar minha localização</button>
@@ -1002,7 +762,7 @@
     <div id="mapa"></div>
   </div>
 
-  <!-- CARD: Como volto pra casa? + "Quando devo sair?" -->
+  <!-- CARD: Como volto pra casa? -->
   <div class="card">
     <h2>🏠 Como volto pra casa?</h2>
     <p class="texto-subtitulo">Descubra onde ir no campus e que horas sair caminhando para pegar o ônibus rumo às Moradias.</p>
@@ -1012,16 +772,39 @@
   </div>
 
   <div class="rodape-compartilhar">
-    Útil para o seu dia a dia? <a href="javascript:void(0)" onclick="compartilharApp()" style="color: #006633; font-weight: 600;">Envie para seus amigos da Moradia!</a>
+    Útil para o seu dia a dia? <a href="#" onclick="compartilharApp(); return false;">Envie para seus amigos da Moradia!</a>
   </div>
 
   <script>
-    /* -----------------------------
-    CONFIGURAÇÕES E ESTADO GLOBAL
-    ----------------------------- */
+    'use strict';
+
+    /* =================================================================
+       CONFIGURAÇÕES E ESTADO GLOBAL
+       ================================================================= */
     const TEMPO_ATUALIZACAO = 10000;
     const MINUTOS_ANTECEDENCIA_ALERTA = 10;
     const VELOCIDADE_CAMINHADA_METROS_MIN = 75; // ~4,5 km/h
+    const FIREBASE_DB_URL = "https://morabus-ufmg-default-rtdb.firebaseio.com";
+    const TAG_LIVE = 'morabus-live-activity';
+    const DIAS_SEMANA = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+
+    const TIPOS_ALERTA = {
+      transito: '🚗 Trânsito lento / Engarrafamento',
+      chuva:    '🌧️ Chuva forte / Alagamento',
+      defeito:  '🔧 Ônibus com defeito (pneu/mecânico)',
+      acidente: '🚨 Acidente / Via interditada',
+      lotado:   '👥 Ônibus muito lotado'
+    };
+    const ALERTAS_CRITICOS = ['defeito', 'acidente', 'chuva'];
+
+    function lerJSON(chave, padrao) {
+      try {
+        const v = JSON.parse(localStorage.getItem(chave));
+        return v ?? padrao;
+      } catch (e) {
+        return padrao;
+      }
+    }
 
     let filtroAtual = 'todos';
     let ocultarPassados = false;
@@ -1030,9 +813,43 @@
     let gradeVisualizada = null; // 'semana' ou 'sabado'
     let pontoFavorito = localStorage.getItem('morabus_ponto_favorito') || '';
 
-    /* -----------------------------
-    ROTAS E PONTOS
-    ----------------------------- */
+    let estadoAoVivoGlobal = {
+      ativo: false, lat: null, lon: null, velocidadeKmh: 0,
+      pontoMaisProximo: null, atrasoMinutos: 0, horarioViagem: null,
+      origemViagem: null, tipoViagem: null, alertaComunidade: null, qtdColaboradores: 0
+    };
+
+    // Mapas e marcadores
+    let meuMapa = null;
+    let marcadorUsuario = null;
+    let gpsWatchId = null;
+    let primeiraLeituraGPS = true;
+    let marcadorOnibusEstimado = null;
+    let marcadorOnibusAoVivo = null;
+
+    let mapaVolta = null;
+    let controleRotaVolta = null;
+    let marcadorUsuarioVolta = null;
+    let marcadorDestinoVolta = null;
+
+    // Tempo real
+    let transmitindoWatchId = null;
+    let radarPermanenteWatchId = null;
+    let wakeLockAtivo = null;
+    let chaveLiveAtual = null;
+    let historicoAtrasosHoje = lerJSON('morabus_atrasos_dia', {});
+    let alertasJaDisparadosHoje = lerJSON('morabus_alertas_auto_disp', {});
+    let posicaoUsuarioRadar = { lat: null, lon: null, naRegiaoUFMGMoradia: false, naMoradia: false };
+    let climaPampulha = { chovendo: false, chuvaForte: false, mm: 0 };
+
+    let idSessaoColaborador = localStorage.getItem('morabus_uid') ||
+      ('usr_' + (window.crypto && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16)
+                                                    : Math.random().toString(36).slice(2, 12)));
+    localStorage.setItem('morabus_uid', idSessaoColaborador);
+
+    /* =================================================================
+       ROTAS E PONTOS
+       ================================================================= */
     const rotaCampus = [
       {p: "Escola de Música", t: 0},
       {p: "Belas Artes", t: 1},
@@ -1068,11 +885,12 @@
     const rotaPassagem = [
       {p: "Moradia 1", t: 0},
       {p: "Moradia 2 e 3", t: 2},
-      {p: "Unidade Admnistrativa II", t: 7},
+      {p: "Unidade Administrativa II", t: 7},
       {p: "Rotatória", t: 8},
       {p: "Ponto final", t: 9}
     ];
 
+    // TODO: adicionar as coordenadas do "Ponto final" para ele aparecer no mapa e no seletor de favorito
     const pontos = [
       {nome: "Moradia 1", lat: -19.8706, lon: -43.9862},
       {nome: "Moradia 2 e 3", lat: -19.8661, lon: -43.9845},
@@ -1090,23 +908,24 @@
       {nome: "Veterinária", lat: -19.871567, lon: -43.970531},
       {nome: "Odonto", lat: -19.872823, lon: -43.973524},
       {nome: "Educação Física", lat: -19.874950, lon: -43.974250},
-      {nome: "Unidade Admnistrativa II", lat: -19.863061, lon: -43.966889},
+      {nome: "Unidade Administrativa II", lat: -19.863061, lon: -43.966889},
       {nome: "Rotatória", lat: -19.863364, lon: -43.964325}
     ];
 
     function obterRota(origem, tipo) {
-      if (tipo === "passagem" && origem.includes("Moradia")) {
-        return rotaPassagem;
-      }
-      if (origem.includes("Moradia")) {
-        return rotaMoradia;
-      }
+      if (tipo === "passagem" && origem.includes("Moradia")) return rotaPassagem;
+      if (origem.includes("Moradia")) return rotaMoradia;
       return rotaCampus;
     }
 
-    /* -----------------------------
-    HORÁRIOS E FERIADOS
-    ----------------------------- */
+    function duracaoRota(rota) {
+      return rota[rota.length - 1].t;
+    }
+
+    /* =================================================================
+       HORÁRIOS E FERIADOS
+       ================================================================= */
+    // [hora, origem, tipo, quantidade de veículos]
     const horariosSemana = [
       ["06:45", "Moradia", null, 3],
       ["07:20", "Escola de Música", null, 3],
@@ -1146,20 +965,37 @@
       ["13:30", "Escola de Música", null, 2]
     ];
 
-    const feriadosBH = [
-      "01/01", "21/04", "01/05", "15/08", "07/09",
-      "12/10", "02/11", "15/11", "08/12", "25/12"
-    ];
+    const feriadosFixos = ["01/01", "21/04", "01/05", "15/08", "07/09",
+                           "12/10", "02/11", "15/11", "20/11", "08/12", "25/12"];
+
+    // Recessos/férias da UFMG sem ônibus (atualize a cada semestre) no formato "AAAA-MM-DD"
+    const diasSemOnibusExtras = [];
+
+    function calcularPascoa(ano) { // algoritmo de Meeus/Jones/Butcher
+      const a = ano % 19, b = Math.floor(ano / 100), c = ano % 100;
+      const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+      const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+      const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+      const m = Math.floor((a + 11 * h + 22 * l) / 451);
+      const n = h + l - 7 * m + 114;
+      return new Date(ano, Math.floor(n / 31) - 1, (n % 31) + 1);
+    }
 
     function ehFeriado(dataObj) {
-      let dia = ("0" + dataObj.getDate()).slice(-2);
-      let mes = ("0" + (dataObj.getMonth() + 1)).slice(-2);
-      return feriadosBH.includes(dia + "/" + mes);
+      const dd = String(dataObj.getDate()).padStart(2, '0');
+      const mm = String(dataObj.getMonth() + 1).padStart(2, '0');
+      const iso = `${dataObj.getFullYear()}-${mm}-${dd}`;
+      if (feriadosFixos.includes(`${dd}/${mm}`) || diasSemOnibusExtras.includes(iso)) return true;
+
+      const dia = new Date(dataObj.getFullYear(), dataObj.getMonth(), dataObj.getDate());
+      const diff = Math.round((dia - calcularPascoa(dataObj.getFullYear())) / 86400000);
+      // Carnaval (seg/ter), Sexta-feira Santa, Corpus Christi
+      return [-48, -47, -2, 60].includes(diff);
     }
 
     function obterHorarios(dataObj) {
       if (ehFeriado(dataObj)) return [];
-      let diaDaSemana = dataObj.getDay();
+      const diaDaSemana = dataObj.getDay();
       if (diaDaSemana >= 1 && diaDaSemana <= 5) return horariosSemana;
       if (diaDaSemana === 6) return horariosSabado;
       return [];
@@ -1169,26 +1005,89 @@
       return obterHorarios(new Date());
     }
 
-    /* -----------------------------
-    RELÓGIO AO VIVO E FAVORITOS
-    ----------------------------- */
+    /* =================================================================
+       UTILITÁRIOS
+       ================================================================= */
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function minutosAgora() {
+      const a = new Date();
+      return a.getHours() * 60 + a.getMinutes();
+    }
+
+    function minutos(hora) {
+      const p = hora.split(":");
+      return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+    }
+
+    function converterMinutosParaHHMM(minTotal) {
+      const h = Math.floor(minTotal / 60) % 24;
+      const m = minTotal % 60;
+      return String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0');
+    }
+
+    function formatarHoraMinuto(min) {
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      if (h > 0) return h + "h" + String(m).padStart(2, '0');
+      return m + " min";
+    }
+
+    function formatarTempo(min) {
+      return "⏳ Faltam " + formatarHoraMinuto(min);
+    }
+
+    function preposicaoPonto(nome) {
+      const masculinos = ["RU 1", "RU 2", "CAD 1", "IGC", "Ponto final"];
+      return masculinos.includes(nome) ? "no" : "na";
+    }
+
+    function distancia(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function obterChaveDataHoje() {
+      const d = new Date();
+      return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    }
+
+    function ehPassagem(origem, tipo) {
+      return tipo === "passagem" && origem.includes("Moradia");
+    }
+
+    function tagOrigemHtml(origem, tipo) {
+      if (ehPassagem(origem, tipo)) return `<span class="tag-passagem">Passando na Moradia</span>`;
+      if (origem.includes("Moradia")) return `<span class="tag-moradia">Moradia</span>`;
+      return `<span class="tag-escola">${esc(origem)}</span>`;
+    }
+
+    function iconesComboio(qtd) {
+      return `<span class="icones-comboio" title="${qtd} veículo(s)">${"🚌".repeat(qtd || 1)}</span>`;
+    }
+
+    /* =================================================================
+       RELÓGIO E FAVORITOS
+       ================================================================= */
     function atualizarRelogio() {
       const agora = new Date();
-      const dias = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-      const h = ("0" + agora.getHours()).slice(-2);
-      const m = ("0" + agora.getMinutes()).slice(-2);
-      const s = ("0" + agora.getSeconds()).slice(-2);
+      const hhmmss = agora.toLocaleTimeString('pt-BR', { hour12: false });
 
       let tipoGrade = "Grade de Dias Úteis";
-      if (ehFeriado(agora)) {
-        tipoGrade = "Feriado (Sem ônibus)";
-      } else if (agora.getDay() === 0) {
-        tipoGrade = "Domingo (Sem ônibus)";
-      } else if (agora.getDay() === 6) {
-        tipoGrade = "Grade de Sábado";
-      }
+      if (ehFeriado(agora)) tipoGrade = "Feriado (Sem ônibus)";
+      else if (agora.getDay() === 0) tipoGrade = "Domingo (Sem ônibus)";
+      else if (agora.getDay() === 6) tipoGrade = "Grade de Sábado";
 
-      document.getElementById("relogio").innerText = `${dias[agora.getDay()]} • ${h}:${m}:${s} • ${tipoGrade}`;
+      document.getElementById("relogio").textContent = `${DIAS_SEMANA[agora.getDay()]} • ${hhmmss} • ${tipoGrade}`;
     }
 
     function inicializarSelectFavorito() {
@@ -1208,115 +1107,65 @@
       atualizar();
     }
 
-    /* -----------------------------
-    UTILITÁRIOS E CÁLCULO DE CAMINHADA
-    ----------------------------- */
-    function minutos(hora) {
-      let p = hora.split(":");
-      return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
-    }
-
-    function converterMinutosParaHHMM(minTotal) {
-      let h = Math.floor(minTotal / 60) % 24;
-      let m = minTotal % 60;
-      return ("0" + h).slice(-2) + ":" + ("0" + m).slice(-2);
-    }
-
-    function formatarHoraMinuto(min) {
-      let h = Math.floor(min / 60);
-      let m = min % 60;
-      let mStr = m < 10 ? "0" + m : m;
-      if (h > 0) return h + "h" + mStr;
-      return m + " min";
-    }
-
-    function formatarTempo(min) {
-      return "⏳ Faltam " + formatarHoraMinuto(min);
-    }
-    
-    function preposicaoPonto(nome) {
-      const masculinos = ["RU 1", "RU 2", "CAD 1", "IGC", "Ponto final"];
-      return masculinos.includes(nome) ? "no" : "na";
-    }
-    
-    function distancia(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
-
+    /* =================================================================
+       PRÓXIMO ÔNIBUS EM UM PONTO + "QUANDO DEVO SAIR?"
+       ================================================================= */
     function buscarProximoNoPonto(nomeDoPonto, apenasVolta = false) {
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
-      let horarios = horariosHoje();
+      const atualMin = minutosAgora();
 
-      for (let h of horarios) {
-        let minSaida = minutos(h[0]);
-        let origem = h[1];
-        let tipo = h[2];
-
+      for (const h of horariosHoje()) {
+        const [hora, origem, tipo] = h;
         if (apenasVolta && origem.includes("Moradia")) continue;
 
-        let rota = obterRota(origem, tipo);
-        let pontoNaRota = rota.find(p => p.p === nomeDoPonto);
+        const pontoNaRota = obterRota(origem, tipo).find(p => p.p === nomeDoPonto);
+        if (!pontoNaRota) continue;
 
-        if (pontoNaRota) {
-          let minChegada = minSaida + pontoNaRota.t;
-          if (minChegada > atualMin) {
-            return {
-              espera: minChegada - atualMin,
-              minChegada: minChegada,
-              horaChegada: converterMinutosParaHHMM(minChegada),
-              horaSaidaOrigem: h[0],
-              origem: origem
-            };
-          }
+        const minChegada = minutos(hora) + pontoNaRota.t;
+        if (minChegada > atualMin) {
+          return {
+            espera: minChegada - atualMin,
+            minChegada,
+            horaChegada: converterMinutosParaHHMM(minChegada),
+            horaSaidaOrigem: hora,
+            origem
+          };
         }
       }
       return null;
     }
 
-    // Gera o card "Quando devo sair?" cruzando a distância a pé com o horário do ônibus
     function gerarCardQuandoSair(distKm, esperaMin) {
-      let metros = Math.round(distKm * 1000);
-      let minCaminhada = Math.max(1, Math.ceil(metros / VELOCIDADE_CAMINHADA_METROS_MIN));
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      const metros = Math.round(distKm * 1000);
+      const minCaminhada = Math.max(1, Math.ceil(metros / VELOCIDADE_CAMINHADA_METROS_MIN));
+      const atualMin = minutosAgora();
 
-      // Margem de segurança de 1 minuto para estar no ponto antes do ônibus
-      let tempoAtePrecisarSair = esperaMin - minCaminhada - 1;
-      let horaIdealSaida = converterMinutosParaHHMM(atualMin + Math.max(0, tempoAtePrecisarSair));
+      // Margem de segurança de 1 minuto
+      const tempoAtePrecisarSair = esperaMin - minCaminhada - 1;
+      const horaIdealSaida = converterMinutosParaHHMM(atualMin + Math.max(0, tempoAtePrecisarSair));
 
-      let statusHtml = "";
+      let statusHtml;
       if (esperaMin < minCaminhada) {
-        statusHtml = `<span style="color:#e53935; font-weight:700;">🏃 Passo apertado!</span> O ônibus passa em ${esperaMin} min e a caminhada leva ~${minCaminhada} min.`;
+        statusHtml = `<span class="txt-erro">🏃 Passo apertado!</span> O ônibus passa em ${esperaMin} min e a caminhada leva ~${minCaminhada} min.`;
       } else if (tempoAtePrecisarSair <= 1) {
-        statusHtml = `<span style="color:#e67e22; font-weight:700;">🚶 Saia agora mesmo!</span> Dá tempo certinho de chegar caminhando.`;
+        statusHtml = `<span class="txt-alerta">🚶 Saia agora mesmo!</span> Dá tempo certinho de chegar caminhando.`;
       } else {
-        statusHtml = `<span style="color:#006633; font-weight:700;">🕒 Saia às ${horaIdealSaida}</span> (daqui a ${formatarHoraMinuto(tempoAtePrecisarSair)}) para chegar com folga.`;
+        statusHtml = `<span class="txt-ok">🕒 Saia às ${horaIdealSaida}</span> (daqui a ${formatarHoraMinuto(tempoAtePrecisarSair)}) para chegar com folga.`;
       }
 
       return `
         <div class="card-caminhada">
           <div>🚶 <b>Caminhada estimada:</b> ~${minCaminhada} min (${metros} m)</div>
           <div style="margin-top:4px;">${statusHtml}</div>
-        </div>
-      `;
+        </div>`;
     }
 
-    /* -----------------------------
-    FILTROS E ABAS DE GRADE
-    ----------------------------- */
+    /* =================================================================
+       FILTROS E ABAS DE GRADE
+       ================================================================= */
     function mudarFiltro(tipo) {
       filtroAtual = tipo;
-      document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('ativo'));
-      document.querySelector(`button[onclick="mudarFiltro('${tipo}')"]`).classList.add('ativo');
+      document.querySelectorAll('.btn-filtro').forEach(btn =>
+        btn.classList.toggle('ativo', btn.dataset.filtro === tipo));
       listarHorarios();
     }
 
@@ -1330,11 +1179,11 @@
       listarHorarios();
     }
 
-    /* -----------------------------
-    COMPARTILHAR E INSTALAR PWA
-    ----------------------------- */
+    /* =================================================================
+       COMPARTILHAR E INSTALAR PWA
+       ================================================================= */
     function compartilharApp() {
-      const urlAtual = window.location.href;
+      const urlAtual = window.location.origin + window.location.pathname;
       const dadosShare = {
         title: 'Ônibus Moradias UFMG',
         text: '🚌 Acompanhe os horários em tempo real, alertas de saída e pontos mais próximos do ônibus das Moradias UFMG:',
@@ -1344,9 +1193,9 @@
       if (navigator.share) {
         navigator.share(dadosShare).catch(() => {});
       } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(urlAtual).then(() => {
-          alert('Link copiado! Agora é só colar no grupo do WhatsApp.');
-        });
+        navigator.clipboard.writeText(urlAtual)
+          .then(() => alert('Link copiado! Agora é só colar no grupo do WhatsApp.'))
+          .catch(() => prompt('Copie o link abaixo para compartilhar:', urlAtual));
       } else {
         prompt('Copie o link abaixo para compartilhar:', urlAtual);
       }
@@ -1359,59 +1208,59 @@
       document.getElementById('btnInstalar').style.display = 'inline-flex';
     });
 
+    window.addEventListener('appinstalled', () => {
+      eventoInstalacao = null;
+      document.getElementById('btnInstalar').style.display = 'none';
+    });
+
     function instalarPWA() {
       if (!eventoInstalacao) return;
       eventoInstalacao.prompt();
-      eventoInstalacao.userChoice.then(() => {
+      eventoInstalacao.userChoice.finally(() => {
         eventoInstalacao = null;
         document.getElementById('btnInstalar').style.display = 'none';
       });
     }
 
-    /* -----------------------------
-    GPS E MAPAS
-    ----------------------------- */
-    function pontoMaisProximo(lat, lon) {
+    /* =================================================================
+       GPS E MAPAS
+       ================================================================= */
+    function leafletDisponivel() {
+      return typeof L !== 'undefined';
+    }
+
+    function adicionarTiles(mapa) {
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(mapa);
+    }
+
+    function pontoMaisProximo(lat, lon, filtroNomes = null) {
       let melhor = null;
-      let menor = 999;
-      for (let p of pontos) {
+      let menor = Infinity;
+      for (const p of pontos) {
         if (p.lat == null) continue;
+        if (filtroNomes && !filtroNomes.includes(p.nome)) continue;
         const d = distancia(lat, lon, p.lat, p.lon);
         if (d < menor) {
           menor = d;
           melhor = p;
         }
       }
-      return {ponto: melhor, dist: menor};
+      return { ponto: melhor, dist: menor };
     }
 
     function pontoMaisProximoVolta(lat, lon) {
-      let melhor = null;
-      let menor = 999;
-      let paradasDeVolta = rotaCampus.map(p => p.p).filter(nome => !nome.includes("Moradia"));
-
-      for (let p of pontos) {
-        if (p.lat == null) continue;
-        if (!paradasDeVolta.includes(p.nome)) continue;
-
-        const d = distancia(lat, lon, p.lat, p.lon);
-        if (d < menor) {
-          menor = d;
-          melhor = p;
-        }
-      }
-      return {ponto: melhor, dist: menor};
+      const paradasDeVolta = rotaCampus.map(p => p.p).filter(nome => !nome.includes("Moradia"));
+      return pontoMaisProximo(lat, lon, paradasDeVolta);
     }
 
-    let gpsWatchId = null;
-    let meuMapa = null;
-    let marcadorUsuario = null;
-    let primeiraLeituraGPS = true;
-
-    let mapaVolta = null;
-    let controleRotaVolta = null;
-    let marcadorUsuarioVolta = null;
-    let marcadorDestinoVolta = null;
+    function estaNaMoradia(lat, lon, raioKm = 0.3) {
+      return pontos
+        .filter(p => p.nome.startsWith("Moradia"))
+        .some(p => distancia(lat, lon, p.lat, p.lon) < raioKm);
+    }
 
     function descobrirVolta() {
       const btn = document.getElementById("btnVolta");
@@ -1419,64 +1268,54 @@
       const divMapaVolta = document.getElementById("mapaVolta");
 
       if (!navigator.geolocation) {
-        visor.innerText = "GPS não suportado pelo seu navegador.";
+        visor.textContent = "GPS não suportado pelo seu navegador.";
+        return;
+      }
+      if (!leafletDisponivel()) {
+        visor.textContent = "O mapa ainda está carregando. Tente novamente em instantes.";
         return;
       }
 
-      btn.innerText = "⏳ Buscando sua posição...";
+      btn.textContent = "⏳ Buscando sua posição...";
 
       navigator.geolocation.getCurrentPosition(
-        function(pos) {
-          btn.innerText = "🧭 Atualizar ponto de volta";
+        (pos) => {
+          btn.textContent = "🧭 Atualizar ponto de volta";
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
 
-          let lat = pos.coords.latitude;
-          let lon = pos.coords.longitude;
-
-          let moradia1 = pontos.find(p => p.nome === "Moradia 1");
-          let moradia23 = pontos.find(p => p.nome === "Moradia 2 e 3");
-          let distM1 = distancia(lat, lon, moradia1.lat, moradia1.lon);
-          let distM23 = distancia(lat, lon, moradia23.lat, moradia23.lon);
-
-          if (distM1 < 0.3 || distM23 < 0.3) {
-            visor.innerHTML = "<span style='color:#006633; font-weight:bold; font-size:18px;'>🏠 Você já se encontra na Moradia!</span>";
-            btn.innerText = "🧭 Encontrar ponto de volta";
+          if (estaNaMoradia(lat, lon)) {
+            visor.innerHTML = "<span class='txt-ok' style='font-size:18px;'>🏠 Você já se encontra na Moradia!</span>";
+            btn.textContent = "🧭 Encontrar ponto de volta";
             divMapaVolta.style.display = "none";
             return;
           }
 
-          let r = pontoMaisProximoVolta(lat, lon);
-
+          const r = pontoMaisProximoVolta(lat, lon);
           if (!r.ponto) {
-            visor.innerHTML = "Não foi possível calcular as rotas de volta.";
+            visor.textContent = "Não foi possível calcular as rotas de volta.";
             return;
           }
 
-          let infoChegada = buscarProximoNoPonto(r.ponto.nome, true);
-
-          if (infoChegada !== null) {
+          const infoChegada = buscarProximoNoPonto(r.ponto.nome, true);
+          if (infoChegada) {
             visor.innerHTML =
-              "📍 Ponto de retorno mais próximo: <b>" + r.ponto.nome + "</b><br>" +
-              "🚌 Passa lá às <b>" + infoChegada.horaChegada + "</b> (em <span style='color:#e67e22; font-size:20px; font-weight:bold;'>" + formatarHoraMinuto(infoChegada.espera) + "</span>)" +
+              `📍 Ponto de retorno mais próximo: <b>${esc(r.ponto.nome)}</b><br>` +
+              `🚌 Passa lá às <b>${infoChegada.horaChegada}</b> (em <span class="destaque-espera">${formatarHoraMinuto(infoChegada.espera)}</span>)` +
               gerarCardQuandoSair(r.dist, infoChegada.espera);
           } else {
             visor.innerHTML =
-              "📍 Ponto mais próximo: <b>" + r.ponto.nome + "</b> (" + (r.dist * 1000).toFixed(0) + " m).<br>" +
-              "<span style='color:#e53935; font-weight:600;'>🚫 Não há mais ônibus voltando hoje.</span>";
+              `📍 Ponto mais próximo: <b>${esc(r.ponto.nome)}</b> (${(r.dist * 1000).toFixed(0)} m).<br>` +
+              `<span class="txt-erro">🚫 Não há mais ônibus voltando hoje.</span>`;
           }
 
           divMapaVolta.style.display = "block";
 
           if (mapaVolta === null) {
             mapaVolta = L.map('mapaVolta').setView([lat, lon], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              maxZoom: 18,
-              attribution: '© OpenStreetMap'
-            }).addTo(mapaVolta);
+            adicionarTiles(mapaVolta);
           }
-
-          setTimeout(() => {
-            mapaVolta.invalidateSize();
-          }, 200);
+          setTimeout(() => mapaVolta.invalidateSize(), 200);
 
           if (controleRotaVolta !== null) {
             mapaVolta.removeLayer(controleRotaVolta);
@@ -1498,34 +1337,48 @@
           } else {
             marcadorDestinoVolta.setLatLng([r.ponto.lat, r.ponto.lon]);
           }
-          marcadorDestinoVolta.bindPopup("Destino: " + r.ponto.nome);
+          marcadorDestinoVolta.bindPopup("Destino: " + esc(r.ponto.nome));
 
-          let urlRota = `https://router.project-osrm.org/route/v1/foot/${lon},${lat};${r.ponto.lon},${r.ponto.lat}?geometries=geojson`;
+          const ajustarAosMarcadores = () => {
+            const grupo = L.featureGroup([marcadorUsuarioVolta, marcadorDestinoVolta]);
+            mapaVolta.fitBounds(grupo.getBounds(), { padding: [30, 30] });
+          };
+
+          // Servidor FOSSGIS com perfil de pedestre (o demo do OSRM só tem carro)
+          const urlRota = `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${lon},${lat};${r.ponto.lon},${r.ponto.lat}?overview=full&geometries=geojson`;
 
           fetch(urlRota)
             .then(res => res.json())
             .then(data => {
               if (data.routes && data.routes.length > 0) {
-                let coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-                controleRotaVolta = L.polyline(coords, {color: '#e67e22', weight: 6, opacity: 0.8}).addTo(mapaVolta);
-                mapaVolta.fitBounds(controleRotaVolta.getBounds(), {padding: [30, 30]});
+                const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                controleRotaVolta = L.polyline(coords, { color: '#e67e22', weight: 6, opacity: 0.8 }).addTo(mapaVolta);
+                mapaVolta.fitBounds(controleRotaVolta.getBounds(), { padding: [30, 30] });
+              } else {
+                ajustarAosMarcadores();
               }
             })
-            .catch(() => {
-              let grupo = new L.featureGroup([marcadorUsuarioVolta, marcadorDestinoVolta]);
-              mapaVolta.fitBounds(grupo.getBounds(), {padding: [30, 30]});
-            });
+            .catch(ajustarAosMarcadores);
         },
-        function(err) {
-          btn.innerText = "🧭 Encontrar ponto de volta";
-          if (err.code === 1) {
-            visor.innerHTML = "<span style='color:#e53935;'>Permissão negada. Ative a localização no seu navegador.</span>";
-          } else {
-            visor.innerHTML = "<span style='color:#e53935;'>Não foi possível obter a localização.</span>";
-          }
+        (err) => {
+          btn.textContent = "🧭 Encontrar ponto de volta";
+          visor.innerHTML = err.code === 1
+            ? "<span class='txt-erro'>Permissão negada. Ative a localização no seu navegador.</span>"
+            : "<span class='txt-erro'>Não foi possível obter a localização.</span>";
         },
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
       );
+    }
+
+    function pararGPSMapa(mensagem) {
+      const botao = document.getElementById("btnGPS");
+      if (gpsWatchId !== null) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+      }
+      botao.textContent = "📍 Usar minha localização";
+      botao.classList.remove("perigo");
+      document.getElementById("gps").textContent = mensagem;
     }
 
     function usarGPS() {
@@ -1534,38 +1387,32 @@
       const divMapa = document.getElementById("mapa");
 
       if (!navigator.geolocation) {
-        visor.innerText = "GPS não suportado";
+        visor.textContent = "GPS não suportado";
+        return;
+      }
+      if (!leafletDisponivel()) {
+        visor.textContent = "O mapa ainda está carregando. Tente novamente em instantes.";
         return;
       }
 
       if (gpsWatchId !== null) {
-        navigator.geolocation.clearWatch(gpsWatchId);
-        gpsWatchId = null;
-        botao.innerHTML = "📍 Usar minha localização";
-        botao.style.background = "#006633";
-        visor.innerHTML = "Atualização do GPS pausada.";
+        pararGPSMapa("Atualização do GPS pausada.");
         divMapa.style.display = "none";
         return;
       }
 
-      visor.innerText = "Obtendo localização e carregando mapa...";
-      botao.innerHTML = "🛑 Parar localização";
-      botao.style.background = "#cc0000";
+      visor.textContent = "Obtendo localização e carregando mapa...";
+      botao.textContent = "🛑 Parar localização";
+      botao.classList.add("perigo");
       divMapa.style.display = "block";
       primeiraLeituraGPS = true;
 
       if (meuMapa === null) {
         meuMapa = L.map('mapa').setView([-19.8690, -43.9664], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 18,
-          attribution: '© OpenStreetMap'
-        }).addTo(meuMapa);
-
+        adicionarTiles(meuMapa);
         pontos.forEach(p => {
-          if (p.lat !== null && p.lon !== null) {
-            L.marker([p.lat, p.lon])
-              .addTo(meuMapa)
-              .bindPopup("<b>" + p.nome + "</b>");
+          if (p.lat != null && p.lon != null) {
+            L.marker([p.lat, p.lon]).addTo(meuMapa).bindPopup("<b>" + esc(p.nome) + "</b>");
           }
         });
       }
@@ -1573,24 +1420,23 @@
       setTimeout(() => {
         meuMapa.invalidateSize();
         atualizar();
+        renderizarMarcadorAoVivo();
       }, 200);
 
       gpsWatchId = navigator.geolocation.watchPosition(
-        function(pos) {
-          let lat = pos.coords.latitude;
-          let lon = pos.coords.longitude;
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const r = pontoMaisProximo(lat, lon);
+          if (!r.ponto) return;
 
-          let r = pontoMaisProximo(lat, lon);
-          let infoChegada = buscarProximoNoPonto(r.ponto.nome, false);
-
-          let textoEspera = infoChegada !== null
-            ? "<br>🚌 Passa aqui às <b>" + infoChegada.horaChegada + "</b> (em <span style='font-size:20px; color:#006633; font-weight:bold;'>" + formatarHoraMinuto(infoChegada.espera) + "</span>)" +
+          const infoChegada = buscarProximoNoPonto(r.ponto.nome, false);
+          const textoEspera = infoChegada
+            ? `<br>🚌 Passa aqui às <b>${infoChegada.horaChegada}</b> (em <span class="destaque-espera verde">${formatarHoraMinuto(infoChegada.espera)}</span>)` +
               gerarCardQuandoSair(r.dist, infoChegada.espera)
-            : "<br><span style='font-size:15px; color:#e53935; font-weight:600;'>🚫 Sem mais ônibus neste ponto hoje</span>";
+            : `<br><span class="txt-erro">🚫 Sem mais ônibus neste ponto hoje</span>`;
 
-          visor.innerHTML =
-            "📍 Ponto mais próximo: <b>" + r.ponto.nome + "</b>" +
-            textoEspera;
+          visor.innerHTML = `📍 Ponto mais próximo: <b>${esc(r.ponto.nome)}</b>${textoEspera}`;
 
           if (marcadorUsuario === null) {
             marcadorUsuario = L.circleMarker([lat, lon], {
@@ -1602,30 +1448,23 @@
 
           if (primeiraLeituraGPS) {
             primeiraLeituraGPS = false;
-            if (r.ponto.lat !== null) {
-              let limites = L.latLngBounds([[lat, lon], [r.ponto.lat, r.ponto.lon]]);
-              meuMapa.fitBounds(limites, {padding: [30, 30]});
-            } else {
-              meuMapa.setView([lat, lon], 16);
-            }
+            meuMapa.fitBounds(L.latLngBounds([[lat, lon], [r.ponto.lat, r.ponto.lon]]), { padding: [30, 30] });
           }
         },
-        function() {
-          visor.innerText = "Não foi possível obter a localização";
-          navigator.geolocation.clearWatch(gpsWatchId);
-          gpsWatchId = null;
-          botao.innerHTML = "📍 Usar minha localização";
-          botao.style.background = "#006633";
+        (err) => {
+          pararGPSMapa(err.code === 1
+            ? "Permissão de localização negada. Ative nas configurações do navegador."
+            : "Não foi possível obter a localização.");
         },
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
       );
     }
 
-    /* -----------------------------
-    INTERFACE E LISTAGEM
-    ----------------------------- */
+    /* =================================================================
+       INTERFACE E LISTAGEM
+       ================================================================= */
     function simularHorarioNaTimeline(hora, origem, tipo) {
-      horarioSimulado = { hora, origem, tipo: tipo === 'null' ? null : tipo, min: minutos(hora) };
+      horarioSimulado = { hora, origem, tipo: (tipo === 'null' || !tipo) ? null : tipo, min: minutos(hora) };
       atualizar();
       document.getElementById("cardChegadas").scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
@@ -1636,57 +1475,50 @@
     }
 
     function listarHorarios() {
-      let lista = document.getElementById("lista");
+      const lista = document.getElementById("lista");
       const btnToggle = document.getElementById("btnTogglePassados");
       const avisoGrade = document.getElementById("avisoGrade");
       lista.innerHTML = "";
 
-      let agora = new Date();
-      let diaHoje = agora.getDay();
-      let gradeRealHoje = (diaHoje === 6) ? 'sabado' : 'semana';
-
-      if (gradeVisualizada === null) {
-        gradeVisualizada = gradeRealHoje;
-      }
+      const agora = new Date();
+      const diaHoje = agora.getDay();
+      const gradeRealHoje = (diaHoje === 6) ? 'sabado' : 'semana';
+      if (gradeVisualizada === null) gradeVisualizada = gradeRealHoje;
 
       document.getElementById("abaSemana").classList.toggle("ativa", gradeVisualizada === 'semana');
       document.getElementById("abaSabado").classList.toggle("ativa", gradeVisualizada === 'sabado');
 
-      let visualizandoGradeDeHoje = (gradeVisualizada === gradeRealHoje) && (diaHoje !== 0) && !ehFeriado(agora);
+      const visualizandoGradeDeHoje = (gradeVisualizada === gradeRealHoje) && (diaHoje !== 0) && !ehFeriado(agora);
 
       if (!visualizandoGradeDeHoje) {
         avisoGrade.style.display = "block";
-        avisoGrade.innerText = gradeVisualizada === 'sabado'
+        avisoGrade.textContent = gradeVisualizada === 'sabado'
           ? "ℹ️ Visualizando a grade de Sábado (modo consulta)"
           : "ℹ️ Visualizando a grade de Dias Úteis (modo consulta)";
       } else {
         avisoGrade.style.display = "none";
       }
 
-      let horarios = (gradeVisualizada === 'sabado') ? horariosSabado : horariosSemana;
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      const horarios = (gradeVisualizada === 'sabado') ? horariosSabado : horariosSemana;
+      const atualMin = minutosAgora();
       let temHorarioNoFiltro = false;
       let qtdPassados = 0;
       let proximoJaMarcado = false;
 
       horarios.forEach(h => {
-        let hora = h[0];
-        let origem = h[1];
-        let tipo = h[2];
-        let qtd = h[3] || 1;
-        let minSaida = minutos(hora);
-        let jaPassou = visualizandoGradeDeHoje && (minSaida <= atualMin);
+        const [hora, origem, tipo] = h;
+        const qtd = h[3] || 1;
+        const jaPassou = visualizandoGradeDeHoje && (minutos(hora) <= atualMin);
 
         if (jaPassou) qtdPassados++;
 
         if (filtroAtual === 'passagem' && tipo !== 'passagem') return;
         if (filtroAtual === 'moradia' && (tipo === 'passagem' || !origem.includes('Moradia'))) return;
         if (filtroAtual === 'escola' && !origem.includes('Escola')) return;
-
         if (jaPassou && ocultarPassados) return;
 
         temHorarioNoFiltro = true;
-        let li = document.createElement("li");
+        const li = document.createElement("li");
 
         let seloProximoHtml = "";
         if (jaPassou) {
@@ -1697,36 +1529,30 @@
           seloProximoHtml = `<span class="selo-proximo">Próximo</span>`;
         }
 
-        let iconeComboio = `<span style="letter-spacing: 4px;">${"🚌".repeat(qtd)}</span>`;
-        let textoHtml = "";
-        if (tipo === "passagem" && origem.includes("Moradia")) {
-          textoHtml = `<b>${hora}</b> — <span class="tag-passagem">Passando na Moradia</span> <span style="font-size:12px;" title="${qtd} veículo(s)">${iconeComboio}</span> ${seloProximoHtml}`;
-        } else if (origem.includes("Moradia")) {
-          textoHtml = `<b>${hora}</b> — Saída <span class="tag-moradia">Moradia</span> <span style="font-size:12px;" title="${qtd} veículo(s)">${iconeComboio}</span> ${seloProximoHtml}`;
-        } else {
-          textoHtml = `<b>${hora}</b> — Saída <span class="tag-escola">${origem}</span> <span style="font-size:12px;" title="${qtd} veículo(s)">${iconeComboio}</span> ${seloProximoHtml}`;
-        }
+        const prefixo = ehPassagem(origem, tipo) ? "" : "Saída ";
+        const info = document.createElement("div");
+        info.className = "info-horario-clicavel";
+        info.title = "Toque para ver o horário em cada ponto";
+        info.innerHTML = `<b>${hora}</b> — ${prefixo}${tagOrigemHtml(origem, tipo)} ${iconesComboio(qtd)} ${seloProximoHtml}`;
+        info.addEventListener("click", () => simularHorarioNaTimeline(hora, origem, tipo));
+        li.appendChild(info);
 
-        let btnAlarme = "";
         if (visualizandoGradeDeHoje && !jaPassou) {
-          let estaAgendado = Boolean(alertasAgendados[hora]);
-          let classeAgendado = estaAgendado ? "agendado" : "";
-          let iconeBtn = estaAgendado ? "✅ Ativo" : "⏰";
-          btnAlarme = `<button class="btn-alarme ${classeAgendado}" onclick="agendarAlerta('${hora}', '${origem}')">${iconeBtn}</button>`;
+          const estaAgendado = Boolean(alertasAgendados[hora]);
+          const btn = document.createElement("button");
+          btn.className = "btn-alarme" + (estaAgendado ? " agendado" : "");
+          btn.textContent = estaAgendado ? "✅ Ativo" : "⏰";
+          btn.title = estaAgendado ? "Cancelar alerta" : `Avisar ${MINUTOS_ANTECEDENCIA_ALERTA} min antes`;
+          btn.addEventListener("click", () => agendarAlerta(hora, origem));
+          li.appendChild(btn);
         }
 
-        li.innerHTML = `
-          <div class="info-horario-clicavel" onclick="simularHorarioNaTimeline('${hora}', '${origem}', '${tipo}')" title="Toque para ver o horário em cada ponto">
-            ${textoHtml}
-          </div>
-          ${btnAlarme}
-        `;
         lista.appendChild(li);
       });
 
       if (visualizandoGradeDeHoje && qtdPassados > 0) {
         btnToggle.style.display = "inline-block";
-        btnToggle.innerText = ocultarPassados
+        btnToggle.textContent = ocultarPassados
           ? `👁️ Mostrar anteriores (${qtdPassados})`
           : `🙈 Ocultar anteriores`;
       } else {
@@ -1739,40 +1565,37 @@
     }
 
     function mostrarChegadas(saida, origem, hora, tipo, emAndamento, ehSimulacaoManual) {
-      let lista = document.getElementById("chegadas");
+      const lista = document.getElementById("chegadas");
       lista.innerHTML = "";
-
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      const atualMin = minutosAgora();
 
       let badgeHtml = "";
       if (ehSimulacaoManual) {
-        badgeHtml = `<div style="margin-bottom:6px;"><span class="badge-andamento" style="background:#e3f2fd; color:#1565c0;">🔎 Visualizando horário selecionado</span> <a href="javascript:void(0)" onclick="voltarTimelineAutomatica()" style="font-size:12px; color:#006633; font-weight:600; margin-left:6px;">Voltar ao automático</a></div>`;
+        badgeHtml = `<div style="margin-bottom:6px;"><span class="badge-andamento simulado">🔎 Visualizando horário selecionado</span>
+          <a href="#" class="link-acao" onclick="voltarTimelineAutomatica(); return false;">Voltar ao automático</a></div>`;
       } else if (emAndamento) {
         badgeHtml = `<div class="badge-andamento">🟢 Viagem em andamento</div><br>`;
       }
 
-      document.getElementById("infoViagem").innerHTML =
-        badgeHtml + "Previsão baseada no ônibus das <b>" + hora + "</b> (saída: " + origem + ")";
+      // Atraso ao vivo só se aplica à viagem que está realmente sendo rastreada
+      const atrasoReal = (emAndamento && estadoAoVivoGlobal.ativo &&
+                          estadoAoVivoGlobal.horarioViagem === hora &&
+                          estadoAoVivoGlobal.atrasoMinutos > 2)
+        ? estadoAoVivoGlobal.atrasoMinutos : 0;
 
-      let rota = obterRota(origem, tipo);
+      const textoAtraso = atrasoReal > 0 ? ` <span class="texto-atraso">(⚠️ +${atrasoReal} min ao vivo)</span>` : "";
+      document.getElementById("infoViagem").innerHTML =
+        `${badgeHtml}Previsão baseada no ônibus das <b>${hora}</b> (saída: ${esc(origem)})${textoAtraso}`;
+
+      const rota = obterRota(origem, tipo);
       let marcouPontoAtual = false;
 
-      
-// Se houver rastreamento ao vivo com atraso nesta viagem, soma o atraso em todos os pontos seguintes!
-      let atrasoReal = (emAndamento && estadoAoVivoGlobal.ativo && estadoAoVivoGlobal.atrasoMinutos > 2)
-        ? estadoAoVivoGlobal.atrasoMinutos
-        : 0;
-
       rota.forEach((p, idx) => {
-        let min = saida + p.t + atrasoReal;
-
-        let horaPontoStr = converterMinutosParaHHMM(min);
-
-        let li = document.createElement("li");
+        const min = saida + p.t + atrasoReal;
+        const li = document.createElement("li");
 
         if (emAndamento) {
-          let proxPontoMin = (idx < rota.length - 1) ? (saida + rota[idx + 1].t) : min;
+          const proxPontoMin = (idx < rota.length - 1) ? (saida + rota[idx + 1].t + atrasoReal) : min;
           if (atualMin >= proxPontoMin && idx < rota.length - 1) {
             li.classList.add("ponto-concluido");
           } else if (!marcouPontoAtual && atualMin >= min) {
@@ -1781,31 +1604,50 @@
           }
         }
 
-        let ehFavorito = (pontoFavorito && p.p === pontoFavorito);
-        if (ehFavorito) {
-          li.classList.add("ponto-favorito-destaque");
-        }
+        const ehFavorito = (pontoFavorito && p.p === pontoFavorito);
+        if (ehFavorito) li.classList.add("ponto-favorito-destaque");
 
-        let dadosCoord = pontos.find(pt => pt.nome === p.p);
+        const dadosCoord = pontos.find(pt => pt.nome === p.p);
         let btnMaps = "";
         if (dadosCoord && dadosCoord.lat && dadosCoord.lon) {
-          let urlMaps = `https://www.google.com/maps/search/?api=1&query=${dadosCoord.lat},${dadosCoord.lon}`;
+          const urlMaps = `https://www.google.com/maps/search/?api=1&query=${dadosCoord.lat},${dadosCoord.lon}`;
           btnMaps = `<a href="${urlMaps}" target="_blank" rel="noopener" class="link-maps-ponto" title="Abrir localização do ponto no Google Maps">📍 Maps</a>`;
         }
 
-        let estrelaFav = ehFavorito ? "⭐ " : "";
-        li.innerHTML = `<span><b>${horaPontoStr}</b> — ${estrelaFav}${p.p}</span> ${btnMaps}`;
+        li.innerHTML = `<span><b>${converterMinutosParaHHMM(min)}</b> — ${ehFavorito ? "⭐ " : ""}${esc(p.p)}</span> ${btnMaps}`;
         lista.appendChild(li);
       });
     }
 
-    /* -----------------------------
-    PRÓXIMO ÔNIBUS E TEMPO REAL
-    ----------------------------- */
+    /* =================================================================
+       PRÓXIMO ÔNIBUS (ATUALIZAÇÃO PRINCIPAL)
+       ================================================================= */
+    function configurarBoxSentido(prefixo, item, atualMin) {
+      const box = document.getElementById("boxProx" + prefixo);
+      const hora = document.getElementById("horaProx" + prefixo);
+      const falta = document.getElementById("faltaProx" + prefixo);
+
+      if (item) {
+        hora.textContent = item.hora;
+        falta.textContent = "em " + formatarHoraMinuto(item.min - atualMin);
+        box.onclick = () => simularHorarioNaTimeline(item.hora, item.origem, item.tipo);
+      } else {
+        hora.textContent = "Encerrado";
+        falta.textContent = "Sem saídas hoje";
+        box.onclick = null;
+      }
+      box.onkeydown = (e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && box.onclick) {
+          e.preventDefault();
+          box.onclick();
+        }
+      };
+    }
+
     function atualizar() {
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
-      let horarios = obterHorarios(agora);
+      const agora = new Date();
+      const atualMin = minutosAgora();
+      const horarios = obterHorarios(agora);
 
       let proximo = null;
       let ultimo = null;
@@ -1813,192 +1655,135 @@
       let proxCampus = null;
 
       horarios.forEach(h => {
-        let min = minutos(h[0]);
-        let item = {hora: h[0], origem: h[1], min: min, quando: "hoje", tipo: h[2], qtd: h[3]};
+        const min = minutos(h[0]);
+        const item = { hora: h[0], origem: h[1], min, quando: "hoje", tipo: h[2], qtd: h[3] || 1 };
 
         if (min > atualMin) {
           if (!proximo) proximo = item;
           if (!proxMoradia && h[1].includes("Moradia") && h[2] !== "passagem") proxMoradia = item;
           if (!proxCampus && h[1].includes("Escola")) proxCampus = item;
-        }
-        if (min <= atualMin) {
+        } else {
           ultimo = item;
         }
       });
 
-      // Atualiza o box do Ponto Favorito (se o usuário tiver escolhido um)
+      // Box do Ponto Favorito
       const boxMeuPonto = document.getElementById("boxMeuPonto");
       if (pontoFavorito) {
-        let infoFav = buscarProximoNoPonto(pontoFavorito, false);
+        const infoFav = buscarProximoNoPonto(pontoFavorito, false);
         boxMeuPonto.style.display = "block";
         if (infoFav) {
-          boxMeuPonto.innerHTML = `⭐ Passa ${preposicaoPonto(pontoFavorito)} <b>${pontoFavorito}</b> às <b>${infoFav.horaChegada}</b> (faltam <b>${formatarHoraMinuto(infoFav.espera)}</b>)`;
+          const atr = obterAtrasoPropagado(infoFav.horaSaidaOrigem);
+          const txtAtr = atr >= 2
+            ? ` <span class="texto-atraso">(⚠️ +${atr} min → ${converterMinutosParaHHMM(infoFav.minChegada + atr)})</span>`
+            : "";
+          boxMeuPonto.innerHTML = `⭐ Passa ${preposicaoPonto(pontoFavorito)} <b>${esc(pontoFavorito)}</b> às <b>${infoFav.horaChegada}</b> (faltam <b>${formatarHoraMinuto(infoFav.espera)}</b>)${txtAtr}`;
         } else {
-          boxMeuPonto.innerHTML = `⭐ <b>${pontoFavorito}:</b> Sem mais passagens previstas para hoje.`;
+          boxMeuPonto.innerHTML = `⭐ <b>${esc(pontoFavorito)}:</b> Sem mais passagens previstas para hoje.`;
         }
       } else {
         boxMeuPonto.style.display = "none";
       }
 
-      // Atualiza o painel duplo (Da Moradia / Do Campus)
+      // Painel duplo
       const painelSentidos = document.getElementById("painelSentidos");
       if (horarios.length > 0 && (proxMoradia || proxCampus)) {
         painelSentidos.style.display = "grid";
-
-        const boxMoradia = document.getElementById("boxProxMoradia");
-        if (proxMoradia) {
-          document.getElementById("horaProxMoradia").innerText = proxMoradia.hora;
-          document.getElementById("faltaProxMoradia").innerText = "em " + formatarHoraMinuto(proxMoradia.min - atualMin);
-          boxMoradia.onclick = () => simularHorarioNaTimeline(proxMoradia.hora, proxMoradia.origem, proxMoradia.tipo);
-        } else {
-          document.getElementById("horaProxMoradia").innerText = "Encerrado";
-          document.getElementById("faltaProxMoradia").innerText = "Sem saídas hoje";
-          boxMoradia.onclick = null;
-        }
-
-        const boxCampus = document.getElementById("boxProxCampus");
-        if (proxCampus) {
-          document.getElementById("horaProxCampus").innerText = proxCampus.hora;
-          document.getElementById("faltaProxCampus").innerText = "em " + formatarHoraMinuto(proxCampus.min - atualMin);
-          boxCampus.onclick = () => simularHorarioNaTimeline(proxCampus.hora, proxCampus.origem, proxCampus.tipo);
-        } else {
-          document.getElementById("horaProxCampus").innerText = "Encerrado";
-          document.getElementById("faltaProxCampus").innerText = "Sem saídas hoje";
-          boxCampus.onclick = null;
-        }
+        configurarBoxSentido("Moradia", proxMoradia, atualMin);
+        configurarBoxSentido("Campus", proxCampus, atualMin);
       } else {
         painelSentidos.style.display = "none";
       }
 
+      // Se não houver mais ônibus hoje, procura o próximo dia com ônibus
       if (!proximo) {
-        let diasNomes = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-        for (let i = 1; i <= 7; i++) {
-          let dataFutura = new Date();
-          dataFutura.setDate(agora.getDate() + i);
-          let horariosFuturos = obterHorarios(dataFutura);
+        for (let i = 1; i <= 10; i++) {
+          const dataFutura = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + i);
+          const horariosFuturos = obterHorarios(dataFutura);
           if (horariosFuturos.length > 0) {
-            let h = horariosFuturos[0];
-            let textoDia = (i === 1) ? "Amanhã" : diasNomes[dataFutura.getDay()];
-            proximo = {hora: h[0], origem: h[1], quando: textoDia, tipo: h[2], qtd: h[3]};
+            const h = horariosFuturos[0];
+            const textoDia = (i === 1) ? "Amanhã" : DIAS_SEMANA[dataFutura.getDay()];
+            proximo = { hora: h[0], origem: h[1], quando: textoDia, tipo: h[2], qtd: h[3] || 1 };
             break;
           }
         }
       }
 
-      if (proximo) {
-        let iconesBus = `<span style="letter-spacing: 4px; margin-right: 2px;">${"🚌".repeat(proximo.qtd)}</span>`;
-        let qtdTexto = proximo.qtd > 1 ? `${iconesBus} ${proximo.qtd} veículos` : `${iconesBus} 1 veículo`;
-        document.getElementById("qtd-onibus").innerHTML = qtdTexto;
-        document.getElementById("qtd-onibus").style.display = "inline-block";
+      const elProximo = document.getElementById("proximo");
+      const elTempo = document.getElementById("tempo");
+      const elOrigem = document.getElementById("origem");
+      const elQtd = document.getElementById("qtd-onibus");
 
-        let tagHtml = "";
-        if (proximo.tipo === "passagem" && proximo.origem.includes("Moradia")) {
-          tagHtml = `<span class="tag-passagem">Passando na Moradia</span>`;
-        } else if (proximo.origem.includes("Moradia")) {
-          tagHtml = `<span class="tag-moradia">Moradia</span>`;
-        } else {
-          tagHtml = `<span class="tag-escola">${proximo.origem}</span>`;
-        }
+      if (proximo) {
+        elQtd.innerHTML = `${iconesComboio(proximo.qtd)} ${proximo.qtd} veículo${proximo.qtd > 1 ? "s" : ""}`;
+        elQtd.style.display = "inline-block";
+
+        const tagHtml = tagOrigemHtml(proximo.origem, proximo.tipo);
+        elOrigem.innerHTML = ehPassagem(proximo.origem, proximo.tipo) ? tagHtml : "Saída: " + tagHtml;
 
         if (proximo.quando === "hoje") {
-          let falta = proximo.min - atualMin;
-          let ehOUltimo = (proximo.hora === horarios[horarios.length - 1][0]);
-          let etiquetaAviso = ehOUltimo
-            ? "<div style='background:#cc0000; color:white; padding:6px 10px; border-radius:6px; font-size:13px; font-weight:bold; display:inline-block; margin-bottom:8px;'>⚠️ ATENÇÃO: ÚLTIMO ÔNIBUS DE HOJE</div><br>"
-            : "";
-
-          document.getElementById("proximo").innerHTML = etiquetaAviso + proximo.hora;
-          document.getElementById("tempo").innerText = formatarTempo(falta);
-
-          if (proximo.tipo === "passagem") {
-            document.getElementById("origem").innerHTML = tagHtml;
-          } else {
-            document.getElementById("origem").innerHTML = "Saída: " + tagHtml;
-          }
+          const ehOUltimo = (proximo.hora === horarios[horarios.length - 1][0]);
+          const etiquetaAviso = ehOUltimo ? `<div class="etiqueta-ultimo">⚠️ ATENÇÃO: ÚLTIMO ÔNIBUS DE HOJE</div><br>` : "";
+          elProximo.innerHTML = etiquetaAviso + proximo.hora;
+          elTempo.textContent = formatarTempo(proximo.min - atualMin);
         } else {
-          let tinhaOnibusHoje = horarios.length > 0;
-          let msgErro = tinhaOnibusHoje
+          const msgErro = horarios.length > 0
             ? "⚠️ Último ônibus do dia já saiu"
             : "🚫 Não há ônibus hoje (Domingo/Feriado)";
-
-          document.getElementById("proximo").innerHTML =
-            "<span style='font-size: 20px; color: #e53935;'>" + msgErro + "</span><br>" +
-            "<span class='texto-dia-seguinte' style='font-size: 22px; margin-top: 10px; display: block;'>Próximo: " + proximo.quando.toLowerCase() + " às " + proximo.hora + "</span>";
-
-          if (proximo.tipo === "passagem") {
-            document.getElementById("origem").innerHTML = tagHtml;
-          } else {
-            document.getElementById("origem").innerHTML = "Saída: " + tagHtml;
-          }
-
-          document.getElementById("tempo").innerText = "";
+          elProximo.innerHTML =
+            `<span class="msg-sem-onibus">${msgErro}</span><br>` +
+            `<span class="texto-dia-seguinte">Próximo: ${proximo.quando.toLowerCase()} às ${proximo.hora}</span>`;
+          elTempo.textContent = "";
         }
       } else {
-        document.getElementById("proximo").innerHTML = "🚫 Sem previsão de ônibus";
-        document.getElementById("origem").innerText = "";
-        document.getElementById("tempo").innerText = "";
-        document.getElementById("qtd-onibus").style.display = "none";
+        elProximo.textContent = "🚫 Sem previsão de ônibus";
+        elOrigem.textContent = "";
+        elTempo.textContent = "";
+        elQtd.style.display = "none";
       }
 
-      // Controle da Timeline de Chegadas
-      if (horarioSimulado) {
-        let rotaSim = obterRota(horarioSimulado.origem, horarioSimulado.tipo);
-        let fimSim = horarioSimulado.min + rotaSim[rotaSim.length - 1].t;
-        let simEmAndamento = (atualMin >= horarioSimulado.min && atualMin <= fimSim);
-        mostrarChegadas(horarioSimulado.min, horarioSimulado.origem, horarioSimulado.hora, horarioSimulado.tipo, simEmAndamento, true);
-      } else if (ultimo) {
-        let rotaUltimo = obterRota(ultimo.origem, ultimo.tipo);
-        let tempoTotalViagem = rotaUltimo[rotaUltimo.length - 1].t;
-        let minutoFimDaViagem = ultimo.min + tempoTotalViagem;
+      // Linha do tempo de chegadas
+      const elChegadas = document.getElementById("chegadas");
+      const elInfo = document.getElementById("infoViagem");
 
-        if (atualMin <= minutoFimDaViagem) {
-          mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora, ultimo.tipo, true, false);
-        } else if (proximo && proximo.quando === "hoje") {
-          mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo, false, false);
-        } else {
-          document.getElementById("chegadas").innerHTML = "<li>Viagens encerradas no momento.</li>";
-          document.getElementById("infoViagem").innerHTML = "";
-        }
+      if (horarioSimulado) {
+        const fimSim = horarioSimulado.min + duracaoRota(obterRota(horarioSimulado.origem, horarioSimulado.tipo));
+        const simEmAndamento = (atualMin >= horarioSimulado.min && atualMin <= fimSim) && horarios.length > 0;
+        mostrarChegadas(horarioSimulado.min, horarioSimulado.origem, horarioSimulado.hora, horarioSimulado.tipo, simEmAndamento, true);
+      } else if (ultimo && atualMin <= ultimo.min + duracaoRota(obterRota(ultimo.origem, ultimo.tipo))) {
+        mostrarChegadas(ultimo.min, ultimo.origem, ultimo.hora, ultimo.tipo, true, false);
       } else if (proximo && proximo.quando === "hoje") {
         mostrarChegadas(proximo.min, proximo.origem, proximo.hora, proximo.tipo, false, false);
       } else {
-        document.getElementById("chegadas").innerHTML = "<li>Aguardando início das viagens...</li>";
-        document.getElementById("infoViagem").innerHTML = "";
+        elChegadas.innerHTML = ultimo
+          ? "<li>Viagens encerradas no momento.</li>"
+          : "<li>Aguardando início das viagens...</li>";
+        elInfo.innerHTML = "";
       }
 
       estimarPosicaoOnibus(ultimo);
       listarHorarios();
+      aplicarAtrasosNosCardsPrincipais();
     }
 
-    let marcadorOnibus = null;
-
+    // Posição ESTIMADA pela tabela (só aparece quando não há GPS real)
     function estimarPosicaoOnibus(ultimo) {
       if (meuMapa === null) return;
 
-      if (!ultimo) {
-        if (marcadorOnibus) {
-          meuMapa.removeLayer(marcadorOnibus);
-          marcadorOnibus = null;
+      const remover = () => {
+        if (marcadorOnibusEstimado) {
+          meuMapa.removeLayer(marcadorOnibusEstimado);
+          marcadorOnibusEstimado = null;
         }
-        return;
-      }
+      };
 
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
+      if (!ultimo || estadoAoVivoGlobal.ativo) return remover();
 
-      let rota = obterRota(ultimo.origem, ultimo.tipo);
-      let tempoTotal = rota[rota.length - 1].t;
-      let minutoFim = ultimo.min + tempoTotal;
+      const atualMin = minutosAgora();
+      const rota = obterRota(ultimo.origem, ultimo.tipo);
+      if (atualMin > ultimo.min + duracaoRota(rota)) return remover();
 
-      if (atualMin > minutoFim) {
-        if (marcadorOnibus) {
-          meuMapa.removeLayer(marcadorOnibus);
-          marcadorOnibus = null;
-        }
-        return;
-      }
-
-      let tempoDecorrido = atualMin - ultimo.min;
+      const tempoDecorrido = atualMin - ultimo.min;
       let pontoAnterior = rota[0];
       let pontoProximo = rota[rota.length - 1];
 
@@ -2010,68 +1795,51 @@
         }
       }
 
-      let coordAnt = pontos.find(p => p.nome === pontoAnterior.p);
-      let coordProx = pontos.find(p => p.nome === pontoProximo.p);
+      const coordAnt = pontos.find(p => p.nome === pontoAnterior.p);
+      const coordProx = pontos.find(p => p.nome === pontoProximo.p);
+      if (!coordAnt || !coordProx) return remover();
 
-      if (coordAnt && coordProx && coordAnt.lat !== null && coordProx.lat !== null) {
-        let tempoTrecho = pontoProximo.t - pontoAnterior.t;
-        let tempoAndadoTrecho = tempoDecorrido - pontoAnterior.t;
-        let porcentagem = tempoTrecho > 0 ? (tempoAndadoTrecho / tempoTrecho) : 0;
+      const tempoTrecho = pontoProximo.t - pontoAnterior.t;
+      const porcentagem = tempoTrecho > 0 ? Math.min(1, (tempoDecorrido - pontoAnterior.t) / tempoTrecho) : 0;
+      const latAtual = coordAnt.lat + (coordProx.lat - coordAnt.lat) * porcentagem;
+      const lonAtual = coordAnt.lon + (coordProx.lon - coordAnt.lon) * porcentagem;
 
-        let latAtual = coordAnt.lat + ((coordProx.lat - coordAnt.lat) * porcentagem);
-        let lonAtual = coordAnt.lon + ((coordProx.lon - coordAnt.lon) * porcentagem);
-
-        if (!marcadorOnibus) {
-          let iconeBus = L.divIcon({
-            html: '<div style="font-size: 22px;">🚌</div>',
-            className: '',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
-          });
-          marcadorOnibus = L.marker([latAtual, lonAtual], {icon: iconeBus}).addTo(meuMapa);
-          marcadorOnibus.bindPopup("<b>Ônibus das " + ultimo.hora + "</b><br>Estimativa em tempo real");
-        } else {
-          marcadorOnibus.setLatLng([latAtual, lonAtual]);
-        }
+      if (!marcadorOnibusEstimado) {
+        const iconeBus = L.divIcon({
+          html: '<div style="font-size: 22px; opacity: 0.85;">🚌</div>',
+          className: '',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        marcadorOnibusEstimado = L.marker([latAtual, lonAtual], { icon: iconeBus }).addTo(meuMapa);
+      } else {
+        marcadorOnibusEstimado.setLatLng([latAtual, lonAtual]);
       }
+      marcadorOnibusEstimado.bindPopup(`<b>Ônibus das ${ultimo.hora}</b><br>Posição estimada pela tabela`);
     }
 
-    /* -----------------------------
-    NOTIFICAÇÕES COM LOCALSTORAGE
-    ----------------------------- */
-    function obterChaveDataHoje() {
-      let d = new Date();
-      return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-    }
-
+    /* =================================================================
+       ALARMES ⏰ (funcionam com o app aberto)
+       ================================================================= */
     function salvarAlertasNoStorage() {
-      let dados = {
+      localStorage.setItem('morabus_alertas', JSON.stringify({
         data: obterChaveDataHoje(),
         horarios: Object.keys(alertasAgendados)
-      };
-      localStorage.setItem('morabus_alertas', JSON.stringify(dados));
+      }));
     }
 
     function restaurarAlertasDoStorage() {
-      try {
-        let bruto = localStorage.getItem('morabus_alertas');
-        if (!bruto) return;
-        let dados = JSON.parse(bruto);
-        if (dados.data !== obterChaveDataHoje() || !Array.isArray(dados.horarios)) {
-          localStorage.removeItem('morabus_alertas');
-          return;
-        }
-
-        let horariosDia = horariosHoje();
-        dados.horarios.forEach(hora => {
-          let item = horariosDia.find(h => h[0] === hora);
-          if (item) {
-            configurarTimerAlerta(item[0], item[1], true);
-          }
-        });
-      } catch (e) {
-        console.log('Erro ao restaurar alertas:', e);
+      const dados = lerJSON('morabus_alertas', null);
+      if (!dados) return;
+      if (dados.data !== obterChaveDataHoje() || !Array.isArray(dados.horarios)) {
+        localStorage.removeItem('morabus_alertas');
+        return;
       }
+      const horariosDia = horariosHoje();
+      dados.horarios.forEach(hora => {
+        const item = horariosDia.find(h => h[0] === hora);
+        if (item) configurarTimerAlerta(item[0], item[1], true);
+      });
     }
 
     function agendarAlerta(horaBus, origemBus) {
@@ -2092,11 +1860,8 @@
         configurarTimerAlerta(horaBus, origemBus, false);
       } else if (Notification.permission !== "denied") {
         Notification.requestPermission().then(permission => {
-          if (permission === "granted") {
-            configurarTimerAlerta(horaBus, origemBus, false);
-          } else {
-            alert("Permissão para notificações negada.");
-          }
+          if (permission === "granted") configurarTimerAlerta(horaBus, origemBus, false);
+          else alert("Permissão para notificações negada.");
         });
       } else {
         alert("As notificações estão bloqueadas nas configurações do seu navegador.");
@@ -2104,15 +1869,14 @@
     }
 
     function configurarTimerAlerta(horaBus, origemBus, silencioso = false) {
-      let agora = new Date();
-      let atualSegundos = (agora.getHours() * 3600) + (agora.getMinutes() * 60) + agora.getSeconds();
-      let saidaSegundos = minutos(horaBus) * 60;
-      let alertaSegundos = saidaSegundos - (MINUTOS_ANTECEDENCIA_ALERTA * 60);
-
-      let esperaMs = (alertaSegundos - atualSegundos) * 1000;
+      const agora = new Date();
+      const atualSegundos = agora.getHours() * 3600 + agora.getMinutes() * 60 + agora.getSeconds();
+      const saidaSegundos = minutos(horaBus) * 60;
+      const alertaSegundos = saidaSegundos - MINUTOS_ANTECEDENCIA_ALERTA * 60;
+      const esperaMs = (alertaSegundos - atualSegundos) * 1000;
 
       if (esperaMs <= 0) {
-        if (!silencioso && (saidaSegundos > atualSegundos)) {
+        if (!silencioso && saidaSegundos > atualSegundos) {
           enviarNotificacao(
             `🚌 Ônibus das ${horaBus} saindo em breve!`,
             `Faltam menos de ${MINUTOS_ANTECEDENCIA_ALERTA} minutos para a saída (${origemBus}).`
@@ -2124,7 +1888,8 @@
       alertasAgendados[horaBus] = setTimeout(() => {
         enviarNotificacao(
           `⏰ Alerta: Ônibus das ${horaBus}`,
-          `O ônibus (${origemBus}) sai em ${MINUTOS_ANTECEDENCIA_ALERTA} minutos!`
+          `O ônibus (${origemBus}) sai em ${MINUTOS_ANTECEDENCIA_ALERTA} minutos!`,
+          { tag: `alarme-${horaBus}`, vibrate: [200, 100, 200] }
         );
         delete alertasAgendados[horaBus];
         salvarAlertasNoStorage();
@@ -2137,146 +1902,75 @@
       if (!silencioso) {
         enviarNotificacao(
           `✅ Alerta ativado (${horaBus})`,
-          `Você receberá um aviso ${MINUTOS_ANTECEDENCIA_ALERTA} minutos antes da saída.`
+          `Você receberá um aviso ${MINUTOS_ANTECEDENCIA_ALERTA} minutos antes da saída. Mantenha o app aberto em segundo plano.`
         );
       }
     }
 
-    function enviarNotificacao(titulo, mensagem) {
-      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'SHOW_NOTIFICATION',
-          titulo: titulo,
-          mensagem: mensagem
-        });
-      } else {
-        new Notification(titulo, { body: mensagem, icon: './Morabus.png' });
-      }
-    }
-
-    /* -----------------------------
-    INICIALIZAÇÃO
-    ----------------------------- */
-    inicializarSelectFavorito();
-    atualizarRelogio();
-    setInterval(atualizarRelogio, 1000);
-
-    restaurarAlertasDoStorage();
-    atualizar();
-    setInterval(atualizar, TEMPO_ATUALIZACAO);
-  </script>
-
-<script>
-    if ('serviceWorker' in navigator) {
-      let recarregando = false;
-
-      // Se o Service Worker baixar uma versão nova do código, atualiza a tela sozinho
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!recarregando) {
-          recarregando = true;
-          window.location.reload();
+    // Usa showNotification do Service Worker (obrigatório no Chrome Android)
+    async function enviarNotificacao(titulo, mensagem, opcoesExtras = {}) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const opcoes = { body: mensagem, icon: './Morabus.png', badge: './Morabus.png', ...opcoesExtras };
+      try {
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.ready;
+          await reg.showNotification(titulo, opcoes);
+          return;
         }
-      });
-
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then((reg) => {
-            // Força a checagem no GitHub toda vez que a página é aberta
-            reg.update();
-          })
-          .catch(err => console.log('Erro no Service Worker:', err));
-      });
+        new Notification(titulo, opcoes);
+      } catch (e) {
+        console.log('Falha ao notificar:', e);
+      }
     }
 
-    // Se o estudante minimizou o app e voltou horas depois, recalcula tudo na hora
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        atualizarRelogio();
-        atualizar();
-      }
-    });
-
-    window.addEventListener('pageshow', () => {
-      atualizarRelogio();
-      atualizar();
-    });
-
-
-/* =================================================================
-    SISTEMA DE RASTREAMENTO EM TEMPO REAL + CASCATA + RETENÇÃO DE GPS
-    ================================================================= */
-    const FIREBASE_DB_URL = "https://morabus-ufmg-default-rtdb.firebaseio.com";
-
-    let transmitindoWatchId = null;
-    let wakeLockAtivo = null;
-    let idSessaoColaborador = localStorage.getItem('morabus_uid') || ('usr_' + Math.random().toString(36).substring(2, 9));
-    localStorage.setItem('morabus_uid', idSessaoColaborador);
-
-    let estadoAoVivoGlobal = {
-      ativo: false,
-      lat: null,
-      lon: null,
-      velocidadeKmh: 0,
-      pontoMaisProximo: null,
-      atrasoMinutos: 0,
-      horarioViagem: null,
-      origemViagem: null,
-      tipoViagem: null,
-      alertaComunidade: null,
-      qtdColaboradores: 0
-    };
-
-    // Guarda atrasos do dia por horário (ex: {"06:45": 12}) para propagar atraso em cascata
-    let historicoAtrasosHoje = JSON.parse(localStorage.getItem('morabus_atrasos_dia') || '{}');
-
+    /* =================================================================
+       ATRASOS: HISTÓRICO DO DIA E PROPAGAÇÃO EM CASCATA
+       ================================================================= */
     function registrarAtrasoDoHorario(horaStr, atrasoMin) {
-      let chaveHoje = obterChaveDataHoje();
-      if (historicoAtrasosHoje.data !== chaveHoje) {
+      const chaveHoje = obterChaveDataHoje();
+      if (historicoAtrasosHoje.data !== chaveHoje || !historicoAtrasosHoje.mapa) {
         historicoAtrasosHoje = { data: chaveHoje, mapa: {} };
       }
-      if (!historicoAtrasosHoje.mapa) historicoAtrasosHoje.mapa = {};
-      historicoAtrasosHoje.mapa[horaStr] = Math.max(0, atrasoMin);
+      historicoAtrasosHoje.mapa[horaStr] = Math.max(0, Math.round(atrasoMin));
       localStorage.setItem('morabus_atrasos_dia', JSON.stringify(historicoAtrasosHoje));
     }
 
-    // Calcula se um horário futuro vai atrasar por cascata do ônibus anterior (< 30 min de intervalo)
+    function atrasoConhecido(horaStr) {
+      if (estadoAoVivoGlobal.ativo && estadoAoVivoGlobal.horarioViagem === horaStr) {
+        return Math.max(0, estadoAoVivoGlobal.atrasoMinutos);
+      }
+      if (historicoAtrasosHoje.data === obterChaveDataHoje() && historicoAtrasosHoje.mapa) {
+        return historicoAtrasosHoje.mapa[horaStr] || 0;
+      }
+      return 0;
+    }
+
+    // Calcula se um horário vai atrasar por cascata do ônibus anterior (intervalo <= 30 min)
     function obterAtrasoPropagado(horaAlvoStr) {
-      let horarios = horariosHoje();
-      let idx = horarios.findIndex(h => h[0] === horaAlvoStr);
+      const horarios = horariosHoje();
+      const idx = horarios.findIndex(h => h[0] === horaAlvoStr);
       if (idx < 0) return 0;
 
-      // 1. Se este próprio horário é o que está ao vivo agora com atraso:
       if (estadoAoVivoGlobal.ativo && estadoAoVivoGlobal.horarioViagem === horaAlvoStr) {
         return Math.max(0, estadoAoVivoGlobal.atrasoMinutos);
       }
 
-      // 2. Verifica o horário imediatamente anterior na tabela de hoje
       if (idx > 0) {
-        let hAnterior = horarios[idx - 1];
-        let minAnterior = minutos(hAnterior[0]);
-        let minAlvo = minutos(horaAlvoStr);
-        let intervaloEntreSaidas = minAlvo - minAnterior;
+        const hAnterior = horarios[idx - 1];
+        const minAnterior = minutos(hAnterior[0]);
+        const minAlvo = minutos(horaAlvoStr);
+        const intervalo = minAlvo - minAnterior;
 
-        // Só propaga se o horário seguinte for próximo (até 30 minutos depois)
-        if (intervaloEntreSaidas > 0 && intervaloEntreSaidas <= 30) {
-          let atrasoDoAnterior = 0;
-          if (estadoAoVivoGlobal.ativo && estadoAoVivoGlobal.horarioViagem === hAnterior[0]) {
-            atrasoDoAnterior = estadoAoVivoGlobal.atrasoMinutos;
-          } else if (historicoAtrasosHoje.data === obterChaveDataHoje() && historicoAtrasosHoje.mapa && historicoAtrasosHoje.mapa[hAnterior[0]]) {
-            atrasoDoAnterior = historicoAtrasosHoje.mapa[hAnterior[0]];
-          }
-
+        if (intervalo > 0 && intervalo <= 30) {
+          const atrasoDoAnterior = atrasoConhecido(hAnterior[0]);
           if (atrasoDoAnterior > 2) {
-            let rotaAnt = obterRota(hAnterior[1], hAnterior[2]);
-            let duracaoViagemAnt = rotaAnt[rotaAnt.length - 1].t; // ~20 a 22 min
-            let chegadaRealDoAnterior = minAnterior + duracaoViagemAnt + atrasoDoAnterior;
+            const duracaoAnt = duracaoRota(obterRota(hAnterior[1], hAnterior[2]));
+            const chegadaRealDoAnterior = minAnterior + duracaoAnt + atrasoDoAnterior;
 
-            // Se o ônibus anterior vai terminar a rota depois (ou muito em cima) do horário de saída deste:
             if (chegadaRealDoAnterior > minAlvo) {
               return chegadaRealDoAnterior - minAlvo + 2; // +2 min de manobra/embarque
             } else if (atrasoDoAnterior >= 5) {
-              // Propagação amortecida quando o intervalo absorve parte do atraso
-              return Math.max(0, atrasoDoAnterior - Math.max(0, intervaloEntreSaidas - duracaoViagemAnt));
+              return Math.max(0, atrasoDoAnterior - Math.max(0, intervalo - duracaoAnt));
             }
           }
         }
@@ -2284,43 +1978,35 @@
       return 0;
     }
 
-    // 0. Clima real da Pampulha (Open-Meteo)
-    let climaPampulha = { chovendo: false, chuvaForte: false, mm: 0 };
-
+    /* =================================================================
+       CLIMA (Open-Meteo) E DIAGNÓSTICO DE ATRASO
+       ================================================================= */
     function atualizarClimaPampulha() {
       const urlClima = "https://api.open-meteo.com/v1/forecast?latitude=-19.8690&longitude=-43.9664&current=precipitation,rain,weather_code&timezone=America%2FSao_Paulo";
       fetch(urlClima)
         .then(r => r.json())
         .then(d => {
-          if (d && d.current) {
-            let mm = d.current.precipitation || d.current.rain || 0;
-            let code = d.current.weather_code || 0;
-            climaPampulha.mm = mm;
-            climaPampulha.chovendo = (mm > 0.1 || code >= 51);
-            climaPampulha.chuvaForte = (mm >= 2.5 || code >= 63 || code >= 80);
-          }
+          if (!d || !d.current) return;
+          const mm = d.current.precipitation || d.current.rain || 0;
+          const code = d.current.weather_code || 0;
+          climaPampulha.mm = mm;
+          climaPampulha.chovendo = (mm > 0.1 || code >= 51);
+          climaPampulha.chuvaForte = (mm >= 2.5 || [63, 65, 81, 82, 95, 96, 99].includes(code));
         })
         .catch(() => {});
     }
 
     function diagnosticarCausaAtraso(atrasoMin, velocidadeKmh) {
-      if (estadoAoVivoGlobal.alertaComunidade) {
-        return estadoAoVivoGlobal.alertaComunidade.texto;
-      }
-      if (climaPampulha.chuvaForte) {
-        return `🌧️ Chuva forte na Pampulha (${climaPampulha.mm} mm) — retenção na via`;
-      }
-      if (climaPampulha.chovendo) {
-        return `🌦️ Pista molhada / Chuva na região causando lentidão`;
-      }
+      if (estadoAoVivoGlobal.alertaComunidade) return estadoAoVivoGlobal.alertaComunidade.texto;
+      if (climaPampulha.chuvaForte) return `🌧️ Chuva forte na Pampulha (${climaPampulha.mm} mm) — retenção na via`;
+      if (climaPampulha.chovendo) return `🌦️ Pista molhada / Chuva na região causando lentidão`;
 
-      let agora = new Date();
-      let dia = agora.getDay();
-      let min = agora.getHours() * 60 + agora.getMinutes();
-      let picoManha = (min >= 405 && min <= 520);
-      let picoTarde = (min >= 1000 && min <= 1170);
+      const agora = new Date();
+      const min = minutosAgora();
+      const picoManha = (min >= 405 && min <= 520);
+      const picoTarde = (min >= 1000 && min <= 1170);
 
-      if (dia === 5 && picoTarde) return "🚗 Engarrafamento típico de sexta-feira à tarde";
+      if (agora.getDay() === 5 && picoTarde) return "🚗 Engarrafamento típico de sexta-feira à tarde";
       if (picoManha || picoTarde) return "🚗 Trânsito intenso de horário de pico";
       if (velocidadeKmh > 0 && velocidadeKmh <= 6 && atrasoMin >= 6) {
         return "🚨 Trânsito parado fora de hora (possível acidente ou defeito)";
@@ -2328,77 +2014,67 @@
       return "⚠️ Trânsito lento no trajeto";
     }
 
-    // 1. Descobre qual viagem está acontecendo agora
+    /* =================================================================
+       TRANSMISSÃO DE GPS (ALUNO DENTRO DO ÔNIBUS)
+       ================================================================= */
     function identificarViagemAtivaParaRastreio() {
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
-      let horarios = horariosHoje();
+      const atualMin = minutosAgora();
       let candidata = null;
-
-      for (let h of horarios) {
-        let minSaida = minutos(h[0]);
+      for (const h of horariosHoje()) {
+        const minSaida = minutos(h[0]);
         if (atualMin >= (minSaida - 5) && atualMin <= (minSaida + 45)) {
-          candidata = { hora: h[0], origem: h[1], tipo: h[2], minSaida: minSaida };
+          candidata = { hora: h[0], origem: h[1], tipo: h[2], minSaida };
         }
       }
       return candidata;
     }
 
-    // 2. CORREÇÃO DO BUG DO MCDONALD'S / CARLOS LUZ:
-    // Filtra os pontos da rota atual e evita pular para "Odonto" quando está na Av. Carlos Luz / Noraldino
+    // Evita "pular" para Odonto quando o ônibus está na Av. Carlos Luz / Noraldino
     function identificarPontoCorretoDoTrajeto(lat, lon, viagem) {
-      // Se o ônibus está no corredor externo (Fleming / Noraldino / McDonald's Carlos Luz)
-      // antes de entrar no campus (latitude mais ao sul que -19.8732 e a oeste de -43.9715, ou entre Moradia e Campus):
-      let distMoradia23 = distancia(lat, lon, -19.8661, -43.9845);
-      let distMcDonaldsCarlosLuz = distancia(lat, lon, -19.8742, -43.9722);
-      let distEdFisica = distancia(lat, lon, -19.87495, -43.97425);
+      const edFisica = pontos.find(p => p.nome === "Educação Física");
+      const distMoradia23 = distancia(lat, lon, -19.8661, -43.9845);
+      const distMcDonaldsCarlosLuz = distancia(lat, lon, -19.8742, -43.9722);
+      const distEdFisica = distancia(lat, lon, edFisica.lat, edFisica.lon);
 
-      // Se está próximo ao McDonald's da Carlos Luz ou na Rua Noraldino indo para a entrada da Educação Física:
       if (distMcDonaldsCarlosLuz < 0.45 && lat < -19.8729) {
-        return { ponto: pontos.find(p => p.nome === "Educação Física"), dist: distEdFisica };
+        return { ponto: edFisica, dist: distEdFisica };
+      }
+      if (lon < -43.9765 && distMoradia23 > 0.35 && (!viagem || viagem.origem.includes("Moradia"))) {
+        return { ponto: edFisica, dist: distEdFisica };
       }
 
-      // Se está no meio do caminho pelo bairro Ouro Preto (entre Moradia e Carlos Luz, lon < -43.9765)
-      if (lon < -43.9765 && distMoradia23 > 0.35) {
-        // Se a viagem saiu da Moradia rumo ao campus, o próximo ponto é Educação Física
-        if (!viagem || viagem.origem.includes("Moradia")) {
-          return { ponto: pontos.find(p => p.nome === "Educação Física"), dist: distEdFisica };
-        }
-      }
-
-      return pontoMaisProximo(lat, lon);
+      // Considera só os pontos da rota da viagem atual, quando conhecida
+      const nomesRota = viagem ? obterRota(viagem.origem, viagem.tipo).map(r => r.p) : null;
+      const r = pontoMaisProximo(lat, lon, nomesRota);
+      return r.ponto ? r : pontoMaisProximo(lat, lon);
     }
 
     function calcularAtrasoReal(viagem, nomePontoAtual) {
       if (!viagem) return 0;
-      let rota = obterRota(viagem.origem, viagem.tipo);
-      let itemRota = rota.find(r => r.p === nomePontoAtual);
+      const itemRota = obterRota(viagem.origem, viagem.tipo).find(r => r.p === nomePontoAtual);
       if (!itemRota) return 0;
-
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
-      let minutoPrevistoNestePonto = viagem.minSaida + itemRota.t;
-
-      return atualMin - minutoPrevistoNestePonto;
+      return minutosAgora() - (viagem.minSaida + itemRota.t);
     }
 
-    // Mantém o celular acordado em segundo plano enquanto compartilha o GPS (WakeLock API)
+    // Mantém a TELA acesa enquanto o app está aberto (não funciona em segundo plano)
     async function ativarWakeLock() {
-      if ('wakeLock' in navigator) {
-        try {
-          wakeLockAtivo = await navigator.wakeLock.request('screen');
-        } catch (e) {}
+      if (!('wakeLock' in navigator) || wakeLockAtivo !== null || document.visibilityState !== 'visible') return;
+      try {
+        wakeLockAtivo = await navigator.wakeLock.request('screen');
+        wakeLockAtivo.addEventListener('release', () => { wakeLockAtivo = null; });
+      } catch (e) {
+        wakeLockAtivo = null;
       }
     }
 
-    function liberarWakeLock() {
+    function liberarWakeLockSePossivel() {
+      if (transmitindoWatchId !== null || radarPermanenteWatchId !== null) return;
       if (wakeLockAtivo !== null) {
         wakeLockAtivo.release().catch(() => {});
         wakeLockAtivo = null;
       }
     }
 
-    // 3. Liga / Desliga o compartilhamento de GPS (e lembra no localStorage se der F5!)
     function alternarTransmissaoOnibus(iniciarSilencioso = false) {
       const btn = document.getElementById("btnTransmitirOnibus");
 
@@ -2412,56 +2088,58 @@
         return;
       }
 
+      if (!iniciarSilencioso && !identificarViagemAtivaParaRastreio()) {
+        if (!confirm("Não há nenhuma viagem prevista para agora na tabela. Deseja compartilhar mesmo assim?")) return;
+      }
+
       localStorage.setItem('morabus_transmitindo_ativo', 'sim');
-      localStorage.setItem('morabus_transmitindo_inicio', String(Date.now()));
-      ativarWakeLock();
+      // Só marca o início na primeira vez (para o limite de 40 min funcionar)
+      if (!iniciarSilencioso || !localStorage.getItem('morabus_transmitindo_inicio')) {
+        localStorage.setItem('morabus_transmitindo_inicio', String(Date.now()));
+      }
 
       btn.classList.add("transmitindo");
-      btn.innerText = "🛑 Parar compartilhamento (Você está ao vivo)";
+      btn.textContent = "🛑 Parar compartilhamento (Você está ao vivo)";
 
-      if (transmitindoWatchId !== null) {
-        navigator.geolocation.clearWatch(transmitindoWatchId);
-      }
+      if (transmitindoWatchId !== null) navigator.geolocation.clearWatch(transmitindoWatchId);
 
       transmitindoWatchId = navigator.geolocation.watchPosition(
         (pos) => {
-          let lat = pos.coords.latitude;
-          let lon = pos.coords.longitude;
-          let velKmh = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
 
-          let viagem = identificarViagemAtivaParaRastreio();
-          let maisProx = identificarPontoCorretoDoTrajeto(lat, lon, viagem);
+          // Ignora leituras imprecisas (GPS ainda "esquentando" ou dentro de prédio)
+          if (pos.coords.accuracy && pos.coords.accuracy > 80) return;
+
+          const velKmh = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
+          const viagem = identificarViagemAtivaParaRastreio();
+          const maisProx = identificarPontoCorretoDoTrajeto(lat, lon, viagem);
 
           if (!maisProx.ponto || maisProx.dist > 3.5) {
             pararTransmissaoOnibus();
             return;
           }
 
-          let atraso = calcularAtrasoReal(viagem, maisProx.ponto.nome);
-          if (viagem && atraso > 0) {
-            registrarAtrasoDoHorario(viagem.hora, atraso);
-          }
-
-          // Encerra automaticamente após 40 minutos ou ao chegar no ponto final da rota
-          let inicioMs = Number(localStorage.getItem('morabus_transmitindo_inicio') || Date.now());
+          const inicioMs = Number(localStorage.getItem('morabus_transmitindo_inicio') || Date.now());
           if (Date.now() - inicioMs > 40 * 60 * 1000) {
             pararTransmissaoOnibus();
             return;
           }
 
           if (viagem) {
-            let rota = obterRota(viagem.origem, viagem.tipo);
-            let ultimoPontoRota = rota[rota.length - 1].p;
-            let minAgora = new Date().getHours() * 60 + new Date().getMinutes();
-            if (maisProx.ponto.nome === ultimoPontoRota && maisProx.dist < 0.10 && minAgora > viagem.minSaida + 10) {
+            const rota = obterRota(viagem.origem, viagem.tipo);
+            const ultimoPontoRota = rota[rota.length - 1].p;
+            if (maisProx.ponto.nome === ultimoPontoRota && maisProx.dist < 0.10 && minutosAgora() > viagem.minSaida + 10) {
               pararTransmissaoOnibus();
               return;
             }
           }
 
-          let payload = {
-            lat: lat,
-            lon: lon,
+          const atraso = calcularAtrasoReal(viagem, maisProx.ponto.nome);
+          if (viagem && atraso > 0) registrarAtrasoDoHorario(viagem.hora, atraso);
+
+          const payload = {
+            lat, lon,
             velocidadeKmh: velKmh,
             pontoProximo: maisProx.ponto.nome,
             distPontoKm: Number(maisProx.dist.toFixed(2)),
@@ -2469,7 +2147,7 @@
             horarioViagem: viagem ? viagem.hora : null,
             origemViagem: viagem ? viagem.origem : null,
             tipoViagem: viagem ? viagem.tipo : null,
-            timestamp: Date.now()
+            timestamp: { '.sv': 'timestamp' } // horário do servidor
           };
 
           fetch(`${FIREBASE_DB_URL}/telemetria/${idSessaoColaborador}.json`, {
@@ -2479,36 +2157,43 @@
             keepalive: true
           }).then(() => lerDadosTempoRealDaNuvem()).catch(() => {});
         },
-        () => {
-          if (!iniciarSilencioso) alert("Não foi possível acessar o GPS. Verifique se a localização está ativa.");
+        (err) => {
+          if (!iniciarSilencioso) {
+            alert(err.code === 1
+              ? "Permissão de localização negada. Ative nas configurações do navegador."
+              : "Não foi possível acessar o GPS. Verifique se a localização está ativa.");
+          }
           pararTransmissaoOnibus();
         },
-        { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
+        { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 }
       );
+
+      ativarWakeLock();
     }
 
     function pararTransmissaoOnibus() {
       const btn = document.getElementById("btnTransmitirOnibus");
       localStorage.removeItem('morabus_transmitindo_ativo');
       localStorage.removeItem('morabus_transmitindo_inicio');
-      liberarWakeLock();
 
       if (transmitindoWatchId !== null) {
         navigator.geolocation.clearWatch(transmitindoWatchId);
         transmitindoWatchId = null;
       }
+      liberarWakeLockSePossivel();
+
       btn.classList.remove("transmitindo");
-      btn.innerText = "🚌 Estou no ônibus (Compartilhar rota)";
+      btn.textContent = "🚌 Estou no ônibus (Compartilhar rota)";
 
       fetch(`${FIREBASE_DB_URL}/telemetria/${idSessaoColaborador}.json`, { method: 'DELETE', keepalive: true })
         .then(() => lerDadosTempoRealDaNuvem())
         .catch(() => {});
     }
 
-    // Se o usuário estava transmitindo e atualizou a página (F5) ou reabriu o app em menos de 35 min, religa sozinho!
+    // Se estava transmitindo e recarregou a página em menos de 35 min, religa sozinho
     function restaurarTransmissaoSeAtiva() {
-      let estavaAtivo = localStorage.getItem('morabus_transmitindo_ativo') === 'sim';
-      let inicioMs = Number(localStorage.getItem('morabus_transmitindo_inicio') || 0);
+      const estavaAtivo = localStorage.getItem('morabus_transmitindo_ativo') === 'sim';
+      const inicioMs = Number(localStorage.getItem('morabus_transmitindo_inicio') || 0);
       if (estavaAtivo && (Date.now() - inicioMs < 35 * 60 * 1000)) {
         alternarTransmissaoOnibus(true);
       } else if (estavaAtivo) {
@@ -2516,203 +2201,214 @@
       }
     }
 
-    // Quando o app volta do segundo plano, reativa o WakeLock e força atualização do GPS
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        if (localStorage.getItem('morabus_transmitindo_ativo') === 'sim') {
-          ativarWakeLock();
-          alternarTransmissaoOnibus(true);
-        }
-        lerDadosTempoRealDaNuvem();
-      }
-    });
+    /* =================================================================
+       ALERTAS DA COMUNIDADE
+       ================================================================= */
+    function enviarAlertaRapido(codigo) {
+      if (!TIPOS_ALERTA[codigo]) return;
 
-    // 4. Envia alerta rápido (Trânsito, Chuva, Defeito, Acidente, Lotado)
-    function enviarAlertaRapido(textoAlerta) {
-      let dadosAlerta = {
-        texto: textoAlerta,
-        horaEnvio: converterMinutosParaHHMM(new Date().getHours() * 60 + new Date().getMinutes()),
-        timestamp: Date.now()
-      };
+      const ultimoEnvio = Number(localStorage.getItem('morabus_ultimo_alerta') || 0);
+      if (Date.now() - ultimoEnvio < 3 * 60 * 1000) {
+        alert('Você já enviou um aviso há pouco. Aguarde alguns minutos.');
+        return;
+      }
+      if (!confirm(`Enviar o aviso "${TIPOS_ALERTA[codigo]}" para todos os estudantes?`)) return;
 
       fetch(`${FIREBASE_DB_URL}/alertas_comunidade/ultimo.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dadosAlerta)
-      }).then(() => {
-        lerDadosTempoRealDaNuvem();
-        alert(`Aviso "${textoAlerta}" enviado para todos os estudantes!`);
-      });
-    }
-
-    // 5. Lê a nuvem a cada 10 segundos e atualiza atrasos e previsões
-    function lerDadosTempoRealDaNuvem() {
-      fetch(`${FIREBASE_DB_URL}/.json`)
-        .then(r => r.json())
-        .then(dados => {
-          const agoraMs = Date.now();
-          let colaboradoresValidos = [];
-
-          if (dados && dados.telemetria) {
-            Object.values(dados.telemetria).forEach(t => {
-              // Aceita sinais dos últimos 2 minutos (120s) para aguentar oscilações de segundo plano
-              if (t && t.timestamp && (agoraMs - t.timestamp < 120000)) {
-                colaboradoresValidos.push(t);
-              }
-            });
-          }
-
-          let alertaRecente = null;
-          if (dados && dados.alertas_comunidade && dados.alertas_comunidade.ultimo) {
-            let al = dados.alertas_comunidade.ultimo;
-            if (al.timestamp && (agoraMs - al.timestamp < 30 * 60 * 1000)) {
-              alertaRecente = al;
-            }
-          }
-
-          if (colaboradoresValidos.length > 0) {
-            let somaLat = 0, somaLon = 0;
-            colaboradoresValidos.forEach(c => { somaLat += c.lat; somaLon += c.lon; });
-            let maisRecente = colaboradoresValidos.sort((a, b) => b.timestamp - a.timestamp)[0];
-
-            estadoAoVivoGlobal = {
-              ativo: true,
-              lat: somaLat / colaboradoresValidos.length,
-              lon: somaLon / colaboradoresValidos.length,
-              velocidadeKmh: maisRecente.velocidadeKmh || 0,
-              pontoMaisProximo: maisRecente.pontoProximo,
-              atrasoMinutos: maisRecente.atrasoMinutos || 0,
-              horarioViagem: maisRecente.horarioViagem,
-              origemViagem: maisRecente.origemViagem,
-              tipoViagem: maisRecente.tipoViagem,
-              alertaComunidade: alertaRecente,
-              qtdColaboradores: colaboradoresValidos.length
-            };
-
-            if (maisRecente.horarioViagem && maisRecente.atrasoMinutos > 0) {
-              registrarAtrasoDoHorario(maisRecente.horarioViagem, maisRecente.atrasoMinutos);
-            }
-          } else {
-            estadoAoVivoGlobal.ativo = false;
-            estadoAoVivoGlobal.alertaComunidade = alertaRecente;
-            estadoAoVivoGlobal.qtdColaboradores = 0;
-          }
-
-          renderizarBannerTempoReal();
-          aplicarAtrasosNosCardsPrincipais();
+        body: JSON.stringify({
+          codigo,
+          horaEnvio: converterMinutosParaHHMM(minutosAgora()),
+          timestamp: { '.sv': 'timestamp' }
         })
-        .catch(() => {});
+      })
+        .then(r => { if (!r.ok) throw new Error(r.status); })
+        .then(() => {
+          localStorage.setItem('morabus_ultimo_alerta', String(Date.now()));
+          lerDadosTempoRealDaNuvem();
+          alert(`Aviso "${TIPOS_ALERTA[codigo]}" enviado para todos!`);
+        })
+        .catch(() => alert('Não foi possível enviar o aviso. Verifique sua conexão.'));
     }
 
-    // 6. Ajusta dinamicamente os horários de saída na Moradia e na Escola de Música se houver atraso/cascata!
+    /* =================================================================
+       LEITURA DA NUVEM (Firebase)
+       ================================================================= */
+    async function buscarTelemetria(desdeMs) {
+      // Consulta indexada (requer ".indexOn": ["timestamp"] nas regras); se falhar, busca o nó inteiro
+      let r = await fetch(`${FIREBASE_DB_URL}/telemetria.json?orderBy=%22timestamp%22&startAt=${desdeMs}`);
+      if (!r.ok) r = await fetch(`${FIREBASE_DB_URL}/telemetria.json`);
+      return r.ok ? r.json() : null;
+    }
+
+    async function lerDadosTempoRealDaNuvem() {
+      if (document.hidden) return; // não gasta dados com o app em segundo plano
+
+      try {
+        const [telemetria, al] = await Promise.all([
+          buscarTelemetria(Date.now() - 120000),
+          fetch(`${FIREBASE_DB_URL}/alertas_comunidade/ultimo.json`).then(r => r.ok ? r.json() : null)
+        ]);
+
+        const agoraMs = Date.now();
+        const validos = Object.values(telemetria || {}).filter(t =>
+          t && Number.isFinite(t.lat) && Number.isFinite(t.lon) &&
+          Number.isFinite(t.timestamp) && (agoraMs - t.timestamp < 120000));
+
+        let alertaRecente = null;
+        if (al && TIPOS_ALERTA[al.codigo] && Number.isFinite(al.timestamp) && agoraMs - al.timestamp < 30 * 60 * 1000) {
+          alertaRecente = {
+            codigo: al.codigo,
+            texto: TIPOS_ALERTA[al.codigo],
+            horaEnvio: /^\d{2}:\d{2}$/.test(al.horaEnvio) ? al.horaEnvio : '--:--'
+          };
+        }
+
+        if (validos.length > 0) {
+          validos.sort((a, b) => b.timestamp - a.timestamp);
+          const ref = validos[0];
+
+          // Média só de quem está no MESMO ônibus do sinal mais recente
+          const mesmoOnibus = validos.filter(t =>
+            t.horarioViagem === ref.horarioViagem && distancia(t.lat, t.lon, ref.lat, ref.lon) < 0.5);
+          const lat = mesmoOnibus.reduce((s, c) => s + c.lat, 0) / mesmoOnibus.length;
+          const lon = mesmoOnibus.reduce((s, c) => s + c.lon, 0) / mesmoOnibus.length;
+          const horarioValido = /^\d{2}:\d{2}$/.test(ref.horarioViagem) ? ref.horarioViagem : null;
+
+          estadoAoVivoGlobal = {
+            ativo: true, lat, lon,
+            velocidadeKmh: Math.max(0, Math.min(150, Number(ref.velocidadeKmh) || 0)),
+            pontoMaisProximo: pontos.some(p => p.nome === ref.pontoProximo) ? ref.pontoProximo : null,
+            atrasoMinutos: Math.max(-30, Math.min(120, Math.round(Number(ref.atrasoMinutos) || 0))),
+            horarioViagem: horarioValido,
+            origemViagem: ref.origemViagem,
+            tipoViagem: ref.tipoViagem,
+            alertaComunidade: alertaRecente,
+            qtdColaboradores: validos.length
+          };
+
+          if (horarioValido && estadoAoVivoGlobal.atrasoMinutos > 0) {
+            registrarAtrasoDoHorario(horarioValido, estadoAoVivoGlobal.atrasoMinutos);
+          }
+        } else {
+          estadoAoVivoGlobal.ativo = false;
+          estadoAoVivoGlobal.alertaComunidade = alertaRecente;
+          estadoAoVivoGlobal.qtdColaboradores = 0;
+        }
+
+        renderizarBannerTempoReal();
+        renderizarMarcadorAoVivo();
+        aplicarAtrasosNosCardsPrincipais();
+      } catch (e) {
+        // sem conexão: mantém o último estado
+      }
+    }
+
+    // Ajusta os horários do painel duplo quando há atraso/cascata
     function aplicarAtrasosNosCardsPrincipais() {
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
-      let horarios = obterHorarios(agora);
+      const atualMin = minutosAgora();
+      const horarios = horariosHoje();
       if (horarios.length === 0) return;
 
-      let proxMoradia = horarios.find(h => minutos(h[0]) > atualMin && h[1].includes("Moradia") && h[2] !== "passagem");
-      let proxCampus = horarios.find(h => minutos(h[0]) > atualMin && h[1].includes("Escola"));
+      const proxMoradia = horarios.find(h => minutos(h[0]) > atualMin && h[1].includes("Moradia") && h[2] !== "passagem");
+      const proxCampus = horarios.find(h => minutos(h[0]) > atualMin && h[1].includes("Escola"));
 
-      if (proxMoradia) {
-        let atrM = obterAtrasoPropagado(proxMoradia[0]);
-        if (atrM >= 2) {
-          let novaHoraM = converterMinutosParaHHMM(minutos(proxMoradia[0]) + atrM);
-          document.getElementById("horaProxMoradia").innerHTML = `<span style="text-decoration:line-through; opacity:0.5; font-size:14px;">${proxMoradia[0]}</span> ${novaHoraM}`;
-          document.getElementById("faltaProxMoradia").innerHTML = `<span style="color:#e67e22;">⚠️ +${atrM} min (em ${formatarHoraMinuto(minutos(proxMoradia[0]) + atrM - atualMin)})</span>`;
-        }
-      }
+      const aplicar = (h, prefixo) => {
+        if (!h) return;
+        const atr = obterAtrasoPropagado(h[0]);
+        if (atr < 2) return;
+        const novoMin = minutos(h[0]) + atr;
+        document.getElementById("horaProx" + prefixo).innerHTML =
+          `<span class="hora-riscada">${h[0]}</span> ${converterMinutosParaHHMM(novoMin)}`;
+        document.getElementById("faltaProx" + prefixo).innerHTML =
+          `<span class="texto-atraso">⚠️ +${atr} min (em ${formatarHoraMinuto(novoMin - atualMin)})</span>`;
+      };
 
-      if (proxCampus) {
-        let atrC = obterAtrasoPropagado(proxCampus[0]);
-        if (atrC >= 2) {
-          let novaHoraC = converterMinutosParaHHMM(minutos(proxCampus[0]) + atrC);
-          document.getElementById("horaProxCampus").innerHTML = `<span style="text-decoration:line-through; opacity:0.5; font-size:14px;">${proxCampus[0]}</span> ${novaHoraC}`;
-          document.getElementById("faltaProxCampus").innerHTML = `<span style="color:#e67e22;">⚠️ +${atrC} min (em ${formatarHoraMinuto(minutos(proxCampus[0]) + atrC - atualMin)})</span>`;
-        }
-      }
+      aplicar(proxMoradia, "Moradia");
+      aplicar(proxCampus, "Campus");
     }
 
-    // 7. Atualiza o Banner Ao Vivo + Mapa
     function renderizarBannerTempoReal() {
       const banner = document.getElementById("bannerTempoReal");
       const contador = document.getElementById("contadorColaboradores");
+      const ev = estadoAoVivoGlobal;
 
-      if (!estadoAoVivoGlobal.ativo && !estadoAoVivoGlobal.alertaComunidade) {
+      if (!ev.ativo && !ev.alertaComunidade) {
         banner.style.display = "none";
-        contador.innerText = "⚪ Sem sinal ao vivo";
+        contador.textContent = "⚪ Sem sinal ao vivo";
         return;
       }
 
       banner.style.display = "block";
       let htmlBanner = "";
 
-      if (estadoAoVivoGlobal.ativo) {
-        contador.innerText = `🟢 ${estadoAoVivoGlobal.qtdColaboradores} aluno(s) transmitindo`;
-        let atr = estadoAoVivoGlobal.atrasoMinutos;
+      if (ev.ativo) {
+        contador.textContent = `🟢 ${ev.qtdColaboradores} aluno(s) transmitindo`;
 
-        if (atr >= 3) {
+        if (ev.atrasoMinutos >= 3) {
           banner.className = "status-ao-vivo-banner status-atrasado";
-          let motivoProvavel = diagnosticarCausaAtraso(atr, estadoAoVivoGlobal.velocidadeKmh);
-          htmlBanner += `⚠️ <b>Atraso de +${atr} min</b> (Ônibus das ${estadoAoVivoGlobal.horarioViagem || 'agora'})<br>`;
-          htmlBanner += `🔎 <b>Motivo:</b> ${motivoProvavel}<br>`;
+          htmlBanner += `⚠️ <b>Atraso de +${ev.atrasoMinutos} min</b> (Ônibus das ${esc(ev.horarioViagem || 'agora')})<br>`;
+          htmlBanner += `🔎 <b>Motivo:</b> ${esc(diagnosticarCausaAtraso(ev.atrasoMinutos, ev.velocidadeKmh))}<br>`;
         } else {
           banner.className = "status-ao-vivo-banner status-no-horario";
           htmlBanner += `🟢 <b>Ônibus em tempo real (No horário)</b><br>`;
         }
 
-        htmlBanner += `📍 Passando próx. ${preposicaoPonto(estadoAoVivoGlobal.pontoMaisProximo)} <b>${estadoAoVivoGlobal.pontoMaisProximo}</b>`;
-        if (estadoAoVivoGlobal.velocidadeKmh > 0) {
-          htmlBanner += ` (${estadoAoVivoGlobal.velocidadeKmh} km/h)`;
+        if (ev.pontoMaisProximo) {
+          htmlBanner += `📍 Passando próx. ${preposicaoPonto(ev.pontoMaisProximo)} <b>${esc(ev.pontoMaisProximo)}</b>`;
+          if (ev.velocidadeKmh > 0) htmlBanner += ` (${ev.velocidadeKmh} km/h)`;
         }
       } else {
-        contador.innerText = "⚪ Sem GPS ativo";
+        contador.textContent = "⚪ Sem GPS ativo";
         banner.className = "status-ao-vivo-banner status-atrasado";
       }
 
-      if (estadoAoVivoGlobal.alertaComunidade) {
-        if (htmlBanner !== "") htmlBanner += `<hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:6px 0;">`;
-        htmlBanner += `📢 <b>Alerta (${estadoAoVivoGlobal.alertaComunidade.horaEnvio}):</b> ${estadoAoVivoGlobal.alertaComunidade.texto}`;
+      if (ev.alertaComunidade) {
+        if (htmlBanner !== "") htmlBanner += `<hr>`;
+        htmlBanner += `📢 <b>Alerta (${esc(ev.alertaComunidade.horaEnvio)}):</b> ${esc(ev.alertaComunidade.texto)}`;
       }
 
       banner.innerHTML = htmlBanner;
+    }
 
-      if (meuMapa !== null && estadoAoVivoGlobal.ativo) {
-        if (!marcadorOnibus) {
-          let iconeBusReal = L.divIcon({
-            html: '<div style="font-size: 24px; filter: drop-shadow(0 0 4px #006633);">🚌📡</div>',
-            className: '',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-          });
-          marcadorOnibus = L.marker([estadoAoVivoGlobal.lat, estadoAoVivoGlobal.lon], {icon: iconeBusReal}).addTo(meuMapa);
+    function renderizarMarcadorAoVivo() {
+      if (meuMapa === null) return;
+      const ev = estadoAoVivoGlobal;
+
+      if (ev.ativo) {
+        if (!marcadorOnibusAoVivo) {
+          marcadorOnibusAoVivo = L.marker([ev.lat, ev.lon], {
+            icon: L.divIcon({
+              html: '<div style="font-size: 24px; filter: drop-shadow(0 0 4px #006633);">🚌📡</div>',
+              className: '',
+              iconSize: [30, 30],
+              iconAnchor: [15, 15]
+            })
+          }).addTo(meuMapa);
         } else {
-          marcadorOnibus.setLatLng([estadoAoVivoGlobal.lat, estadoAoVivoGlobal.lon]);
+          marcadorOnibusAoVivo.setLatLng([ev.lat, ev.lon]);
         }
-        marcadorOnibus.bindPopup(`<b>📡 Posição Real (Ao Vivo)</b><br>Próx. ${preposicaoPonto(estadoAoVivoGlobal.pontoMaisProximo)} ${estadoAoVivoGlobal.pontoMaisProximo}`);
+        marcadorOnibusAoVivo.bindPopup(
+          `<b>📡 Posição Real (Ao Vivo)</b>` +
+          (ev.pontoMaisProximo ? `<br>Próx. ${preposicaoPonto(ev.pontoMaisProximo)} ${esc(ev.pontoMaisProximo)}` : ""));
+
+        if (marcadorOnibusEstimado) {
+          meuMapa.removeLayer(marcadorOnibusEstimado);
+          marcadorOnibusEstimado = null;
+        }
+      } else if (marcadorOnibusAoVivo) {
+        meuMapa.removeLayer(marcadorOnibusAoVivo);
+        marcadorOnibusAoVivo = null;
       }
     }
 
-    // Inicializações do rastreio inteligente
-    atualizarClimaPampulha();
-    setInterval(atualizarClimaPampulha, 600000);
-
-    restaurarTransmissaoSeAtiva();
-    lerDadosTempoRealDaNuvem();
-    setInterval(lerDadosTempoRealDaNuvem, TEMPO_ATUALIZACAO);
-
-
-
-/* =================================================================
-    RADAR PERMANENTE DE GPS + ALERTAS INTELIGENTES + BARRA AO VIVO (ONE UI)
-    ================================================================= */
-    let radarPermanenteWatchId = null;
-    let posicaoUsuarioRadar = { lat: null, lon: null, naRegiaoUFMGMoradia: false, naMoradia: false };
-    let alertasJaDisparadosHoje = JSON.parse(localStorage.getItem('morabus_alertas_auto_disp') || '{}');
-
+    /* =================================================================
+       RADAR + ALERTAS INTELIGENTES + BARRA AO VIVO
+       ================================================================= */
     function marcarAlertaAutomaticoDisparado(chaveUnica) {
-      let hoje = obterChaveDataHoje();
-      if (alertasJaDisparadosHoje.data !== hoje) {
+      const hoje = obterChaveDataHoje();
+      if (alertasJaDisparadosHoje.data !== hoje || !Array.isArray(alertasJaDisparadosHoje.lista)) {
         alertasJaDisparadosHoje = { data: hoje, lista: [] };
       }
       if (!alertasJaDisparadosHoje.lista.includes(chaveUnica)) {
@@ -2722,93 +2418,96 @@
     }
 
     function jaDisparouAlertaAutomatico(chaveUnica) {
-      let hoje = obterChaveDataHoje();
-      if (alertasJaDisparadosHoje.data !== hoje || !alertasJaDisparadosHoje.lista) return false;
+      if (alertasJaDisparadosHoje.data !== obterChaveDataHoje() || !Array.isArray(alertasJaDisparadosHoje.lista)) return false;
       return alertasJaDisparadosHoje.lista.includes(chaveUnica);
     }
 
-    // Liga ou desliga o acompanhamento permanente de GPS + Notificação Ao Vivo
-    async function alternarRadarPermanente(iniciarSilencioso = false) {
+    function atualizarVisualRadar(ativo) {
       const btn = document.getElementById("btnRadarPermanente");
       const lbl = document.getElementById("statusRadarPermanente");
+      btn.classList.toggle("radar-ativo", ativo);
+      btn.textContent = ativo ? "🛰️ Radar Ativo (Toque p/ desligar)" : "🔔 Ativar Radar e Barra Ao Vivo";
+      lbl.textContent = ativo ? "🟢 Monitorando" : "⚪ Desativado";
+      lbl.classList.toggle("ativo", ativo);
+    }
 
-      if (radarPermanenteWatchId !== null && !iniciarSilencioso) {
+    function desligarRadar() {
+      if (radarPermanenteWatchId !== null) {
         navigator.geolocation.clearWatch(radarPermanenteWatchId);
         radarPermanenteWatchId = null;
-        localStorage.removeItem('morabus_radar_permanente');
-        btn.style.background = "#006633";
-        btn.innerText = "🔔 Ativar GPS Contínuo e Barra Ao Vivo";
-        lbl.innerText = "⚪ Desativado";
-        lbl.style.color = "#888";
-        lbl.style.background = "rgba(128,128,128,0.15)";
-        fecharNotificacaoAoVivo();
+      }
+      localStorage.removeItem('morabus_radar_permanente');
+      atualizarVisualRadar(false);
+      fecharNotificacaoAoVivo();
+      liberarWakeLockSePossivel();
+    }
+
+    async function alternarRadarPermanente(iniciarSilencioso = false) {
+      if (radarPermanenteWatchId !== null && !iniciarSilencioso) {
+        desligarRadar();
         return;
       }
 
       if (!("Notification" in window) || !navigator.geolocation) {
-        if (!iniciarSilencioso) alert("Seu navegador não suporta GPS ou Notificações em tempo real.");
+        if (!iniciarSilencioso) alert("Seu navegador não suporta GPS ou notificações.");
         return;
       }
 
       if (Notification.permission !== "granted") {
-        let perm = await Notification.requestPermission();
+        // Sem toque do usuário o navegador bloqueia o pedido de permissão
+        if (iniciarSilencioso) {
+          desligarRadar();
+          return;
+        }
+        const perm = await Notification.requestPermission();
         if (perm !== "granted") {
-          if (!iniciarSilencioso) alert("Permita as notificações para receber alertas de atraso e a barra ao vivo.");
+          alert("Permita as notificações para receber alertas de atraso e a barra ao vivo.");
           return;
         }
       }
 
       localStorage.setItem('morabus_radar_permanente', 'ativo');
-      ativarWakeLock();
+      atualizarVisualRadar(true);
 
-      btn.style.background = "#1565c0";
-      btn.innerText = "🛰️ Radar e Barra Ao Vivo Ativos (Toque p/ desligar)";
-      lbl.innerText = "🟢 Monitorando";
-      lbl.style.color = "#4ade80";
-      lbl.style.background = "rgba(74, 222, 128, 0.15)";
-
-      if (radarPermanenteWatchId !== null) {
-        navigator.geolocation.clearWatch(radarPermanenteWatchId);
-      }
+      if (radarPermanenteWatchId !== null) navigator.geolocation.clearWatch(radarPermanenteWatchId);
 
       radarPermanenteWatchId = navigator.geolocation.watchPosition(
         (pos) => {
-          let lat = pos.coords.latitude;
-          let lon = pos.coords.longitude;
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
           posicaoUsuarioRadar.lat = lat;
           posicaoUsuarioRadar.lon = lon;
 
-          let maisProx = pontoMaisProximo(lat, lon);
-          let distM1 = distancia(lat, lon, -19.8706, -43.9862);
-          let distM23 = distancia(lat, lon, -19.8661, -43.9845);
-
-          // Verifica se o estudante está nas Moradias ou dentro da UFMG (até 2,5 km de qualquer ponto)
-          posicaoUsuarioRadar.naMoradia = (distM1 < 0.35 || distM23 < 0.35);
-          posicaoUsuarioRadar.naRegiaoUFMGMoradia = (maisProx.ponto && maisProx.dist <= 2.5);
+          const maisProx = pontoMaisProximo(lat, lon);
+          posicaoUsuarioRadar.naMoradia = estaNaMoradia(lat, lon, 0.35);
+          posicaoUsuarioRadar.naRegiaoUFMGMoradia = Boolean(maisProx.ponto && maisProx.dist <= 2.5);
 
           avaliarGatilhosInteligentesEBarraAoVivo();
         },
-        () => {},
+        (err) => {
+          if (err.code === 1) {
+            if (!iniciarSilencioso) alert("Permissão de localização negada.");
+            desligarRadar();
+          }
+        },
         { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
       );
     }
 
-    // Desenha a barra visual estilo Uber / Google Maps [━━━🚌━━━━⭕] para a One UI
     function montarBarraProgressoVisual(porcentagem) {
       const tamanhoTotal = 10;
-      let pos = Math.min(tamanhoTotal - 1, Math.max(0, Math.round((porcentagem / 100) * (tamanhoTotal - 1))));
-      let antes = "━".repeat(pos);
-      let depois = "─".repeat((tamanhoTotal - 1) - pos);
-      return `🟢${antes}🚌${depois}🏁`;
+      const pos = Math.min(tamanhoTotal - 1, Math.max(0, Math.round((porcentagem / 100) * (tamanhoTotal - 1))));
+      return `🟢${"━".repeat(pos)}🚌${"─".repeat((tamanhoTotal - 1) - pos)}🏁`;
     }
 
-    function fecharNotificacaoAoVivo() {
-      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: 'CLOSE_LIVE_NOTIFICATION' });
-      }
+    async function fecharNotificacaoAoVivo() {
+      if (!('serviceWorker' in navigator)) return;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        (await reg.getNotifications({ tag: TAG_LIVE })).forEach(n => n.close());
+      } catch (e) {}
     }
 
-    // Avalia atrasos, proximidade e atualiza a Notificação Ao Vivo a cada ciclo
     function avaliarGatilhosInteligentesEBarraAoVivo() {
       if (localStorage.getItem('morabus_radar_permanente') !== 'ativo') return;
       if (!posicaoUsuarioRadar.naRegiaoUFMGMoradia) {
@@ -2816,171 +2515,186 @@
         return;
       }
 
-      let agora = new Date();
-      let atualMin = agora.getHours() * 60 + agora.getMinutes();
-      let horarios = horariosHoje();
-      if (horarios.length === 0) return;
+      const atualMin = minutosAgora();
+      const horarios = horariosHoje();
+      if (horarios.length === 0) {
+        fecharNotificacaoAoVivo();
+        return;
+      }
 
-      // Define qual é o ponto-alvo do aluno (Ponto Favorito ou, se não tiver, o Ponto Mais Próximo do GPS)
+      // Ponto-alvo: favorito ou, se não houver, o mais próximo do GPS
       let pontoAlvo = pontoFavorito;
       if (!pontoAlvo && posicaoUsuarioRadar.lat) {
-        let mp = pontoMaisProximo(posicaoUsuarioRadar.lat, posicaoUsuarioRadar.lon);
+        const mp = pontoMaisProximo(posicaoUsuarioRadar.lat, posicaoUsuarioRadar.lon);
         if (mp.ponto) pontoAlvo = mp.ponto.nome;
       }
       if (!pontoAlvo) return;
 
-      let infoProx = buscarProximoNoPonto(pontoAlvo, false);
+      const infoProx = buscarProximoNoPonto(pontoAlvo, false);
+      let atrasoDaViagem = 0;
 
-      // GATILHO 1: Alerta de Atraso no Ponto Favorito (quando você está na UFMG ou na Moradia)
       if (infoProx) {
-        let atrasoDaViagem = obterAtrasoPropagado(infoProx.horaSaidaOrigem);
-        if (estadoAoVivoGlobal.ativo && estadoAoVivoGlobal.horarioViagem === infoProx.horaSaidaOrigem) {
-          atrasoDaViagem = Math.max(atrasoDaViagem, estadoAoVivoGlobal.atrasoMinutos);
-        }
+        atrasoDaViagem = obterAtrasoPropagado(infoProx.horaSaidaOrigem);
 
+        // GATILHO 1: atraso no ponto do aluno
         if (atrasoDaViagem >= 4 && infoProx.espera <= 35) {
-          let chaveAtraso = `atraso_${infoProx.horaSaidaOrigem}_${pontoAlvo}`;
+          const chaveAtraso = `atraso_${infoProx.horaSaidaOrigem}_${pontoAlvo}`;
           if (!jaDisparouAlertaAutomatico(chaveAtraso)) {
             marcarAlertaAutomaticoDisparado(chaveAtraso);
-            let novaHora = converterMinutosParaHHMM(infoProx.minChegada + atrasoDaViagem);
-            let motivo = diagnosticarCausaAtraso(atrasoDaViagem, estadoAoVivoGlobal.velocidadeKmh);
+            const novaHora = converterMinutosParaHHMM(infoProx.minChegada + atrasoDaViagem);
+            const motivo = diagnosticarCausaAtraso(atrasoDaViagem, estadoAoVivoGlobal.velocidadeKmh);
             enviarNotificacao(
               `⚠️ Ônibus atrasado (+${atrasoDaViagem} min)`,
-              `Previsão ${preposicaoPonto(pontoAlvo)}${pontoAlvo} mudou para ${novaHora}. Motivo: ${motivo}`
+              `Previsão ${preposicaoPonto(pontoAlvo)} ${pontoAlvo} mudou para ${novaHora}. Motivo: ${motivo}`,
+              { tag: chaveAtraso, vibrate: [200, 100, 200] }
             );
           }
         }
 
-        // GATILHO 2: Hora exata de sair caminhando (baseado na distância GPS real até o pontoAlvo)
-        let coordAlvo = pontos.find(p => p.nome === pontoAlvo);
+        // GATILHO 2: hora de sair caminhando
+        const coordAlvo = pontos.find(p => p.nome === pontoAlvo);
         if (coordAlvo && posicaoUsuarioRadar.lat) {
-          let distKm = distancia(posicaoUsuarioRadar.lat, posicaoUsuarioRadar.lon, coordAlvo.lat, coordAlvo.lon);
-          let minCaminhada = Math.max(1, Math.ceil((distKm * 1000) / VELOCIDADE_CAMINHADA_METROS_MIN));
-          let esperaComAtraso = infoProx.espera + atrasoDaViagem;
+          const distKm = distancia(posicaoUsuarioRadar.lat, posicaoUsuarioRadar.lon, coordAlvo.lat, coordAlvo.lon);
+          const minCaminhada = Math.max(1, Math.ceil((distKm * 1000) / VELOCIDADE_CAMINHADA_METROS_MIN));
+          const esperaComAtraso = infoProx.espera + atrasoDaViagem;
 
-          // Se faltam entre (minCaminhada + 1) e (minCaminhada + 3) minutos e o aluno está a mais de 80m do ponto:
-          if (distKm >= 0.08 && distKm <= 1.8 && esperaComAtraso >= minCaminhada && esperaComAtraso <= (minCaminhada + 2)) {
-            let chaveSaida = `sair_${infoProx.horaSaidaOrigem}_${pontoAlvo}`;
+          if (distKm >= 0.08 && distKm <= 1.8 && esperaComAtraso >= minCaminhada && esperaComAtraso <= minCaminhada + 2) {
+            const chaveSaida = `sair_${infoProx.horaSaidaOrigem}_${pontoAlvo}`;
             if (!jaDisparouAlertaAutomatico(chaveSaida)) {
               marcarAlertaAutomaticoDisparado(chaveSaida);
               enviarNotificacao(
                 `🚶 Hora de sair para o ponto!`,
-                `O ônibus passa ${preposicaoPonto(pontoAlvo)} ${pontoAlvo} em${esperaComAtraso} min (sua caminhada leva ~${minCaminhada} min).`
+                `O ônibus passa ${preposicaoPonto(pontoAlvo)} ${pontoAlvo} em ${esperaComAtraso} min (sua caminhada leva ~${minCaminhada} min).`,
+                { tag: chaveSaida, vibrate: [200, 100, 200] }
               );
             }
           }
         }
       }
 
-      // GATILHO 3: Alerta crítico da comunidade (Ônibus com defeito / pneu furado / acidente / alagamento)
-      if (estadoAoVivoGlobal.alertaComunidade) {
-        let txt = estadoAoVivoGlobal.alertaComunidade.texto;
-        let chaveCom = `com_${estadoAoVivoGlobal.alertaComunidade.horaEnvio}_${txt}`;
-        if ((txt.includes("defeito") || txt.includes("Acidente") || txt.includes("Alagamento")) && !jaDisparouAlertaAutomatico(chaveCom)) {
+      // GATILHO 3: alerta crítico da comunidade
+      const alc = estadoAoVivoGlobal.alertaComunidade;
+      if (alc && ALERTAS_CRITICOS.includes(alc.codigo)) {
+        const chaveCom = `com_${alc.horaEnvio}_${alc.codigo}`;
+        if (!jaDisparouAlertaAutomatico(chaveCom)) {
           marcarAlertaAutomaticoDisparado(chaveCom);
-          enviarNotificacao(
-            `🚨 Aviso Importante na Rota (${estadoAoVivoGlobal.alertaComunidade.horaEnvio})`,
-            txt
-          );
+          enviarNotificacao(`🚨 Aviso Importante na Rota (${alc.horaEnvio})`, alc.texto, { tag: chaveCom });
         }
       }
 
-      // GATILHO 4: Aviso de Último Ônibus da Noite (se o aluno estiver no Campus e não na Moradia)
-      let ultimoHorarioDia = horarios[horarios.length - 1];
-      if (ultimoHorarioDia && !posicaoUsuarioRadar.naMoradia) {
-        let minUlt = minutos(ultimoHorarioDia[0]);
-        let faltaUlt = minUlt - atualMin;
+      // GATILHO 4: último ônibus que VOLTA do campus (só se o aluno não estiver na Moradia)
+      const ultimoVolta = [...horarios].reverse().find(h => h[1].includes("Escola"));
+      if (ultimoVolta && !posicaoUsuarioRadar.naMoradia) {
+        const faltaUlt = minutos(ultimoVolta[0]) - atualMin;
         if (faltaUlt > 0 && faltaUlt <= 20) {
-          let chaveUlt = `ultimo_onibus_${ultimoHorarioDia[0]}`;
+          const chaveUlt = `ultimo_onibus_${ultimoVolta[0]}`;
           if (!jaDisparouAlertaAutomatico(chaveUlt)) {
             marcarAlertaAutomaticoDisparado(chaveUlt);
             enviarNotificacao(
               `⚠️ Último ônibus saindo em ${faltaUlt} min!`,
-              `Você ainda está no campus. O último ônibus (${ultimoHorarioDia[0]}) sairá em breve!`
+              `Você ainda está fora da Moradia. O último ônibus de volta (${ultimoVolta[0]}, ${ultimoVolta[1]}) sairá em breve!`,
+              { tag: chaveUlt, vibrate: [300, 100, 300] }
             );
           }
         }
       }
 
-      // ==============================================================
-      // BARRA AO VIVO ESTILO ONE UI / LIVE ACTIVITY (UBER / GOOGLE MAPS)
-      // ==============================================================
-      // Ativa quando há um ônibus em andamento ou faltando <= 15 min para chegar no ponto do aluno
+      // BARRA AO VIVO: quando faltam <= 22 min para o ônibus chegar no ponto do aluno
       if (infoProx && infoProx.espera <= 22) {
-        let atraso = obterAtrasoPropagado(infoProx.horaSaidaOrigem);
-        if (estadoAoVivoGlobal.ativo && estadoAoVivoGlobal.horarioViagem === infoProx.horaSaidaOrigem) {
-          atraso = Math.max(atraso, estadoAoVivoGlobal.atrasoMinutos);
-        }
+        chaveLiveAtual = `${obterChaveDataHoje()}_${infoProx.horaSaidaOrigem}_${pontoAlvo}`;
+        if (localStorage.getItem('morabus_live_dispensada') === chaveLiveAtual) return; // usuário fechou a barra
 
-        let esperaReal = Math.max(0, infoProx.espera + atraso);
-        let horaRealChegada = converterMinutosParaHHMM(infoProx.minChegada + atraso);
+        const esperaReal = Math.max(0, infoProx.espera + atrasoDaViagem);
+        const horaRealChegada = converterMinutosParaHHMM(infoProx.minChegada + atrasoDaViagem);
+        const progressoPct = Math.min(100, Math.max(5, Math.round(((22 - esperaReal) / 22) * 100)));
 
-        // Calcula a porcentagem do trajeto concluído até o ponto do aluno
-        let progressoPct = Math.min(100, Math.max(5, Math.round(((22 - esperaReal) / 22) * 100)));
-        let barraVisual = montarBarraProgressoVisual(progressoPct);
+        const ev = estadoAoVivoGlobal;
+        const ondeEstaTexto = (ev.ativo && ev.pontoMaisProximo && ev.horarioViagem === infoProx.horaSaidaOrigem)
+          ? `📍 Próx. ${preposicaoPonto(ev.pontoMaisProximo)} ${ev.pontoMaisProximo} (${ev.velocidadeKmh} km/h)`
+          : `🕒 Saída ${infoProx.origem}: ${infoProx.horaSaidaOrigem}`;
 
-        let ondeEstaTexto = estadoAoVivoGlobal.ativo
-          ? `📍 Próx. ${preposicaoPonto(estadoAoVivoGlobal.pontoMaisProximo)} ${estadoAoVivoGlobal.pontoMaisProximo} (${estadoAoVivoGlobal.velocidadeKmh} km/h)`
-          : `🕒 Saída ${infoProx.origem}:${infoProx.horaSaidaOrigem}`;
-
-        let tagAtrasoTitulo = atraso >= 3 ? ` (+${atraso} min atraso)` : ``;
-        let tituloLive = esperaReal === 0
+        const tagAtrasoTitulo = atrasoDaViagem >= 3 ? ` (+${atrasoDaViagem} min atraso)` : ``;
+        const tituloLive = esperaReal === 0
           ? `🚌 Chegando agora ${preposicaoPonto(pontoAlvo)} ${pontoAlvo}!`
           : `🚌 Chega em ${esperaReal} min • ${pontoAlvo}${tagAtrasoTitulo}`;
 
-        let corpoLive = `Chegada: ${horaRealChegada} • ${ondeEstaTexto}\n${barraVisual}`;
-
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type: 'UPDATE_LIVE_NOTIFICATION',
-            titulo: tituloLive,
-            corpo: corpoLive
-          });
-        }
+        enviarNotificacao(tituloLive, `Chegada: ${horaRealChegada} • ${ondeEstaTexto}\n${montarBarraProgressoVisual(progressoPct)}`, {
+          tag: TAG_LIVE,
+          renotify: false,
+          silent: true,
+          requireInteraction: true,
+          actions: [
+            { action: 'abrir', title: '🗺️ Ver Mapa' },
+            { action: 'parar_live', title: '✖️ Fechar barra' }
+          ]
+        });
       } else {
+        chaveLiveAtual = null;
         fecharNotificacaoAoVivo();
       }
     }
 
-    // Restaura automaticamente o Radar Permanente sempre que o usuário abre o app
-    if (localStorage.getItem('morabus_radar_permanente') === 'ativo') {
-      alternarRadarPermanente(true);
-    }
-
-    setInterval(avaliarGatilhosInteligentesEBarraAoVivo, TEMPO_ATUALIZACAO);
-
-  </script>
-
-  <script>
+    /* =================================================================
+       SERVICE WORKER
+       ================================================================= */
     if ('serviceWorker' in navigator) {
+      const jaTinhaController = !!navigator.serviceWorker.controller;
       let recarregando = false;
 
+      // Recarrega quando uma versão nova assume (mas não na primeira instalação)
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!recarregando) {
-          recarregando = true;
-          window.location.reload();
+        if (!jaTinhaController || recarregando) return;
+        recarregando = true;
+        window.location.reload();
+      });
+
+      // Mensagens vindas do SW (ex.: usuário fechou a barra ao vivo)
+      navigator.serviceWorker.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'LIVE_DISMISSED' && chaveLiveAtual) {
+          localStorage.setItem('morabus_live_dispensada', chaveLiveAtual);
         }
       });
 
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then((reg) => {
-            reg.update();
-          })
+          .then(reg => reg.update())
           .catch(err => console.log('Erro no Service Worker:', err));
       });
     }
 
+    /* =================================================================
+       INICIALIZAÇÃO (único lugar)
+       ================================================================= */
+    inicializarSelectFavorito();
+    atualizarRelogio();
+    restaurarAlertasDoStorage();
+    atualizar();
+    atualizarClimaPampulha();
+    restaurarTransmissaoSeAtiva();
+    lerDadosTempoRealDaNuvem();
+    if (localStorage.getItem('morabus_radar_permanente') === 'ativo') alternarRadarPermanente(true);
+
+    setInterval(atualizarRelogio, 1000);
+    setInterval(atualizar, TEMPO_ATUALIZACAO);
+    setInterval(lerDadosTempoRealDaNuvem, TEMPO_ATUALIZACAO);
+    setInterval(avaliarGatilhosInteligentesEBarraAoVivo, TEMPO_ATUALIZACAO);
+    setInterval(atualizarClimaPampulha, 600000);
+
+    // Ao voltar para o app depois de minimizado, recalcula tudo e reativa o necessário
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState !== 'visible') return;
+      atualizarRelogio();
+      atualizar();
+      if (localStorage.getItem('morabus_transmitindo_ativo') === 'sim') alternarTransmissaoOnibus(true);
+      if (transmitindoWatchId !== null || radarPermanenteWatchId !== null) ativarWakeLock();
+      lerDadosTempoRealDaNuvem();
+    });
+
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted) {
         atualizarRelogio();
         atualizar();
       }
-    });
-
-    window.addEventListener('pageshow', () => {
-      atualizarRelogio();
-      atualizar();
     });
   </script>
 </body>
