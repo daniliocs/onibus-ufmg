@@ -882,16 +882,18 @@
     </select>
   </div>
 
-<!-- Painel de Monitoramento Inteligente e Notificação Ao Vivo (Estilo One UI / Live Activity) -->
-  <div class="favorito-bar" style="flex-direction: column; align-items: stretch; gap: 8px;">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-size: 13px; font-weight: 700;">🛰️ Radares & Notificação Ao Vivo (One UI)</span>
-      <span id="statusRadarPermanente" style="font-size: 11px; font-weight: 700; color: #777;">Desativado</span>
+<!-- Painel de Monitoramento Inteligente e Notificação Ao Vivo -->
+  <div class="favorito-bar" style="flex-direction: column; align-items: stretch; gap: 10px; padding: 14px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+      <span style="font-size: 14px; font-weight: 700; white-space: nowrap;">🛰️ Radar & Barra Ao Vivo</span>
+      <span id="statusRadarPermanente" style="font-size: 11px; font-weight: 700; color: #888; background: rgba(128,128,128,0.15); padding: 4px 10px; border-radius: 12px; white-space: nowrap;">
+        ⚪ Desativado
+      </span>
     </div>
-    <div style="font-size: 12px; color: #666; line-height: 1.35;">
+    <div style="font-size: 12px; color: #888; line-height: 1.4;">
       Acompanha seu GPS na Moradia/UFMG, avisa sozinho se o ônibus do seu ponto atrasar e mostra a <b>barra de aproximação ao vivo</b> na tela de bloqueio.
     </div>
-    <button id="btnRadarPermanente" onclick="alternarRadarPermanente()" style="margin-bottom: 0; padding: 9px 12px; font-size: 13px;">
+    <button id="btnRadarPermanente" onclick="alternarRadarPermanente()" style="margin-bottom: 0; padding: 10px 12px; font-size: 14px;">
       🔔 Ativar GPS Contínuo e Barra Ao Vivo
     </button>
   </div>
@@ -2736,8 +2738,9 @@
         localStorage.removeItem('morabus_radar_permanente');
         btn.style.background = "#006633";
         btn.innerText = "🔔 Ativar GPS Contínuo e Barra Ao Vivo";
-        lbl.innerText = "Desativado";
-        lbl.style.color = "#777";
+        lbl.innerText = "⚪ Desativado";
+        lbl.style.color = "#888";
+        lbl.style.background = "rgba(128,128,128,0.15)";
         fecharNotificacaoAoVivo();
         return;
       }
@@ -2761,7 +2764,8 @@
       btn.style.background = "#1565c0";
       btn.innerText = "🛰️ Radar e Barra Ao Vivo Ativos (Toque p/ desligar)";
       lbl.innerText = "🟢 Monitorando";
-      lbl.style.color = "#006633";
+      lbl.style.color = "#4ade80";
+      lbl.style.background = "rgba(74, 222, 128, 0.15)";
 
       if (radarPermanenteWatchId !== null) {
         navigator.geolocation.clearWatch(radarPermanenteWatchId);
