@@ -1,0 +1,25 @@
+{
+  "name": "morabus-ufmg",
+  "version": "1.0.0",
+  "description": "Aplicativo oficial (PWA + Android Nativo) do Ônibus das Moradias Estudantis da UFMG",
+  "main": "index.html",
+  "scripts": {
+    "build:www": "node scripts/prepare-www.js",
+    "android:init": "npm run build:www && npx cap add android",
+    "android:sync": "npm run build:www && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:apk": "npm run android:sync && cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor-community/background-geolocation": "^1.2.21",
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/geolocation": "^6.0.2",
+    "@capacitor/local-notifications": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  },
+  "author": "Danilio Costa",
+  "license": "MIT"
+}

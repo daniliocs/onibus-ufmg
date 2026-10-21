@@ -2,7 +2,7 @@
    MORABUS - Service Worker
    ⚠️ Sempre que alterar o index.html ou este arquivo, aumente a versão
    ================================================================= */
-const VERSAO = 'v29';
+const VERSAO = 'v1.5';
 const CACHE_APP = `onibus-ufmg-app-${VERSAO}`;
 const CACHE_MAPA = 'onibus-ufmg-tiles'; // tiles do mapa (mantido entre versões)
 const LIMITE_TILES = 300;               // evita encher o armazenamento do celular
@@ -23,7 +23,8 @@ const HOSTS_TEMPO_REAL = [
   'firebasedatabase.app',
   'open-meteo.com',
   'router.project-osrm.org',
-  'routing.openstreetmap.de'
+  'routing.openstreetmap.de',
+  'nominatim.openstreetmap.org'
 ];
 
 /* 1. Instalação: guarda os arquivos essenciais */

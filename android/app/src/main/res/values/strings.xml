@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Identity -->
+    <string name="app_name">Morabus UFMG</string>
+    <string name="title_activity_main">Morabus UFMG</string>
+    <string name="package_name">br.ufmg.morabus.app</string>
+    <string name="custom_url_scheme">br.ufmg.morabus.app</string>
+    <string name="app_subtitle">Ônibus Campus Pampulha ⇄ Moradias Universitárias</string>
+
+    <!-- Navigation Bar -->
+    <string name="nav_home">Início</string>
+    <string name="nav_map">Mapa</string>
+    <string name="nav_schedules">Horários</string>
+    <string name="nav_more">Mais</string>
+
+    <!-- Home Screen - Cards and Highlights -->
+    <string name="home_next_bus_title">Próximo Ônibus</string>
+    <string name="home_destination_campus">Sentido Campus</string>
+    <string name="home_destination_housing">Sentido Moradia</string>
+    <string name="home_arriving_now">Chegando agora!</string>
+    <string name="home_time_remaining_minutes">%d min</string>
+    <string name="home_time_remaining_label">Previsão</string>
+    <string name="home_scheduled_time">Horário programado: %s</string>
+    <string name="home_status_on_time">No horário</string>
+    <string name="home_status_delayed">Atrasado (+%d min)</string>
+    <string name="home_status_predicted">Previsto</string>
+    <string name="home_status_live">Ao vivo</string>
+    <string name="home_service_finished_title">Operação encerrada por hoje</string>
+    <string name="home_next_service_label">Próxima saída: %1$s às %2$s</string>
+
+    <!-- Contextual "Voltar pra Casa" -->
+    <string name="action_go_to_housing">Ir para a Moradia</string>
+    <string name="action_go_to_campus">Ir para o Campus</string>
+    <string name="context_next_from_stop">Próxima saída %1$s: %2$s (%3$d min)</string>
+    <string name="context_walking_time">Caminhada: ~%d min até o ponto</string>
+    <string name="context_no_dead_end_suggestion">Ver horários de amanhã ou rotas alternativas</string>
+
+    <!-- Live Activity / Notifications -->
+    <string name="notification_channel_live_name">Morabus Ao Vivo (Live Updates / Now Bar)</string>
+    <string name="notification_channel_live_desc">Acompanhamento contínuo em tempo real na barra de status e tela de bloqueio</string>
+    <string name="notification_channel_departure_name">Hora de Sair para o Ponto</string>
+    <string name="notification_channel_departure_desc">Alertas sonoros pontuais para iniciar a caminhada até a parada</string>
+    <string name="notification_channel_alerts_name">Alertas de Linha e Atrasos</string>
+    <string name="notification_channel_alerts_desc">Avisos imediatos quando houver atraso significativo ou incidente na rota</string>
+
+    <!-- Live Notification Phases -->
+    <string name="notification_phase_departure">🚶 Hora de sair! Ônibus no seu ponto em %d min</string>
+    <string name="notification_phase_en_route">🚌 Ônibus a caminho • Chega em ~%d min</string>
+    <string name="notification_phase_approaching">🚌 Ônibus chegando na sua parada!</string>
+    <string name="notification_phase_on_board">🚍 A bordo • Próxima parada: %s</string>
+    <string name="notification_phase_alight_next">📍 Prepare-se para descer na próxima: %s</string>
+    <string name="notification_subtext_route">Linha Campus ⇄ Moradias UFMG</string>
+    <string name="notification_status_chip_eta">%d min</string>
+
+    <!-- Notification Actions -->
+    <string name="action_notification_stop">Parar</string>
+    <string name="action_notification_on_board">Estou no ônibus</string>
+    <string name="action_notification_snooze_5m">Adiar 5 min</string>
+    <string name="action_notification_view_map">Ver no Mapa</string>
+
+    <!-- Stops (Paradas Oficiais da Linha) -->
+    <string name="stop_escola_musica">Escola de Música</string>
+    <string name="stop_belas_artes">Belas Artes</string>
+    <string name="stop_fae">FaE</string>
+    <string name="stop_ru_1">RU 1</string>
+    <string name="stop_face">FACE</string>
+    <string name="stop_reitoria">Reitoria</string>
+    <string name="stop_cad_1">CAD 1</string>
+    <string name="stop_farmacia">Farmácia</string>
+    <string name="stop_veterinaria">Veterinária</string>
+    <string name="stop_odonto">Odonto</string>
+    <string name="stop_educacao_fisica">Educação Física</string>
+    <string name="stop_moradia_1">Moradia 1</string>
+    <string name="stop_moradias_2_3">Moradias 2 e 3</string>
+
+    <!-- Collaborative Reports and Sharing -->
+    <string name="live_bus_card_title">Ônibus ao vivo</string>
+    <string name="live_bus_btn_on_board">Estou no ônibus</string>
+    <string name="live_bus_supporting_text">Compartilha sua posição para ajudar quem está nos pontos</string>
+    <string name="live_bus_sharing_active_format">Compartilhando · viagem das %s</string>
+    <string name="live_bus_btn_stop_sharing">Parar</string>
+    <string name="live_bus_background_service_note">O compartilhamento continua ativo em segundo plano mesmo com a tela apagada.</string>
+    <string name="live_bus_condition_traffic">Trânsito</string>
+    <string name="live_bus_condition_rain">Chuva/Alagamento</string>
+    <string name="live_bus_condition_defect">Com defeito</string>
+    <string name="live_bus_condition_accident">Acidente</string>
+    <string name="live_bus_condition_crowded">Lotado</string>
+    <string name="live_bus_report_sent_confirmation">Relato enviado com sucesso! Obrigado pela colaboração.</string>
+
+    <plurals name="collaborative_sharing_count">
+        <item quantity="one">%d pessoa compartilhando</item>
+        <item quantity="other">%d pessoas compartilhando</item>
+    </plurals>
+
+    <!-- Favorite Stop BottomSheet -->
+    <string name="favorite_stop_title">Ponto favorito</string>
+    <string name="favorite_stop_search_placeholder">Buscar parada ou prédio...</string>
+    <string name="favorite_stop_use_nearest">Usar o mais próximo de mim</string>
+    <string name="favorite_stop_section_housing">Moradias Universitárias</string>
+    <string name="favorite_stop_section_campus">Campus Pampulha</string>
+    <string name="favorite_stop_choose_button">Escolher ponto</string>
+    <string name="favorite_stop_remove">Remover favorito</string>
+    <string name="favorite_stop_snackbar_format">Ponto favorito: %s</string>
+    <string name="favorite_stop_snackbar_undo">Desfazer</string>
+    <string name="favorite_stop_removed_snackbar">Ponto favorito removido</string>
+
+    <string name="home_service_finished_details">Última saída: %1$s • Próxima: Amanhã às %2$s</string>
+
+    <!-- Collaborative Reports -->
+    <string name="report_title">Relato na Rota</string>
+    <string name="report_traffic">Trânsito lento / Retenção</string>
+    <string name="report_rain_flood">Chuva forte / Ponto de alagamento</string>
+    <string name="report_mechanical_issue">Ônibus com defeito mecânico</string>
+    <string name="report_accident">Acidente na via</string>
+    <string name="report_crowded">Ônibus muito lotado</string>
+    <string name="report_still_active_prompt">A situação ainda continua assim?</string>
+    <string name="report_confirm_yes">Sim, continua</string>
+    <string name="report_confirm_no">Já normalizou</string>
+
+    <!-- Schedules Screen -->
+    <string name="schedule_tab_weekdays">Dias Úteis</string>
+    <string name="schedule_tab_saturday">Sábados</string>
+    <string name="schedule_hide_past_label">Ocultar horários passados</string>
+    <string name="schedule_vehicle_count_legend">%d veículos em circulação</string>
+    <string name="schedule_set_alarm_action">Criar alarme</string>
+
+    <!-- Permissions -->
+    <string name="permission_notification_rationale">O Morabus precisa de permissão de notificação para avisar quando o ônibus estiver chegando e para exibir a atividade ao vivo.</string>
+    <string name="permission_location_rationale">Precisamos da localização para indicar a parada mais próxima e calcular o tempo de caminhada.</string>
+</resources>
