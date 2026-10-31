@@ -1,7 +1,8 @@
 {
-  "versionCode": 13,
-  "versionName": "3.1.6",
-  "apkUrl": "https://raw.githubusercontent.com/daniliocs/onibus-ufmg/main/morabus.apk?v=13",
-  "releaseNotes": "Versão 3.1.6: Correção nas notificações ao vivo (exibição de 'AGORA' em vermelho em vez de 0 min), desativação da notificação ao vivo em dias e horários sem viagens em operação, e aprimoramento da estimativa de chegada.",
-  "forceUpdate": false
+    "versionCode":  14,
+    "versionName":  "3.2.0",
+    "apkUrl":  "https://raw.githubusercontent.com/daniliocs/onibus-ufmg/main/morabus.apk?v=14",
+    "sha256":  "8ee4230fd872e4de6e8a086a249623df2e96a76f301c7f5cb253fa5fb8ba4fda",
+    "releaseNotes":  "Versão 3.2.0: lembretes que sobrevivem a reinício e pulam feriados/domingos, widget atualizado a cada minuto, atualização do app mais confiável (novas tentativas e verificação de integridade) e reforço de segurança.",
+    "forceUpdate":  false
 }

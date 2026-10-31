@@ -24,7 +24,8 @@ data class RemoteAppVersion(
     val versionName: String,
     val apkUrl: String,
     val releaseNotes: String,
-    val isForceUpdate: Boolean = false
+    val isForceUpdate: Boolean = false,
+    val sha256: String = ""
 )
 
 object AppUpdateManager {
@@ -153,7 +154,7 @@ object AppUpdateManager {
             if (code > 0 && url.isNotBlank() && isTrustedDomain) {
                 val cleanBaseUrl = url.substringBefore("?")
                 val versionedApkUrl = "$cleanBaseUrl?v=$code"
-                RemoteAppVersion(code, name, versionedApkUrl, notes, force)
+                RemoteAppVersion(code, name, versionedApkUrl, notes, force, obj.optString("sha256", "").trim().lowercase())
             } else null
         } catch (e: Exception) {
             Log.e(TAG, "Erro parseando JSON de versão", e)
@@ -191,22 +192,36 @@ object AppUpdateManager {
 
         scope.launch {
             try {
-                val apkFile = downloadApk(context, update)
-                val downloadedCode = getArchiveVersionCode(context, apkFile)
-
-                if (downloadedCode <= 0) {
-                    apkFile.delete()
+                var apkFile: File? = null
+                var lastProblem: String? = null
+                // Até 3 tentativas automáticas: a CDN do GitHub pode demorar a propagar o novo arquivo
+                for (attempt in 1..3) {
+                    val candidate = downloadApk(context, update)
+                    val downloadedCode = getArchiveVersionCode(context, candidate)
+                    lastProblem = when {
+                        downloadedCode <= 0 ->
+                            "O arquivo baixado estava incompleto. Toque novamente para baixar."
+                        downloadedCode < update.versionCode ->
+                            "O servidor do GitHub ainda está propagando o novo arquivo da v${update.versionName}. Aguarde 1 minuto e toque novamente."
+                        update.sha256.isNotBlank() && !sha256Of(candidate).equals(update.sha256, ignoreCase = true) ->
+                            "A verificação de integridade do arquivo falhou. Toque novamente para baixar."
+                        !signatureMatchesInstalled(context, candidate) ->
+                            "O pacote baixado tem uma assinatura diferente da versão instalada e não pode atualizar o app. Reinstale pelo link oficial do GitHub."
+                        else -> null
+                    }
+                    if (lastProblem == null) {
+                        apkFile = candidate
+                        break
+                    }
+                    candidate.delete()
                     _downloadedApkFile.value = null
-                    _downloadError.value = "O arquivo baixado estava incompleto. Toque novamente para baixar."
-                    _isDownloading.value = false
-                    return@launch
+                    // Assinatura incorreta não melhora com nova tentativa
+                    if (lastProblem.startsWith("O pacote baixado tem uma assinatura")) break
+                    if (attempt < 3) kotlinx.coroutines.delay(20_000L)
                 }
 
-                if (downloadedCode < update.versionCode) {
-                    // A CDN do GitHub ainda entregou a versão anterior em cache (janela de até 5 min após publicação)
-                    apkFile.delete()
-                    _downloadedApkFile.value = null
-                    _downloadError.value = "O servidor do GitHub ainda está propagando o novo arquivo da v${update.versionName} (leva ~2 min). Aguarde 1 minuto e toque novamente."
+                if (apkFile == null) {
+                    _downloadError.value = lastProblem ?: "Falha ao baixar a atualização."
                     _isDownloading.value = false
                     return@launch
                 }
@@ -226,6 +241,38 @@ object AppUpdateManager {
         }
     }
 
+    private fun sha256Of(file: File): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buf = ByteArray(8192)
+            var n: Int
+            while (input.read(buf).also { n = it } != -1) digest.update(buf, 0, n)
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    /** true se o APK baixado foi assinado com o mesmo certificado do app instalado (ou se não for possível verificar). */
+    @Suppress("DEPRECATION")
+    private fun signatureMatchesInstalled(context: Context, apkFile: File): Boolean {
+        return try {
+            val pm = context.packageManager
+            fun sigs(info: android.content.pm.PackageInfo?): Set<String> {
+                if (info == null) return emptySet()
+                val arr = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    info.signingInfo?.apkContentsSigners
+                } else info.signatures
+                return arr?.map { it.toCharsString() }?.toSet() ?: emptySet()
+            }
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
+            else android.content.pm.PackageManager.GET_SIGNATURES
+            val installed = sigs(pm.getPackageInfo(context.packageName, flags))
+            val archive = sigs(pm.getPackageArchiveInfo(apkFile.absolutePath, flags))
+            if (installed.isEmpty() || archive.isEmpty()) true else installed.intersect(archive).isNotEmpty()
+        } catch (_: Exception) {
+            true
+        }
+    }
     private suspend fun downloadApk(context: Context, update: RemoteAppVersion): File = withContext(Dispatchers.IO) {
         val destDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.cacheDir
         if (!destDir.exists()) destDir.mkdirs()

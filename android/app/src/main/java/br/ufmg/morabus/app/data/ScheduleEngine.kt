@@ -103,6 +103,7 @@ object ScheduleEngine {
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var isSyncing = false
+    @Volatile private var lastSyncAttemptMs = 0L
 
     val STOPS = listOf(
         BusStop("Moradia 1", -19.8706, -43.9862, false),
@@ -247,6 +248,10 @@ object ScheduleEngine {
         }
 
         if (isSyncing) return
+        // Throttle: evita bater na rede a cada atualização do widget (a cada ~1 min)
+        val nowMs = System.currentTimeMillis()
+        if (nowMs - lastSyncAttemptMs < 30 * 60 * 1000L) return
+        lastSyncAttemptMs = nowMs
         isSyncing = true
         scope.launch {
             try {

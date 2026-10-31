@@ -279,7 +279,7 @@ object FirebaseRealtimeRepository {
                 val ctx = appContext
                 if (ctx != null) {
                     val installId = UserPreferencesRepository.getInstallId(ctx)
-                    val pingJson = "{\"lastSeen\":$nowMs,\"version\":\"3.1.6\"}"
+                    val pingJson = "{\"lastSeen\":$nowMs,\"version\":\"3.2.0\"}"
                     httpPut("$FIREBASE_URL/installs/$installId.json", pingJson)
 
                     // Busca a contagem real de instalações registradas (soma de todas as versões)

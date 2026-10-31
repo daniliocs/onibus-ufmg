@@ -8,3 +8,8 @@ android/local.properties
 *.apk
 !morabus.apk
 *.aab
+
+android/keystore.properties
+android/app/*.keystore
+android/app/*.jks
+*.jks

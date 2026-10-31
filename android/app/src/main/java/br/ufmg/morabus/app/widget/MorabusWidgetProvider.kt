@@ -17,6 +17,43 @@ class MorabusWidgetProvider : AppWidgetProvider() {
 
     companion object {
         const val ACTION_REFRESH_WIDGET = "br.ufmg.morabus.app.ACTION_REFRESH_WIDGET"
+        private const val TICK_REQUEST_CODE = 4401
+
+        fun requestRefresh(context: Context) = updateAllWidgets(context)
+
+        private fun tickPendingIntent(context: Context): PendingIntent {
+            val intent = Intent(context, MorabusWidgetProvider::class.java).apply {
+                action = ACTION_REFRESH_WIDGET
+            }
+            return PendingIntent.getBroadcast(
+                context,
+                TICK_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+
+        /**
+         * Mantém o contador do widget fresco: a cada ~1 min enquanto há ônibus rodando ou prestes a sair,
+         * e a cada 15 min fora disso (economiza bateria). Alarme inexato: não exige permissão especial.
+         */
+        private fun scheduleNextTick(context: Context, serviceActive: Boolean) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
+            val delayMs = if (serviceActive) 60_000L else 15 * 60_000L
+            try {
+                alarmManager.setAndAllowWhileIdle(
+                    android.app.AlarmManager.RTC,
+                    System.currentTimeMillis() + delayMs,
+                    tickPendingIntent(context)
+                )
+            } catch (_: Exception) {
+            }
+        }
+
+        private fun cancelTicks(context: Context) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
+            alarmManager.cancel(tickPendingIntent(context))
+        }
 
         fun updateAllWidgets(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context) ?: return
@@ -32,6 +69,16 @@ class MorabusWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        scheduleNextTick(context, true)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        cancelTicks(context)
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == ACTION_REFRESH_WIDGET) {
@@ -44,6 +91,7 @@ class MorabusWidgetProvider : AppWidgetProvider() {
         ScheduleEngine.initAndSyncDynamicSchedules(context)
         val favoriteStop = UserPreferencesRepository.favoriteStop.value
         val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), favoriteStop)
+        scheduleNextTick(context, status.isServiceActive)
 
         for (appWidgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.widget_morabus)

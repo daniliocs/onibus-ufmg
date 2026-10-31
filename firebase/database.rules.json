@@ -1,0 +1,61 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "app_version": {
+      ".read": true,
+      ".write": false
+    },
+
+    "telemetria": {
+      ".read": true,
+      "$sessionId": {
+        ".write": "$sessionId.length <= 64",
+        ".validate": "!newData.exists() || (newData.hasChildren(['lat', 'lon', 'timestamp']) && newData.child('lat').isNumber() && newData.child('lat').val() >= -90 && newData.child('lat').val() <= 90 && newData.child('lon').isNumber() && newData.child('lon').val() >= -180 && newData.child('lon').val() <= 180 && newData.child('timestamp').isNumber())",
+        "viaAtual": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "horarioViagem": { ".validate": "newData.isString() && newData.val().length <= 16" },
+        "velocidadeKmh": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 200" },
+        "atrasoMinutos": { ".validate": "newData.isNumber() && newData.val() >= -60 && newData.val() <= 180" }
+      }
+    },
+
+    "alertas_comunidade": {
+      ".read": true,
+      "ultimo": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['codigo'])",
+        "codigo": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "horaEnvio": { ".validate": "newData.isString() && newData.val().length <= 16" },
+        "horarioViagem": { ".validate": "newData.isString() && newData.val().length <= 16" }
+      }
+    },
+
+    "passagens_recentes": {
+      ".read": true,
+      "ultimo": { ".write": true }
+    },
+
+    "esperando_no_ponto": {
+      ".read": true,
+      "$stop": {
+        "$sessionId": {
+          ".write": "$stop.length <= 120 && $sessionId.length <= 64"
+        }
+      }
+    },
+
+    "atrasos_consolidados": {
+      ".read": true,
+      ".write": false
+    },
+
+    "installs": {
+      ".read": true,
+      "$installId": {
+        ".write": "$installId.length <= 64",
+        ".validate": "!newData.exists() || newData.hasChildren(['lastSeen'])"
+      }
+    }
+  }
+}

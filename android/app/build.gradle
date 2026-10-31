@@ -8,8 +8,8 @@ android {
         applicationId "br.ufmg.morabus.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 13
-        versionName "3.1.6"
+        versionCode 14
+        versionName "3.2.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -31,10 +31,15 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file('morabus-signing.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+            // Credenciais lidas de android/keystore.properties (fora do git) ou de variÃ¡veis de ambiente.
+            // A MESMA chave de sempre Ã© mantida para que as atualizaÃ§Ãµes continuem instalando sobre o app atual.
+            def ksProps = new Properties()
+            def ksFile = rootProject.file('keystore.properties')
+            if (ksFile.exists()) { ksFile.withInputStream { ksProps.load(it) } }
+            storeFile file(ksProps.getProperty('storeFile', System.getenv('MORABUS_KEYSTORE') ?: 'morabus-signing.keystore'))
+            storePassword ksProps.getProperty('storePassword', System.getenv('MORABUS_STORE_PASSWORD') ?: 'android')
+            keyAlias ksProps.getProperty('keyAlias', System.getenv('MORABUS_KEY_ALIAS') ?: 'androiddebugkey')
+            keyPassword ksProps.getProperty('keyPassword', System.getenv('MORABUS_KEY_PASSWORD') ?: 'android')
             v1SigningEnabled true
             v2SigningEnabled true
         }

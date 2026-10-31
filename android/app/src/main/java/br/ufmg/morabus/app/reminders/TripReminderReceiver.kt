@@ -28,6 +28,16 @@ class TripReminderReceiver : BroadcastReceiver() {
         val tripTime = intent.getStringExtra(EXTRA_TRIP_TIME) ?: return
         val origin = intent.getStringExtra(EXTRA_ORIGIN) ?: "Moradia"
 
+        UserPreferencesRepository.init(context)
+        val stillWanted = UserPreferencesRepository.isReminderSet("${tripTime}_$origin")
+        if (!stillWanted) return
+
+        // Reagenda já para a próxima ocorrência (o alarme é de disparo único)
+        TripReminderManager.scheduleReminder(context, tripTime, origin)
+
+        // Sem ônibus hoje (domingo/feriado/recesso): não notifica
+        if (ScheduleEngine.getTripsForDate(Calendar.getInstance()).isEmpty()) return
+
         createChannel(context)
 
         val contentIntent = PendingIntent.getActivity(
@@ -101,14 +111,19 @@ object TripReminderManager {
         val tripMin = ScheduleEngine.timeToMinutes(tripTime)
         val reminderMin = tripMin - 15 // 15 minutos antes
 
+        // Próxima ocorrência futura que caia em um dia com ônibus (ignora domingos e feriados)
         val cal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, reminderMin / 60)
             set(Calendar.MINUTE, reminderMin % 60)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
-            if (timeInMillis <= System.currentTimeMillis()) {
-                add(Calendar.DAY_OF_YEAR, 1) // agenda para o dia seguinte
-            }
+        }
+        var guard = 0
+        while (guard < 15 &&
+            (cal.timeInMillis <= System.currentTimeMillis() || ScheduleEngine.getTripsForDate(cal).isEmpty())
+        ) {
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+            guard++
         }
 
         try {
@@ -118,6 +133,17 @@ object TripReminderManager {
                 alarmManager.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
             }
         } catch (_: Exception) {}
+    }
+
+    /** Reagenda todos os lembretes salvos (após reboot, atualização do app ou mudança de fuso). */
+    fun rescheduleAll(context: Context) {
+        UserPreferencesRepository.init(context)
+        for (key in UserPreferencesRepository.scheduledReminders.value) {
+            val parts = key.split("_", limit = 2)
+            if (parts.size == 2 && parts[0].matches(Regex("\\d{2}:\\d{2}"))) {
+                scheduleReminder(context, parts[0], parts[1])
+            }
+        }
     }
 
     fun cancelReminder(context: Context, tripTime: String) {
