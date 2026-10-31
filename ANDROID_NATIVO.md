@@ -1,70 +1,84 @@
-# 📱 Guia do App Nativo Android — Morabus UFMG
+# 📱 Guia de Desenvolvimento do App Nativo Android — Morabus UFMG
 
-Este projeto agora está preparado para gerar um **aplicativo Android nativo (.apk)** usando **Capacitor**, mantendo **100% de compatibilidade** com o GitHub Pages (PWA) a partir do mesmo arquivo `index.html`.
-
----
-
-## 🚀 O que muda no App Nativo Android?
-
-1. **GPS em 2º Plano Real (`@capacitor-community/background-geolocation`):**
-   - No navegador comum, quando o estudante bloqueia a tela ou abre o WhatsApp, o Android congela o GPS em ~1 minuto.
-   - No App Nativo, o rastreio cria um **Serviço de Primeiro Plano (Foreground Service)** do Android: o GPS continua enviando a posição exata para o Firebase mesmo com a tela apagada no bolso!
-2. **Notificações Locais e Barra Ao Vivo Nativas (`@capacitor/local-notifications`):**
-   - Notificações fixas (`ongoing: true`) na bandeja do Android que não somem sozinhas e vibram mesmo com o app fechado.
+Este documento descreve a arquitetura nativa do aplicativo **Morabus UFMG** em **Kotlin + Jetpack Compose**, sua estrutura de diretórios e o fluxo de compilação.
 
 ---
 
-## 🛠️ Passo a Passo para Gerar e Testar no seu Celular
+## 🏛️ Arquitetura do App Nativo
 
-### 1. Instalar as dependências do Capacitor
-Abra o terminal na pasta do projeto (`onibus-ufmg`) e execute:
+O Morabus UFMG foi arquitetado para aliar a reatividade e beleza do **Jetpack Compose (Material 3)** com o baixo consumo de dados e confiabilidade do motor de horários offline:
 
-> **Dica para Windows PowerShell:** Se aparecer erro de *Execution Policy* no `npm`, use `npm.cmd` e `npx.cmd`:
+```
+android/app/src/main/java/br/ufmg/morabus/app/
+├── MainActivity.kt                      # Ponto de entrada e tratamento de App Shortcuts
+├── data/
+│   ├── AppUpdateManager.kt              # Gerenciador OTA de download e instalação de APKs
+│   ├── CampusRadarEngine.kt             # Lógica de telemetria e avisos de trânsito/chuva
+│   ├── FirebaseRealtimeRepository.kt    # Integração REST com Firebase RTDB (installs, alertas)
+│   ├── MapTileCacheManager.kt           # Cache nativo em disco de blocos OpenStreetMap
+│   ├── RuEngine.kt                      # Motor de horários e recomendações dos RUs Setorial I e II
+│   ├── ScheduleEngine.kt                # Cálculo de partidas, tempo restante e pontos
+│   └── UserPreferencesRepository.kt     # Persistência via SharedPreferences com StateFlow
+├── notifications/
+│   ├── LiveTripModels.kt                # Modelos de dados de viagens ativas
+│   ├── LiveTripNotifier.kt              # Notificações em primeiro plano (Foreground)
+│   ├── LiveTripService.kt               # Serviço contínuo de rastreio de viagem
+│   └── CampusRadarNotifier.kt           # Notificações de comunicados urgentes
+├── reminders/
+│   └── TripReminderReceiver.kt          # BroadcastReceiver de alarmes agendados
+├── ui/
+│   ├── MorabusMainApp.kt                # Scaffold principal, barra de navegação de 5 abas
+│   ├── components/
+│   │   ├── LiveBusCard.kt               # Cards duplos de saída simultânea (Moradia/Campus)
+│   │   ├── RuComponents.kt              # Card e BottomSheet modal dos Restaurantes Universitários
+│   │   ├── CampusRadarBanner.kt         # Banner de avisos urgentes na Home
+│   │   └── FavoriteStopBottomSheet.kt   # Seleção rápida do ponto favorito
+│   ├── screens/
+│   │   ├── HomeScreen.kt                # Aba 1: Início (status, cards, RU, timeline)
+│   │   ├── MapScreen.kt                 # Aba 2: Mapa interativo Leaflet com cache offline
+│   │   ├── SchedulesScreen.kt           # Aba 3: Grade completa com filtros persistentes
+│   │   ├── AvisosScreen.kt              # Aba 4: Mural com histórico de comunicados
+│   │   └── MoreScreen.kt                # Aba 5: Configurações, comunidade e atualizador
+│   └── theme/
+│       ├── MorabusIcons.kt              # Coleção de ícones vetoriais Material 3
+│       └── Theme.kt                     # Cores, tipografia e suporte Claro/Escuro
+└── widget/
+    └── MorabusWidgetProvider.kt         # AppWidget para tela inicial do Android
+```
+
+---
+
+## 🚀 Como Compilar e Gerar o APK
+
+### 1. Compilação direta via terminal:
+Na raiz do projeto, acesse a pasta `android` e execute:
 
 ```powershell
-npm.cmd install
+cd android
+./gradlew assembleDebug
 ```
 
-### 2. Criar a pasta nativa Android (só precisa na 1ª vez)
+O arquivo compilado é nomeado automaticamente como **`morabus.apk`** e gerado em:
+- `android/app/build/outputs/apk/debug/morabus.apk`
+
+### 2. Copiar para a raiz para distribuição:
 ```powershell
-npm.cmd run build:www
-npx.cmd cap add android
+Copy-Item android/app/build/outputs/apk/debug/morabus.apk ../morabus.apk -Force
 ```
 
-### 3. Configurar as Permissões de GPS em 2º Plano no Android
-Abra o arquivo `android/app/src/main/AndroidManifest.xml` (criado no passo anterior) e certifique-se de que estas permissões estejam antes da tag `<application>`:
+### 3. Instalar no celular conectado via cabo USB:
+Certifique-se de que a **Depuração USB** está ativada no celular:
 
-```xml
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-<uses-permission android:name="android.permission.VIBRATE" />
-<uses-permission android:name="android.permission.WAKE_LOCK" />
-```
-
-### 4. Sincronizar alterações do `index.html` com o Android
-Sempre que você editar o `index.html`, rode:
 ```powershell
-npm.cmd run android:sync
+adb install -r ../morabus.apk
 ```
 
-### 5. Rodar no seu celular ou gerar o `.APK`
-Você tem duas opções:
+---
 
-- **Opção A (Com Android Studio):**
-  ```powershell
-  npm.cmd run android:open
-  ```
-  Conecte seu celular via cabo USB (com *Depuração USB* ativada) ou Wi-Fi e clique no botão **Run (▶️)** no Android Studio.
+## 📲 Sistema de Atualização Remota (In-App OTA)
 
-- **Opção B (Gerar arquivo `.apk` direto pelo terminal):**
-  ```powershell
-  npm.cmd run android:apk
-  ```
-  O arquivo instalável estará em:
-  `android/app/build/outputs/apk/debug/app-debug.apk`
-  Basta enviar esse `.apk` para o seu celular (via WhatsApp/Telegram/USB) e instalar!
+O aplicativo conta com verificação interna de novas versões sem depender da Google Play Store:
+
+1. **Metadados:** Armazenados no Firebase (`/app_version.json`) e no GitHub (`version.json`).
+2. **Download:** O `AppUpdateManager` baixa o `.apk` com acompanhamento de progresso em tempo real.
+3. **Instalação:** Invoca a `ACTION_VIEW` com `FileProvider` (`br.ufmg.morabus.app.fileprovider`), solicitando autorização nativa do usuário para concluir a atualização.
