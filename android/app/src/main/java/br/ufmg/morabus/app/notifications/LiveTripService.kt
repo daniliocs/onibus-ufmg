@@ -43,6 +43,12 @@ class LiveTripService : Service() {
             val hasNotification = notificationManager.activeNotifications?.any {
                 it.id == StandardLiveTripNotifier.NOTIFICATION_ID
             } ?: false
+            val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance())
+            if (!status.isServiceActive && hasNotification) {
+                StandardLiveTripNotifier(context).dismiss()
+                _isRunning.value = false
+                return false
+            }
             _isRunning.value = hasNotification
             return hasNotification
         }
@@ -58,10 +64,14 @@ class LiveTripService : Service() {
             val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
             val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
-            _isRunning.value = true
             val resolvedTarget = if (!targetStop.isNullOrBlank()) targetStop else "Ponto mais próximo"
-
             val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), resolvedTarget)
+            if (!status.isServiceActive) {
+                _isRunning.value = false
+                return
+            }
+
+            _isRunning.value = true
             val isBusMoving = status.activeTrip != null
             val initialPhase = when {
                 !isBusMoving -> TripPhase.DEPARTURE
@@ -186,6 +196,13 @@ class LiveTripService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 targetStop = intent.getStringExtra(EXTRA_TARGET_STOP) ?: "Ponto mais próximo"
+                val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), targetStop)
+                if (!status.isServiceActive) {
+                    _isRunning.value = false
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+
                 remainingMinutes = intent.getIntExtra(EXTRA_ETA_MINUTES, 15)
                 targetTimestampMs = System.currentTimeMillis() + (remainingMinutes * 60 * 1000)
                 departureAdvice = intent.getStringExtra(EXTRA_DEPARTURE_ADVICE)
@@ -193,7 +210,6 @@ class LiveTripService : Service() {
                 walkingMinutes = if (walkExtra > 0) walkExtra else null
                 isUsingNearestGpsStop = intent.getBooleanExtra(EXTRA_IS_NEAREST_GPS, false)
 
-                val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), targetStop)
                 val isBusMoving = status.activeTrip != null
                 currentPhase = when {
                     !isBusMoving -> TripPhase.DEPARTURE
@@ -290,6 +306,13 @@ class LiveTripService : Service() {
     }
 
     private fun checkTripProgression() {
+        val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), targetStop)
+        if (!status.isServiceActive) {
+            _isRunning.value = false
+            stopSelf()
+            return
+        }
+
         val remainingSec = Math.max(0, (targetTimestampMs - System.currentTimeMillis()) / 1000)
         remainingMinutes = Math.max(0, (remainingSec / 60).toInt())
 

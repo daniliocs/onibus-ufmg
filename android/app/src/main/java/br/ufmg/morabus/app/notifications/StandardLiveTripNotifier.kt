@@ -6,7 +6,13 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Build
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import br.ufmg.morabus.app.MainActivity
@@ -133,41 +139,74 @@ class StandardLiveTripNotifier(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val titleText = when (state.phase) {
+        val titleText: CharSequence = when (state.phase) {
             TripPhase.DEPARTURE -> {
-                if (state.walkingMinutes != null && state.etaMinutes <= state.walkingMinutes + 2) {
+                if (state.etaMinutes <= 0) {
+                    formatWithAgora("🚍 Próximo ônibus")
+                } else if (state.walkingMinutes != null && state.etaMinutes <= state.walkingMinutes + 2) {
                     "⏰ Hora de sair! Ônibus no seu ponto em ${state.etaMinutes} min"
                 } else {
                     "🚍 Próximo ônibus em ${state.etaMinutes} min"
                 }
             }
-            TripPhase.EN_ROUTE -> "🚍 Ônibus em viagem · Chega em ~${state.etaMinutes} min"
-            TripPhase.APPROACHING -> "🚍 Ônibus chegando na sua parada!"
+            TripPhase.EN_ROUTE -> {
+                if (state.etaMinutes <= 0) {
+                    formatWithAgora("🚍 Ônibus no seu ponto")
+                } else if (state.etaMinutes <= 2) {
+                    "🚍 Quase na parada · Chega em ~${state.etaMinutes} min"
+                } else {
+                    "🚍 Ônibus em viagem · Chega em ~${state.etaMinutes} min"
+                }
+            }
+            TripPhase.APPROACHING -> {
+                if (state.etaMinutes <= 0) {
+                    formatWithAgora("🚍 Ônibus na parada")
+                } else {
+                    "🚍 Ônibus chegando na sua parada!"
+                }
+            }
             TripPhase.ON_BOARD -> "🚍 A bordo · Próxima parada: ${state.nextStopName}"
             TripPhase.ALIGHT_NEXT -> "🔔 Prepare-se para descer em: ${state.targetStop}"
             TripPhase.COMPLETED -> ""
         }
 
         val delayText = if (state.delayMinutes > 0) " (+${state.delayMinutes} min atraso)" else ""
-        val bodyText = "${state.targetStop} • ${state.currentLocationName}$delayText"
+        val bodyText = if (state.etaMinutes <= 0) {
+            "Chegando agora na parada • ${state.targetStop}$delayText"
+        } else {
+            "${state.targetStop} • ${state.currentLocationName}$delayText"
+        }
 
         val bigText = buildString {
             append("📍 Parada: ${state.targetStop}\n")
             append("🚍 ${state.currentLocationName}\n")
-            append("⏱️ Previsão de chegada: ${state.etaMinutes} min")
+            if (state.etaMinutes <= 0) {
+                append("⏱️ Previsão de chegada: AGORA!\n")
+            } else {
+                append("⏱️ Previsão de chegada: em ${state.etaMinutes} min\n")
+            }
             if (state.delayMinutes > 0) {
-                append(" (atraso de +${state.delayMinutes} min)")
+                append(" (atraso de +${state.delayMinutes} min)\n")
             }
             if (!state.departureAdvice.isNullOrBlank()) {
-                append("\n${state.departureAdvice}")
+                append(state.departureAdvice)
             }
+        }.trimEnd()
+
+        val subText: CharSequence = if (state.etaMinutes <= 0) {
+            val ssb = SpannableStringBuilder("AGORA")
+            ssb.setSpan(ForegroundColorSpan(Color.parseColor("#DC2626")), 0, 5, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            ssb.setSpan(StyleSpan(Typeface.BOLD), 0, 5, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            ssb
+        } else {
+            context.getString(R.string.notification_status_chip_eta, state.etaMinutes)
         }
 
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_bus_tracker)
             .setContentTitle(titleText)
             .setContentText(bodyText)
-            .setSubText(context.getString(R.string.notification_status_chip_eta, state.etaMinutes))
+            .setSubText(subText)
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -232,6 +271,19 @@ class StandardLiveTripNotifier(
         builder.setProgress(100, state.progressPercent, false)
 
         return builder.build()
+    }
+
+    private fun formatWithAgora(prefix: String): CharSequence {
+        val ssb = SpannableStringBuilder()
+        if (prefix.isNotBlank()) {
+            ssb.append(prefix).append(" ")
+        }
+        val start = ssb.length
+        ssb.append("AGORA")
+        val end = ssb.length
+        ssb.setSpan(ForegroundColorSpan(Color.parseColor("#DC2626")), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        ssb.setSpan(StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        return ssb
     }
 
     override fun dismiss() {

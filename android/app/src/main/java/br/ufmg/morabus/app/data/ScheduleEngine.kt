@@ -667,7 +667,8 @@ object ScheduleEngine {
             nextTrip != null -> {
                 val waitMin = nextTrip.minutesFromMidnight - currentMinutes
                 val originDesc = if (nextTrip.isPassagem) "Passando na Moradia ➔ UFMG" else "Saída ${nextTrip.origin}"
-                "Próxima saída às ${nextTrip.time} ($originDesc) em ${formatDurationMin(waitMin)}"
+                val waitSuffix = if (waitMin <= 0) "AGORA" else "em ${formatDurationMin(waitMin)}"
+                "Próxima saída às ${nextTrip.time} ($originDesc) $waitSuffix"
             }
             else -> {
                 "Viagens encerradas por hoje. $nextServiceShortText"
@@ -759,6 +760,9 @@ object ScheduleEngine {
         val idealDepartureTime = minutesToHHMM(idealDepartureMin)
 
         return when {
+            etaMinutes <= 0 -> {
+                "🚌 Ônibus no ponto agora! (Caminhada até aqui leva ~$walkingMinutes min)"
+            }
             etaMinutes < walkingMinutes -> {
                 "🏃 Passo apertado! Ônibus passa em ${formatDurationMin(etaMinutes)} e caminhada leva ~$walkingMinutes min."
             }

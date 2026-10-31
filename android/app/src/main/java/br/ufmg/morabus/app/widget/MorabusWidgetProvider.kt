@@ -60,9 +60,10 @@ class MorabusWidgetProvider : AppWidgetProvider() {
 
                 if (fav != null) {
                     views.setTextViewText(R.id.widget_tv_time, fav.arrivalTime)
+                    val favCountdown = if (fav.minutesUntilArrival <= 0) "AGORA" else "em ${ScheduleEngine.formatDurationMin(fav.minutesUntilArrival)}"
                     views.setTextViewText(
                         R.id.widget_tv_countdown,
-                        "em ${ScheduleEngine.formatDurationMin(fav.minutesUntilArrival)}"
+                        favCountdown
                     )
                     views.setTextViewText(
                         R.id.widget_tv_origin,
@@ -70,7 +71,9 @@ class MorabusWidgetProvider : AppWidgetProvider() {
                     )
                 } else if (trip != null) {
                     views.setTextViewText(R.id.widget_tv_time, trip.time)
-                    val minText = status.nextTripMinutes?.let { "em ${ScheduleEngine.formatDurationMin(it)}" } ?: "Em viagem"
+                    val minText = status.nextTripMinutes?.let {
+                        if (it <= 0) "AGORA" else "em ${ScheduleEngine.formatDurationMin(it)}"
+                    } ?: "Em viagem"
                     views.setTextViewText(R.id.widget_tv_countdown, minText)
 
                     val originDesc = when {

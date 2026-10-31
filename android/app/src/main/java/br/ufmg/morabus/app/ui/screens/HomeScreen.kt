@@ -7,6 +7,7 @@ import android.location.Location
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -220,22 +221,26 @@ fun HomeScreen(
             fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
                 if (loc != null) userGpsLocation = loc
                 val target = favoriteStop ?: loc?.let { ScheduleEngine.findNearestStop(it.latitude, it.longitude)?.first?.name }
+                if (scheduleStatus.isServiceActive) {
+                    LiveTripService.start(
+                        context = context,
+                        targetStop = target,
+                        etaMinutes = Math.max(1, minutesToArrival),
+                        departureAdvice = departureAdviceText,
+                        isNearestGps = favoriteStop == null
+                    )
+                }
+            }
+        } else {
+            if (scheduleStatus.isServiceActive) {
                 LiveTripService.start(
                     context = context,
-                    targetStop = target,
-                    etaMinutes = minutesToArrival,
+                    targetStop = favoriteStop,
+                    etaMinutes = Math.max(1, minutesToArrival),
                     departureAdvice = departureAdviceText,
                     isNearestGps = favoriteStop == null
                 )
             }
-        } else {
-            LiveTripService.start(
-                context = context,
-                targetStop = favoriteStop,
-                etaMinutes = minutesToArrival,
-                departureAdvice = departureAdviceText,
-                isNearestGps = favoriteStop == null
-            )
         }
     }
 
@@ -636,13 +641,38 @@ fun HomeScreen(
                                     color = etaColor
                                 )
                             }
+                        } else if (minutesToArrival <= 0) {
+                            Row(
+                                verticalAlignment = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "AGORA",
+                                    style = MaterialTheme.typography.displayMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = StatusRed
+                                )
+                                Surface(
+                                    color = StatusRed.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                ) {
+                                    Text(
+                                        text = "No ponto!",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = StatusRed,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
                         } else {
                             Row(
                                 verticalAlignment = Alignment.Bottom,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    text = Math.max(0, minutesToArrival).toString(),
+                                    text = minutesToArrival.toString(),
                                     style = MaterialTheme.typography.displayMedium,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = etaColor
@@ -776,11 +806,57 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // Botão para ativar/parar Notificação ao Vivo
-                    Button(
-                        onClick = {
-                            if (isLiveNotificationRunning) {
-                                LiveTripService.stop(context)
-                            } else {
+                    if (isLiveNotificationRunning) {
+                        Button(
+                            onClick = { LiveTripService.stop(context) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = StatusRed)
+                        ) {
+                            Icon(
+                                imageVector = MorabusIcons.Stop,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Parar Notificação ao Vivo",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    } else if (!scheduleStatus.isServiceActive) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = MorabusIcons.NotificationsNone,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = "Notificação ao vivo indisponível (viagens encerradas)",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        Button(
+                            onClick = {
                                 val neededPermissions = mutableListOf(
                                     Manifest.permission.ACCESS_FINE_LOCATION,
                                     Manifest.permission.ACCESS_COARSE_LOCATION
@@ -797,32 +873,32 @@ fun HomeScreen(
                                     LiveTripService.start(
                                         context = context,
                                         targetStop = effectiveTargetStop,
-                                        etaMinutes = minutesToArrival,
+                                        etaMinutes = Math.max(1, minutesToArrival),
                                         departureAdvice = departureAdviceText,
                                         isNearestGps = favoriteStop == null
                                     )
                                 }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isLiveNotificationRunning) StatusRed else MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Icon(
-                            imageVector = if (isLiveNotificationRunning) MorabusIcons.Stop else Icons.Default.Notifications,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isLiveNotificationRunning) "Parar Notificação ao Vivo" else "Ativar Notificação ao Vivo",
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Ativar Notificação ao Vivo",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
             }
@@ -857,7 +933,7 @@ fun HomeScreen(
                         val moradiaSubText = scheduleStatus.nextMoradiaMinutes?.let { min ->
                             val adjusted = Math.max(0, min + effectiveDelayMinutes)
                             val suffix = if (scheduleStatus.nextMoradiaTrip?.isPassagem == true) " (➔ UFMG)" else ""
-                            "em ${ScheduleEngine.formatDurationMin(adjusted)}$suffix"
+                            if (adjusted <= 0) "AGORA$suffix" else "em ${ScheduleEngine.formatDurationMin(adjusted)}$suffix"
                         } ?: scheduleStatus.nextMoradiaServiceShortText
                         Text(
                             text = moradiaSubText,
@@ -891,7 +967,7 @@ fun HomeScreen(
                         )
                         val campusSubText = scheduleStatus.nextCampusMinutes?.let { min ->
                             val adjusted = Math.max(0, min + effectiveDelayMinutes)
-                            "em ${ScheduleEngine.formatDurationMin(adjusted)}"
+                            if (adjusted <= 0) "AGORA" else "em ${ScheduleEngine.formatDurationMin(adjusted)}"
                         } ?: scheduleStatus.nextCampusServiceShortText
                         Text(
                             text = campusSubText,
