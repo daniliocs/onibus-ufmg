@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="saindo_moradia"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_moradia_short"
+        android:shortcutLongLabel="@string/shortcut_moradia_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="br.ufmg.morabus.app"
+            android:targetClass="br.ufmg.morabus.app.MainActivity">
+            <extra android:name="shortcut_destination" android:value="moradia" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="saindo_campus"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_campus_short"
+        android:shortcutLongLabel="@string/shortcut_campus_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="br.ufmg.morabus.app"
+            android:targetClass="br.ufmg.morabus.app.MainActivity">
+            <extra android:name="shortcut_destination" android:value="campus" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="horarios"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_schedules_short"
+        android:shortcutLongLabel="@string/shortcut_schedules_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="br.ufmg.morabus.app"
+            android:targetClass="br.ufmg.morabus.app.MainActivity">
+            <extra android:name="shortcut_destination" android:value="schedules" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="avisos"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_notices_short"
+        android:shortcutLongLabel="@string/shortcut_notices_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="br.ufmg.morabus.app"
+            android:targetClass="br.ufmg.morabus.app.MainActivity">
+            <extra android:name="shortcut_destination" android:value="notices" />
+        </intent>
+    </shortcut>
+</shortcuts>

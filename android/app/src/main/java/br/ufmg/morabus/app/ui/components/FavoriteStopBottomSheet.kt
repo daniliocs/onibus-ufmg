@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import br.ufmg.morabus.app.R
+import br.ufmg.morabus.app.ui.theme.MorabusIcons
 
 data class BusStop(
     val name: String,
@@ -154,7 +155,7 @@ fun FavoriteStopBottomSheet(
                 },
                 leadingIcon = {
                     Icon(
-                        Icons.Default.MyLocation,
+                        MorabusIcons.MyLocation,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
@@ -214,7 +215,7 @@ fun FavoriteStopBottomSheet(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         stringResource(R.string.favorite_stop_remove),

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Mapa Morabus UFMG</title>
+  <link rel="stylesheet" href="leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #121824;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #mapa {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+    .custom-bus-icon {
+      background: #006633;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      color: white;
+      text-align: center;
+      line-height: 32px;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .custom-stop-icon {
+      background: #0f172a;
+      border: 2px solid #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+    .custom-user-icon {
+      background: #2563eb;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.6);
+    }
+
+    /* Estilos dos Popups com Alto Contraste (Claro e Escuro) */
+    .leaflet-popup-content-wrapper {
+      border-radius: 14px;
+      font-family: inherit;
+      padding: 4px;
+    }
+
+    /* Tema Claro (Padrão: Fundo branco e letras pretas nítidas) */
+    body.theme-light .leaflet-popup-content-wrapper,
+    body:not(.theme-dark) .leaflet-popup-content-wrapper {
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      border: 1px solid #e2e8f0;
+    }
+    body.theme-light .leaflet-popup-tip,
+    body:not(.theme-dark) .leaflet-popup-tip {
+      background: #ffffff;
+    }
+    body.theme-light .popup-title,
+    body:not(.theme-dark) .popup-title {
+      color: #0f172a !important;
+    }
+    body.theme-light .map-btn,
+    body:not(.theme-dark) .map-btn {
+      background: #ffffff;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    /* Tema Escuro (Fundo escuro e letras brancas nítidas) */
+    body.theme-dark .leaflet-popup-content-wrapper {
+      background: #1e293b;
+      color: #ffffff;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      border: 1px solid #334155;
+    }
+    body.theme-dark .leaflet-popup-tip {
+      background: #1e293b;
+    }
+    body.theme-dark .popup-title {
+      color: #ffffff !important;
+    }
+    body.theme-dark .map-btn {
+      background: #1e293b;
+      color: #ffffff;
+      border: 1px solid #334155;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .map-controls {
+      position: absolute;
+      bottom: 24px;
+      right: 16px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .map-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s ease;
+    }
+    .map-btn:active {
+      transform: scale(0.92);
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+  <div id="mapa"></div>
+
+  <div class="map-controls">
+    <button class="map-btn" id="btnRecenterBus" title="Centralizar no ônibus" onclick="recenterBus()">🚌</button>
+    <button class="map-btn" id="btnMyLoc" title="Minha localização" onclick="findUserLocation()">📍</button>
+  </div>
+
+  <script src="leaflet.js"></script>
+  <script>
+    console.log("Inicializando Leaflet no Morabus...");
+
+    const pontos = [
+      {nome: "Moradia 1", lat: -19.8706, lon: -43.9862},
+      {nome: "Moradias 2 e 3", lat: -19.8661, lon: -43.9845},
+      {nome: "Escola de Música", lat: -19.8621, lon: -43.9618},
+      {nome: "Belas Artes", lat: -19.863787, lon: -43.960242},
+      {nome: "FaE", lat: -19.867845, lon: -43.958610},
+      {nome: "RU 1", lat: -19.868928, lon: -43.960290},
+      {nome: "FACE", lat: -19.868211, lon: -43.963662},
+      {nome: "Reitoria", lat: -19.866381, lon: -43.965288},
+      {nome: "CAD 1", lat: -19.867173, lon: -43.967189},
+      {nome: "RU 2", lat: -19.869941, lon: -43.966892},
+      {nome: "Engenharia", lat: -19.869706, lon: -43.964092},
+      {nome: "IGC", lat: -19.868652, lon: -43.962783},
+      {nome: "Farmácia", lat: -19.870094, lon: -43.968643},
+      {nome: "Veterinária", lat: -19.871567, lon: -43.970531},
+      {nome: "Odonto", lat: -19.872823, lon: -43.973524},
+      {nome: "Educação Física", lat: -19.875905, lon: -43.975670},
+      {nome: "Unidade Administrativa II", lat: -19.863061, lon: -43.966889},
+      {nome: "Rotatória", lat: -19.863364, lon: -43.964325},
+      {nome: "Ponto final", lat: -19.862100, lon: -43.961800}
+    ];
+
+    let mapa = null;
+    let busMarker = null;
+    let userMarker = null;
+
+    try {
+      mapa = L.map('mapa', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([-19.8670, -43.9730], 14);
+
+      window.mapa = mapa;
+
+      // Tiles CartoDB Voyager (sem bloqueio 403 do OSM e com suporte ao cache offline nativo)
+      let currentTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: ['a', 'b', 'c', 'd'],
+        attribution: '&copy; OpenStreetMap &copy; CartoDB'
+      }).addTo(mapa);
+
+      function setStopAsFavorite(name) {
+        if (window.AndroidBridge && window.AndroidBridge.setFavoriteStop) {
+          window.AndroidBridge.setFavoriteStop(name);
+        } else {
+          alert("Ponto favorito: " + name);
+        }
+      }
+
+      // Marcadores dos Pontos
+      pontos.forEach(p => {
+        const stopIcon = L.divIcon({
+          className: 'custom-stop-icon',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7]
+        });
+
+        const popupHtml = `
+          <div style="font-family:inherit;min-width:145px;text-align:left;padding:2px;">
+            <div class="popup-title" style="font-size:14px;font-weight:bold;margin-bottom:8px;line-height:1.2;">${p.nome}</div>
+            <button onclick="setStopAsFavorite('${p.nome}')" style="width:100%;padding:7px 10px;background:#10b981;color:#ffffff;border:none;border-radius:8px;font-size:12px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
+              ⭐ Definir como Favorito
+            </button>
+          </div>
+        `;
+
+        L.marker([p.lat, p.lon], { icon: stopIcon })
+          .addTo(mapa)
+          .bindPopup(popupHtml);
+      });
+
+      // Marcador do Ônibus
+      const busIcon = L.divIcon({
+        className: 'custom-bus-icon',
+        html: '🚌',
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+      });
+
+      busMarker = L.marker([-19.8621, -43.9618], { icon: busIcon }).addTo(mapa);
+      busMarker.bindPopup(`
+        <div style="font-family:inherit;min-width:140px;text-align:left;padding:2px;">
+          <div class="popup-title" style="font-size:14px;font-weight:bold;">Ônibus Morabus</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Ponto Final / Escola de Música</div>
+        </div>
+      `);
+
+      // Força recálculo do tamanho do mapa
+      const checkAndResize = () => {
+        const el = document.getElementById('mapa');
+        console.log("Largura div mapa: " + (el ? el.clientWidth : -1) + " Altura: " + (el ? el.clientHeight : -1));
+        if (mapa) mapa.invalidateSize();
+      };
+      setTimeout(checkAndResize, 200);
+      setTimeout(checkAndResize, 800);
+      setTimeout(checkAndResize, 2000);
+
+      console.log("Mapa Leaflet carregado com sucesso!");
+    } catch (e) {
+      console.error("Erro ao inicializar mapa Leaflet:", e);
+    }
+
+    function recenterBus() {
+      if (busMarker && mapa) {
+        mapa.setView(busMarker.getLatLng(), 15);
+        busMarker.openPopup();
+      }
+    }
+
+    function findUserLocation() {
+      if (!navigator.geolocation) {
+        alert("GPS não suportado");
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        if (!userMarker) {
+          const userIcon = L.divIcon({
+            className: 'custom-user-icon',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+          });
+          userMarker = L.marker([lat, lon], { icon: userIcon }).addTo(mapa);
+          userMarker.bindPopup("<b>Você está aqui</b>");
+        } else {
+          userMarker.setLatLng([lat, lon]);
+        }
+        mapa.setView([lat, lon], 15);
+        userMarker.openPopup();
+      }, err => {
+        console.warn("GPS error:", err);
+      }, { enableHighAccuracy: true });
+    }
+
+    window.updateBusLocation = function(lat, lon, title, subtitle) {
+      if (!lat || !lon || !busMarker) return;
+      busMarker.setLatLng([lat, lon]);
+      busMarker.setPopupContent(`
+        <div style="font-family:inherit;min-width:140px;text-align:left;padding:2px;">
+          <div class="popup-title" style="font-size:14px;font-weight:bold;">${title || "Ônibus Morabus"}</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:2px;">${subtitle || ""}</div>
+        </div>
+      `);
+    };
+
+    window.setMapTheme = function(isDark) {
+      if (isDark) {
+        document.body.classList.remove('theme-light');
+        document.body.classList.add('theme-dark');
+        if (currentTiles) {
+          currentTiles.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
+        }
+      } else {
+        document.body.classList.remove('theme-dark');
+        document.body.classList.add('theme-light');
+        if (currentTiles) {
+          currentTiles.setUrl('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png');
+        }
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,25 +1,23 @@
 package br.ufmg.morabus.app.ui.navigation
 
 import androidx.annotation.StringRes
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DirectionsBus
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.ui.graphics.vector.ImageVector
 import br.ufmg.morabus.app.R
+import br.ufmg.morabus.app.ui.theme.MorabusIcons
 
 sealed class NavItem(
     val route: String,
     @StringRes val titleRes: Int,
     val icon: ImageVector
 ) {
-    object Home : NavItem("home", R.string.nav_home, Icons.Default.DirectionsBus)
-    object Map : NavItem("map", R.string.nav_map, Icons.Default.Map)
-    object Schedules : NavItem("schedules", R.string.nav_schedules, Icons.Default.Schedule)
-    object More : NavItem("more", R.string.nav_more, Icons.Default.MoreHoriz)
+    data object Home : NavItem("home", R.string.nav_home, MorabusIcons.DirectionsBus)
+    data object Map : NavItem("map", R.string.nav_map, MorabusIcons.Map)
+    data object Schedules : NavItem("schedules", R.string.nav_schedules, MorabusIcons.Schedule)
+    data object Notices : NavItem("notices", R.string.nav_notices, MorabusIcons.NotificationsActive)
+    data object More : NavItem("more", R.string.nav_more, MorabusIcons.MoreHoriz)
 
     companion object {
-        val items = listOf(Home, Map, Schedules, More)
+        val items: List<NavItem>
+            get() = listOf(Home, Map, Schedules, Notices, More)
     }
 }

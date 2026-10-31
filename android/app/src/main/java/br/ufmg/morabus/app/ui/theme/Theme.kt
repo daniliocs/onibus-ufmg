@@ -53,7 +53,12 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun MorabusTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: String = "system",
+    darkTheme: Boolean = when (themeMode) {
+        "dark" -> true
+        "light" -> false
+        else -> isSystemInDarkTheme()
+    },
     dynamicColor: Boolean = false, // Mantém identidade UFMG verde/laranja por padrão
     content: @Composable () -> Unit
 ) {

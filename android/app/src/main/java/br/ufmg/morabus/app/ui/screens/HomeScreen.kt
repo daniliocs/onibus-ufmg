@@ -1,6 +1,12 @@
 package br.ufmg.morabus.app.ui.screens
 
-import android.content.res.Configuration
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import android.location.Location
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -22,46 +29,202 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import br.ufmg.morabus.app.R
+import br.ufmg.morabus.app.data.BusStop
+import br.ufmg.morabus.app.data.FirebaseRealtimeRepository
+import br.ufmg.morabus.app.data.ScheduleEngine
+import br.ufmg.morabus.app.data.UserPreferencesRepository
 import br.ufmg.morabus.app.notifications.LiveTripService
 import br.ufmg.morabus.app.ui.components.FavoriteStopBottomSheet
 import br.ufmg.morabus.app.ui.components.LiveBusCard
+import br.ufmg.morabus.app.ui.theme.MorabusIcons
 import br.ufmg.morabus.app.ui.theme.MorabusTheme
 import br.ufmg.morabus.app.ui.theme.StatusAmber
 import br.ufmg.morabus.app.ui.theme.StatusGreen
 import br.ufmg.morabus.app.ui.theme.StatusRed
+import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
+@SuppressLint("MissingPermission")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToMap: () -> Unit,
     onNavigateToSchedules: () -> Unit,
+    onNavigateToNotices: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Estados Reativos
-    var favoriteStop by remember { mutableStateOf<String?>("Moradias 2 e 3") }
+    LaunchedEffect(Unit) {
+        UserPreferencesRepository.init(context)
+        FirebaseRealtimeRepository.startPolling()
+        LiveTripService.checkAndUpdateRunningState(context)
+        br.ufmg.morabus.app.data.CampusRadarEngine.triggerImmediateCheck(context)
+        br.ufmg.morabus.app.data.CampusRadarEngine.startPeriodicRadar(context)
+    }
+
+    // Ponto Favorito persistente
+    val favoriteStop by UserPreferencesRepository.favoriteStop.collectAsState()
     var previousFavoriteStop by remember { mutableStateOf<String?>(null) }
     var isBottomSheetOpen by remember { mutableStateOf(false) }
 
-    var userLocationIsCampus by remember { mutableStateOf(true) }
-    var minutesToArrival by remember { mutableStateOf(7) }
-    var isLiveTracked by remember { mutableStateOf(true) }
-    var delayMinutes by remember { mutableStateOf(2) }
-    var isServiceActive by remember { mutableStateOf(true) } // simulação de operação ativa vs encerrada
-    var busCurrentLocation by remember { mutableStateOf("Passando na Av. Fleming") }
+    // Radar Automático de Comunicados (FUMP, UFMG, Defesa Civil / Clima) - Máx 2 cards na tela inicial
+    val homeNotices by br.ufmg.morabus.app.data.CampusRadarEngine.homeNotices.collectAsState()
+    var dismissedCommunityAlert by remember { mutableStateOf<String?>(null) }
 
-    // Estado do Card "Ônibus ao vivo" (Colaborativo)
-    var isSharingLocation by remember { mutableStateOf(false) }
-    var activeSharingContributors by remember { mutableStateOf(1) }
+    // Atualizações Remotas (OTA)
+    val availableUpdate by br.ufmg.morabus.app.data.AppUpdateManager.availableUpdate.collectAsState()
+    val isDownloadingUpdate by br.ufmg.morabus.app.data.AppUpdateManager.isDownloading.collectAsState()
+    val updateProgress by br.ufmg.morabus.app.data.AppUpdateManager.downloadProgress.collectAsState()
+    val downloadedFile by br.ufmg.morabus.app.data.AppUpdateManager.downloadedApkFile.collectAsState()
+    val downloadError by br.ufmg.morabus.app.data.AppUpdateManager.downloadError.collectAsState()
 
-    // Estado do Foreground Service de Notificações ao Vivo
-    val context = LocalContext.current
-    var liveNotificationRunning by remember { mutableStateOf(false) }
+    // GPS local do usuário para descoberta inteligente de parada mais próxima
+    var userGpsLocation by remember { mutableStateOf<Location?>(null) }
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    // Sentido contextual com auto-descoberta via GPS
+    var manualCampusToggle by remember { mutableStateOf<Boolean?>(null) }
+    val userLocationIsCampus = remember(userGpsLocation, manualCampusToggle) {
+        manualCampusToggle ?: run {
+            if (userGpsLocation != null) {
+                val distMoradia = ScheduleEngine.calculateDistanceMeters(userGpsLocation!!.latitude, userGpsLocation!!.longitude, -19.8661, -43.9845)
+                val distCampus = ScheduleEngine.calculateDistanceMeters(userGpsLocation!!.latitude, userGpsLocation!!.longitude, -19.8685, -43.9650)
+                distCampus < distMoradia
+            } else false
+        }
+    }
+
+    // Compartilhamento colaborativo via Foreground Service
+    val isSharingLocation by br.ufmg.morabus.app.sharing.BusSharingService.isSharing.collectAsState()
+
+    // Sincronização em tempo real do Firebase RTDB
+    val telemetry by FirebaseRealtimeRepository.telemetry.collectAsState()
+    val recentPassage by FirebaseRealtimeRepository.recentPassage.collectAsState()
+    val waitingCounts by FirebaseRealtimeRepository.waitingCounts.collectAsState()
+    val userWaitingStop by FirebaseRealtimeRepository.userWaitingStop.collectAsState()
+
+    // Controle do Modal de todos os RUs da UFMG
+    var isRuModalOpen by remember { mutableStateOf(false) }
+
+    // Sincronização do estado do serviço de notificação ao vivo
+    val isLiveNotificationRunning by LiveTripService.isRunning.collectAsState()
+
+    val hasFineLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    val hasCoarseLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    LaunchedEffect(hasFineLocation, hasCoarseLocation) {
+        if (hasFineLocation || hasCoarseLocation) {
+            fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+                if (loc != null) userGpsLocation = loc
+            }
+        }
+    }
+
+    // Dispara checagem imediata do Radar de Comunicados ao abrir a tela inicial
+    LaunchedEffect(Unit) {
+        br.ufmg.morabus.app.data.CampusRadarEngine.triggerImmediateCheck(context)
+    }
+
+    // Atualizador periódico do relógio (recalcula a cada 10 segundos)
+    var timeTrigger by remember { mutableStateOf(0L) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(10000L)
+            timeTrigger = System.currentTimeMillis()
+            if (hasFineLocation || hasCoarseLocation) {
+                fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+                    if (loc != null) userGpsLocation = loc
+                }
+            }
+        }
+    }
+
+    val currentCal = remember(timeTrigger) { Calendar.getInstance() }
+    val currentMinutes = currentCal.get(Calendar.HOUR_OF_DAY) * 60 + currentCal.get(Calendar.MINUTE)
+    val dayOfWeek = currentCal.get(Calendar.DAY_OF_WEEK)
+    val isWeekday = dayOfWeek in Calendar.MONDAY..Calendar.FRIDAY
+
+    val ruRecommendation = remember(timeTrigger) {
+        br.ufmg.morabus.app.data.RuEngine.calculateMobilityRecommendation(Calendar.getInstance())
+    }
+    val ruPampulhaStatus = remember(timeTrigger) {
+        br.ufmg.morabus.app.data.RuEngine.calculateUnitStatus(br.ufmg.morabus.app.data.RuEngine.ALL_RUS[0], Calendar.getInstance())
+    }
+
+    // Parada mais próxima detectada via GPS
+    val nearestGpsResult: Pair<BusStop, Double>? = remember(userGpsLocation) {
+        userGpsLocation?.let { ScheduleEngine.findNearestStop(it.latitude, it.longitude) }
+    }
+
+    // Parada ativa para cálculo de previsão: se o usuário tiver favorito, usa o favorito; se não, usa a mais próxima via GPS
+    val effectiveTargetStop: String? = remember(favoriteStop, nearestGpsResult) {
+        favoriteStop ?: nearestGpsResult?.first?.name
+    }
+
+    val scheduleStatus = remember(timeTrigger, effectiveTargetStop) {
+        ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), effectiveTargetStop)
+    }
+
+    // Previsão de minutos para a parada alvo ou saída geral
+    val minutesToArrival = remember(scheduleStatus, telemetry) {
+        if (scheduleStatus.favoriteArrival != null) {
+            scheduleStatus.favoriteArrival.minutesUntilArrival + telemetry.delayMinutes
+        } else {
+            (scheduleStatus.nextTripMinutes ?: 0) + telemetry.delayMinutes
+        }
+    }
+
+    // Conselho de caminhada ("Quando devo sair?") se soubermos a distância até a parada
+    val departureAdviceText = remember(nearestGpsResult, minutesToArrival, currentMinutes, effectiveTargetStop) {
+        if (nearestGpsResult != null && effectiveTargetStop == nearestGpsResult.first.name) {
+            ScheduleEngine.calculateDepartureAdvice(nearestGpsResult.second, Math.max(0, minutesToArrival), currentMinutes)
+        } else null
+    }
+
+    val isLiveTracked = telemetry.isActive
+    val activeSharingContributors = telemetry.contributorsCount
+    val busCurrentLocation = remember(telemetry, scheduleStatus) {
+        if (telemetry.isActive && !telemetry.streetName.isNullOrBlank()) {
+            "Na ${telemetry.streetName}"
+        } else {
+            scheduleStatus.estimatedLocationText
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        val grantedLoc = grants[Manifest.permission.ACCESS_FINE_LOCATION] == true || grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (grantedLoc) {
+            fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+                if (loc != null) userGpsLocation = loc
+                val target = favoriteStop ?: loc?.let { ScheduleEngine.findNearestStop(it.latitude, it.longitude)?.first?.name }
+                LiveTripService.start(
+                    context = context,
+                    targetStop = target,
+                    etaMinutes = minutesToArrival,
+                    departureAdvice = departureAdviceText,
+                    isNearestGps = favoriteStop == null
+                )
+            }
+        } else {
+            LiveTripService.start(
+                context = context,
+                targetStop = favoriteStop,
+                etaMinutes = minutesToArrival,
+                departureAdvice = departureAdviceText,
+                isNearestGps = favoriteStop == null
+            )
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -99,7 +262,6 @@ fun HomeScreen(
                     )
                 }
 
-                // Se houver favorito, mostra o chip com estrela; se não, mostra o botão "Escolher ponto"
                 if (!favoriteStop.isNullOrBlank()) {
                     AssistChip(
                         onClick = { isBottomSheetOpen = true },
@@ -130,7 +292,7 @@ fun HomeScreen(
                         modifier = Modifier.heightIn(min = 36.dp)
                     ) {
                         Icon(
-                            Icons.Default.AddLocationAlt,
+                            Icons.Default.Place,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp)
                         )
@@ -144,7 +306,213 @@ fun HomeScreen(
                 }
             }
 
-            // 1. CARD "PRÓXIMO ÔNIBUS" (Contagem Única e Tratamento de Encerrado)
+            // BANNER DE ATUALIZAÇÃO REMOTA (OTA)
+            if (availableUpdate != null) {
+                val update = availableUpdate!!
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(14.dp),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("🚀", style = MaterialTheme.typography.titleMedium)
+                                Column {
+                                    Text(
+                                        text = "Nova Versão ${update.versionName} Disponível",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Text(
+                                        text = update.releaseNotes,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                                    )
+                                }
+                            }
+                            if (!update.isForceUpdate) {
+                                IconButton(
+                                    onClick = { br.ufmg.morabus.app.data.AppUpdateManager.dismissUpdate() },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Dispensar",
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        if (isDownloadingUpdate) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                LinearProgressIndicator(
+                                    progress = { updateProgress / 100f },
+                                    modifier = Modifier.fillMaxWidth().height(6.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Baixando atualização: $updateProgress%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        } else if (downloadedFile != null && downloadedFile!!.exists()) {
+                            Button(
+                                onClick = { br.ufmg.morabus.app.data.AppUpdateManager.promptInstall(context, downloadedFile) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Instalar Versão ${update.versionName}")
+                            }
+                        } else {
+                            Button(
+                                onClick = { br.ufmg.morabus.app.data.AppUpdateManager.startDownloadAndInstall(context, update) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Baixar e Atualizar Agora")
+                            }
+                        }
+
+                        if (!downloadError.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = downloadError!!,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            }
+
+            // RADAR AUTOMÁTICO DE COMUNICADOS (Máx 2 cards na tela inicial: compacto para urgentes, padrão para normais)
+            br.ufmg.morabus.app.ui.components.CampusRadarBannerList(
+                notices = homeNotices,
+                onDismissNotice = { id -> br.ufmg.morabus.app.data.CampusRadarEngine.dismissHomeNotice(context, id) },
+                onOpenUrl = { url ->
+                    try {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                        context.startActivity(intent)
+                    } catch (_: Exception) {}
+                },
+                onNavigateToNoticesTab = onNavigateToNotices
+            )
+
+            // BANNER DE ALERTA DA COMUNIDADE (se houver aviso recente do Firebase)
+            if (!telemetry.alertMessage.isNullOrBlank() && dismissedCommunityAlert != telemetry.alertMessage) {
+                Surface(
+                    color = StatusAmber.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(StatusAmber.copy(alpha = 0.5f))
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                MorabusIcons.Warning,
+                                contentDescription = null,
+                                tint = StatusAmber,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Text(
+                                text = telemetry.alertMessage!!,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        IconButton(
+                            onClick = { dismissedCommunityAlert = telemetry.alertMessage },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Fechar aviso",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ALERTA NOTURNO DE SEGURANÇA / ÚLTIMO ÔNIBUS (Dias úteis à noite)
+            if (isWeekday && currentMinutes >= 21 * 60) {
+                val isCritical = currentMinutes in (22 * 60 + 50)..(23 * 60 + 10)
+                val alertBg = if (isCritical) StatusRed.copy(alpha = 0.18f) else MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f)
+                val alertBorder = if (isCritical) StatusRed else MaterialTheme.colorScheme.tertiary
+                Surface(
+                    color = alertBg,
+                    shape = RoundedCornerShape(14.dp),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(alertBorder.copy(alpha = 0.6f))
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(if (isCritical) "🚨" else "🌙", style = MaterialTheme.typography.titleLarge)
+                        Column {
+                            Text(
+                                text = if (isCritical) "⚠️ ÚLTIMA VIAGEM: 23:10 DA ESCOLA DE MÚSICA!" else "🌙 Alerta Noturno de Retorno às Moradias",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isCritical) StatusRed else MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (isCritical) {
+                                    "Este é o último ônibus da noite para as Moradias. Dirija-se imediatamente ao ponto!"
+                                } else if (currentMinutes < 22 * 60 + 50) {
+                                    "Últimas saídas do campus: 22:50 e 23:10 (Escola de Música). Fique atento para não perder o último ônibus!"
+                                } else {
+                                    "Saídas noturnas de hoje concluídas. Retorno amanhã a partir das 06:45."
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 1. CARD "PRÓXIMO ÔNIBUS" (Com Ponto Favorito ou Ponto mais próximo inteligente)
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -158,14 +526,24 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = stringResource(R.string.home_next_bus_title).uppercase(),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Column {
+                            Text(
+                                text = stringResource(R.string.home_next_bus_title).uppercase(),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (!effectiveTargetStop.isNullOrBlank()) {
+                                Text(
+                                    text = if (favoriteStop != null) "⭐ $favoriteStop" else "📍 Próximo a você: $effectiveTargetStop",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
 
-                        // Selo Previsto vs Ao Vivo (Sem repetir minutos no selo)
+                        // Selo Previsto vs Ao Vivo
                         val badgeColor = if (isLiveTracked) StatusGreen else MaterialTheme.colorScheme.secondary
                         Surface(
                             color = badgeColor.copy(alpha = 0.15f),
@@ -194,49 +572,91 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    if (isServiceActive) {
-                        // CONTAGEM REGRESSIVA EXIBIDA UMA ÚNICA VEZ
+                    if (scheduleStatus.isServiceActive) {
                         val etaColor = when {
                             minutesToArrival > 10 -> StatusGreen
                             minutesToArrival in 5..10 -> StatusAmber
                             else -> StatusRed
                         }
 
-                        Row(
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = minutesToArrival.toString(),
-                                style = MaterialTheme.typography.displayMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = etaColor
-                            )
-                            Text(
-                                text = "min",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = etaColor,
-                                modifier = Modifier.padding(bottom = 6.dp)
-                            )
-                            if (minutesToArrival < 5) {
-                                Surface(
-                                    color = StatusRed.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(6.dp),
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                ) {
-                                    Text(
-                                        text = "Saia agora!",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = StatusRed,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
+                        if (minutesToArrival >= 60) {
+                            val h = minutesToArrival / 60
+                            val m = minutesToArrival % 60
+                            Row(
+                                verticalAlignment = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "${h}h${String.format("%02d", m)}",
+                                    style = MaterialTheme.typography.displayMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = etaColor
+                                )
+                            }
+                        } else {
+                            Row(
+                                verticalAlignment = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = Math.max(0, minutesToArrival).toString(),
+                                    style = MaterialTheme.typography.displayMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = etaColor
+                                )
+                                Text(
+                                    text = "min",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = etaColor,
+                                    modifier = Modifier.padding(bottom = 6.dp)
+                                )
+                                if (minutesToArrival in 1..4) {
+                                    Surface(
+                                        color = StatusRed.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    ) {
+                                        Text(
+                                            text = "Saia agora!",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = StatusRed,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
+
+                        // Quantidade de veículos programados para a saída / comboio
+                        val activeOrNextTrip = scheduleStatus.activeTrip ?: scheduleStatus.nextTrip
+                        val vehicleCount = activeOrNextTrip?.vehicles ?: 1
+                        val busEmojis = "🚌".repeat(vehicleCount)
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = busEmojis,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                                Text(
+                                    text = "$vehicleCount veículo${if (vehicleCount > 1) "s" else ""} programado${if (vehicleCount > 1) "s" else ""}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
 
                         // Onde o ônibus está agora
                         Row(
@@ -244,7 +664,7 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(
-                                Icons.Default.Navigation,
+                                MorabusIcons.Navigation,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp)
@@ -256,26 +676,49 @@ fun HomeScreen(
                             )
                         }
 
-                        if (delayMinutes > 0) {
+                        // Informação de quando sair (caminhada calculada pelo GPS)
+                        if (!departureAdviceText.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = departureAdviceText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+
+                        if (telemetry.delayMinutes > 0) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = stringResource(R.string.home_status_delayed, delayMinutes),
+                                text = stringResource(R.string.home_status_delayed, telemetry.delayMinutes),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = StatusAmber,
                                 fontWeight = FontWeight.Medium
                             )
                         }
                     } else {
-                        // ESTADO ENCERRADO (Mostra última saída e próxima de amanhã)
+                        // ESTADO ENCERRADO / DOMINGO / FERIADO
                         Text(
-                            text = stringResource(R.string.home_service_finished_title),
+                            text = if (scheduleStatus.isHolidayOrSunday) {
+                                scheduleStatus.holidayOrSundayMessage ?: stringResource(R.string.home_service_finished_title)
+                            } else {
+                                stringResource(R.string.home_service_finished_title)
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(6.dp))
+                        val lastTrip = scheduleStatus.lastTripToday?.time ?: "23:10"
+                        val nextTripTomorrow = scheduleStatus.firstTripTomorrow?.time ?: "06:45"
                         Text(
-                            text = stringResource(R.string.home_service_finished_details, "18:20", "06:45"),
+                            text = stringResource(R.string.home_service_finished_details, lastTrip, nextTripTomorrow),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -283,15 +726,33 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Botão para ativar Notificação ao Vivo
+                    // Botão para ativar/parar Notificação ao Vivo
                     Button(
                         onClick = {
-                            if (liveNotificationRunning) {
+                            if (isLiveNotificationRunning) {
                                 LiveTripService.stop(context)
-                                liveNotificationRunning = false
                             } else {
-                                LiveTripService.start(context, favoriteStop ?: "Moradias 2 e 3", minutesToArrival)
-                                liveNotificationRunning = true
+                                val neededPermissions = mutableListOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    neededPermissions.add(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                                val missing = neededPermissions.filter {
+                                    ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+                                }
+                                if (missing.isNotEmpty()) {
+                                    permissionLauncher.launch(missing.toTypedArray())
+                                } else {
+                                    LiveTripService.start(
+                                        context = context,
+                                        targetStop = effectiveTargetStop,
+                                        etaMinutes = minutesToArrival,
+                                        departureAdvice = departureAdviceText,
+                                        isNearestGps = favoriteStop == null
+                                    )
+                                }
                             }
                         },
                         modifier = Modifier
@@ -299,17 +760,17 @@ fun HomeScreen(
                             .heightIn(min = 48.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (liveNotificationRunning) StatusRed else MaterialTheme.colorScheme.primary
+                            containerColor = if (isLiveNotificationRunning) StatusRed else MaterialTheme.colorScheme.primary
                         )
                     ) {
                         Icon(
-                            imageVector = if (liveNotificationRunning) Icons.Default.Stop else Icons.Default.NotificationsActive,
+                            imageVector = if (isLiveNotificationRunning) MorabusIcons.Stop else Icons.Default.Notifications,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (liveNotificationRunning) "Parar Notificação ao Vivo" else "Ativar Notificação ao Vivo (Now Bar)",
+                            text = if (isLiveNotificationRunning) "Parar Notificação ao Vivo" else "Ativar Notificação ao Vivo",
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -317,27 +778,141 @@ fun HomeScreen(
                 }
             }
 
-            // 2. CARD "ÔNIBUS AO VIVO" (GPS COLABORATIVO REFORMULADO)
+            // 2. PAINEL DUPLO DE SENTIDOS (Saindo da Moradia e Saindo do Campus)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Sentido Campus: Saindo da Moradia
+                OutlinedCard(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "🏠 Saindo da Moradia",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = scheduleStatus.nextMoradiaTrip?.time ?: "Encerrado",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = scheduleStatus.nextMoradiaMinutes?.let { "em ${ScheduleEngine.formatDurationMin(it)}" } ?: "Sem saídas hoje",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                // Sentido Moradia: Saindo do Campus
+                OutlinedCard(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "🎓 Saindo do Campus",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = scheduleStatus.nextCampusTrip?.time ?: "Encerrado",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = scheduleStatus.nextCampusMinutes?.let { "em ${ScheduleEngine.formatDurationMin(it)}" } ?: "Sem saídas hoje",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            // 3. CARD RESTAURANTE UNIVERSITÁRIO (RU FUMP) COM RECOMENDAÇÃO DE MOBILIDADE
+            br.ufmg.morabus.app.ui.components.RuRecommendationCard(
+                recommendation = ruRecommendation,
+                pampulhaStatus = ruPampulhaStatus,
+                onOpenRuList = { isRuModalOpen = true }
+            )
+
+            // 4. CARD "ÔNIBUS AO VIVO" (GPS Colaborativo + Ações Rápidas sem Bateria)
+            val currentSharingTrip = scheduleStatus.activeTrip?.time ?: scheduleStatus.nextTrip?.time ?: "22:15"
             LiveBusCard(
                 isSharing = isSharingLocation,
                 sharingCount = activeSharingContributors,
-                currentTripTime = "22:15",
+                currentTripTime = currentSharingTrip,
+                targetStopName = effectiveTargetStop,
+                recentPassage = recentPassage,
+                waitingCount = waitingCounts[effectiveTargetStop ?: ""] ?: 0,
+                isUserWaiting = userWaitingStop == effectiveTargetStop && !effectiveTargetStop.isNullOrBlank(),
                 onStartSharing = {
-                    isSharingLocation = true
-                    activeSharingContributors += 1
+                    val neededPermissions = mutableListOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        neededPermissions.add(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    val missing = neededPermissions.filter {
+                        ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+                    }
+                    if (missing.isNotEmpty()) {
+                        permissionLauncher.launch(missing.toTypedArray())
+                    } else {
+                        br.ufmg.morabus.app.sharing.BusSharingService.start(context, currentSharingTrip)
+                    }
                 },
                 onStopSharing = {
-                    isSharingLocation = false
-                    if (activeSharingContributors > 0) activeSharingContributors -= 1
+                    br.ufmg.morabus.app.sharing.BusSharingService.stop(context)
                 },
-                onSendConditionReport = { _ ->
+                onQuickPassageReport = {
+                    val stop = effectiveTargetStop ?: "Moradias 2 e 3"
+                    FirebaseRealtimeRepository.sendQuickPassageReport(stop, currentSharingTrip)
                     scope.launch {
-                        snackbarHostState.showSnackbar("Relato registrado. Obrigado por colaborar!")
+                        snackbarHostState.showSnackbar("Relato rápido registrado: ônibus acabou de passar em $stop")
+                    }
+                },
+                onToggleWaiting = {
+                    val stop = effectiveTargetStop ?: "Moradias 2 e 3"
+                    if (userWaitingStop == stop) {
+                        FirebaseRealtimeRepository.unregisterWaitingAtStop(stop)
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Você não está mais aguardando em $stop")
+                        }
+                    } else {
+                        FirebaseRealtimeRepository.registerWaitingAtStop(stop)
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Confirmado: você está aguardando em $stop")
+                        }
+                    }
+                },
+                onSendConditionReport = { code ->
+                    FirebaseRealtimeRepository.sendCommunityAlert(code, currentSharingTrip)
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Relato registrado no sistema. Obrigado!")
                     }
                 }
             )
 
-            // 3. ATALHO CONTEXTUAL "VOLTAR PRA CASA" (Nunca termina em beco sem saída)
+            // 4. ATALHO CONTEXTUAL "IR PARA A MORADIA / CAMPUS" (Detectado inteligentemente por GPS)
+            val contextualWalkingText = remember(nearestGpsResult) {
+                if (nearestGpsResult != null) {
+                    val walkMin = Math.max(1, Math.ceil(nearestGpsResult.second / 75.0).toInt())
+                    val distM = nearestGpsResult.second.toInt()
+                    "Caminhada até ${nearestGpsResult.first.name}: ~$walkMin min (${distM}m)"
+                } else {
+                    "Caminhada ~4 min até o ponto"
+                }
+            }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
@@ -357,7 +932,7 @@ fun HomeScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Icon(
-                                imageVector = if (userLocationIsCampus) Icons.Default.Home else Icons.Default.School,
+                                imageVector = if (userLocationIsCampus) Icons.Default.Home else MorabusIcons.School,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -369,9 +944,9 @@ fun HomeScreen(
                             )
                         }
 
-                        IconButton(onClick = { userLocationIsCampus = !userLocationIsCampus }) {
+                        IconButton(onClick = { manualCampusToggle = !userLocationIsCampus }) {
                             Icon(
-                                Icons.Default.SwapVert,
+                                MorabusIcons.SwapVert,
                                 contentDescription = "Inverter Direção Contextual",
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -380,19 +955,30 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    Text(
-                        text = stringResource(
-                            R.string.context_next_from_stop,
-                            if (userLocationIsCampus) "Escola de Música" else "Moradias 2 e 3",
-                            "20:00",
-                            minutesToArrival
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    val relevantTrip = if (userLocationIsCampus) scheduleStatus.nextCampusTrip else scheduleStatus.nextMoradiaTrip
+                    val relevantMinutes = if (userLocationIsCampus) scheduleStatus.nextCampusMinutes else scheduleStatus.nextMoradiaMinutes
+
+                    if (relevantTrip != null && relevantMinutes != null) {
+                        Text(
+                            text = stringResource(
+                                R.string.context_next_from_stop,
+                                relevantTrip.origin,
+                                relevantTrip.time,
+                                Math.max(0, relevantMinutes)
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            text = "Sem saídas previstas nesta direção hoje.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
                     Text(
-                        text = stringResource(R.string.context_walking_time, 4),
+                        text = contextualWalkingText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -410,7 +996,7 @@ fun HomeScreen(
                                 .heightIn(min = 44.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Icon(Icons.Default.Directions, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(MorabusIcons.Map, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(stringResource(R.string.action_notification_view_map), style = MaterialTheme.typography.labelLarge)
                         }
@@ -434,7 +1020,7 @@ fun HomeScreen(
                 currentFavorite = favoriteStop,
                 onSelectStop = { selected ->
                     previousFavoriteStop = favoriteStop
-                    favoriteStop = selected
+                    UserPreferencesRepository.setFavoriteStop(context, selected)
                     isBottomSheetOpen = false
                     scope.launch {
                         val result = snackbarHostState.showSnackbar(
@@ -443,13 +1029,13 @@ fun HomeScreen(
                             duration = SnackbarDuration.Short
                         )
                         if (result == SnackbarResult.ActionPerformed) {
-                            favoriteStop = previousFavoriteStop
+                            UserPreferencesRepository.setFavoriteStop(context, previousFavoriteStop)
                         }
                     }
                 },
                 onRemoveFavorite = {
                     previousFavoriteStop = favoriteStop
-                    favoriteStop = null
+                    UserPreferencesRepository.setFavoriteStop(context, null)
                     isBottomSheetOpen = false
                     scope.launch {
                         val result = snackbarHostState.showSnackbar(
@@ -458,11 +1044,18 @@ fun HomeScreen(
                             duration = SnackbarDuration.Short
                         )
                         if (result == SnackbarResult.ActionPerformed) {
-                            favoriteStop = previousFavoriteStop
+                            UserPreferencesRepository.setFavoriteStop(context, previousFavoriteStop)
                         }
                     }
                 },
                 onDismissRequest = { isBottomSheetOpen = false }
+            )
+        }
+
+        // MODAL DE HORÁRIOS OFICIAIS DOS 5 RUS DA UFMG
+        if (isRuModalOpen) {
+            br.ufmg.morabus.app.ui.components.RuAllUnitsModal(
+                onDismissRequest = { isRuModalOpen = false }
             )
         }
     }

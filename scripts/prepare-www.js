@@ -8,7 +8,7 @@ if (!fs.existsSync(wwwDir)) {
   fs.mkdirSync(wwwDir, { recursive: true });
 }
 
-const arquivos = ['index.html', 'manifest.json', 'sw.js', 'Morabus.png'];
+const arquivos = ['index.html', 'mapa.html', 'manifest.json', 'sw.js', 'Morabus.png'];
 
 for (const arq of arquivos) {
   const origem = path.join(rootDir, arq);

@@ -11,6 +11,7 @@
     <string name="nav_home">Início</string>
     <string name="nav_map">Mapa</string>
     <string name="nav_schedules">Horários</string>
+    <string name="nav_notices">Avisos</string>
     <string name="nav_more">Mais</string>
 
     <!-- Home Screen - Cards and Highlights -->
@@ -127,4 +128,14 @@
     <!-- Permissions -->
     <string name="permission_notification_rationale">O Morabus precisa de permissão de notificação para avisar quando o ônibus estiver chegando e para exibir a atividade ao vivo.</string>
     <string name="permission_location_rationale">Precisamos da localização para indicar a parada mais próxima e calcular o tempo de caminhada.</string>
+
+    <!-- App Shortcuts -->
+    <string name="shortcut_moradia_short">Saindo Moradia</string>
+    <string name="shortcut_moradia_long">🏠 Saindo da Moradia</string>
+    <string name="shortcut_campus_short">Saindo Campus</string>
+    <string name="shortcut_campus_long">🎓 Saindo do Campus</string>
+    <string name="shortcut_schedules_short">Horários</string>
+    <string name="shortcut_schedules_long">⏱️ Grade de Horários</string>
+    <string name="shortcut_notices_short">Avisos</string>
+    <string name="shortcut_notices_long">📢 Mural de Avisos</string>
 </resources>

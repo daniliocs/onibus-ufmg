@@ -1,13 +1,16 @@
 package br.ufmg.morabus.app.ui
 
-import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import br.ufmg.morabus.app.data.UserPreferencesRepository
 import br.ufmg.morabus.app.ui.navigation.NavItem
+import br.ufmg.morabus.app.ui.screens.AvisosScreen
 import br.ufmg.morabus.app.ui.screens.HomeScreen
 import br.ufmg.morabus.app.ui.screens.MapScreen
 import br.ufmg.morabus.app.ui.screens.MoreScreen
@@ -15,11 +18,19 @@ import br.ufmg.morabus.app.ui.screens.SchedulesScreen
 import br.ufmg.morabus.app.ui.theme.MorabusTheme
 
 @Composable
-fun MorabusMainApp() {
-    MorabusTheme {
-        var currentRoute by remember { mutableStateOf(NavItem.Home.route) }
+fun MorabusMainApp(initialRoute: String = NavItem.Home.route) {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        UserPreferencesRepository.init(context)
+    }
+
+    val themeMode by UserPreferencesRepository.themeMode.collectAsState()
+
+    MorabusTheme(themeMode = themeMode) {
+        var currentRoute by remember(initialRoute) { mutableStateOf(initialRoute) }
 
         Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -49,20 +60,20 @@ fun MorabusMainApp() {
                 }
             }
         ) { innerPadding ->
-            Crossfade(
-                targetState = currentRoute,
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
-                label = "NavigationTransition"
-            ) { route ->
-                when (route) {
+                    .padding(innerPadding)
+            ) {
+                when (currentRoute) {
                     NavItem.Home.route -> HomeScreen(
                         onNavigateToMap = { currentRoute = NavItem.Map.route },
-                        onNavigateToSchedules = { currentRoute = NavItem.Schedules.route }
+                        onNavigateToSchedules = { currentRoute = NavItem.Schedules.route },
+                        onNavigateToNotices = { currentRoute = NavItem.Notices.route }
                     )
                     NavItem.Map.route -> MapScreen()
                     NavItem.Schedules.route -> SchedulesScreen()
+                    NavItem.Notices.route -> AvisosScreen()
                     NavItem.More.route -> MoreScreen()
                 }
             }

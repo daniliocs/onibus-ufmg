@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:gravity="center_vertical"
+    android:background="@drawable/widget_background">
+
+    <!-- Top Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="MORABUS"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="#4ade80"
+            android:letterSpacing="0.06" />
+
+        <ImageView
+            android:id="@+id/widget_btn_refresh"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:padding="2dp"
+            android:src="@drawable/ic_bus_tracker"
+            android:contentDescription="Atualizar" />
+    </LinearLayout>
+
+    <!-- Target Label -->
+    <TextView
+        android:id="@+id/widget_label_target"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="Próximo ônibus"
+        android:textSize="10sp"
+        android:textColor="#94a3b8"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Time and Countdown -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="bottom"
+        android:layout_marginTop="2dp">
+
+        <TextView
+            android:id="@+id/widget_tv_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--:--"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#f8fafc" />
+
+        <TextView
+            android:id="@+id/widget_tv_countdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_marginBottom="2dp"
+            android:text="calculando"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#4ade80" />
+    </LinearLayout>
+
+    <!-- Origin / Destination -->
+    <TextView
+        android:id="@+id/widget_tv_origin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="Campus ⇄ Moradias"
+        android:textSize="11sp"
+        android:textColor="#cbd5e1"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Vehicle badge -->
+    <TextView
+        android:id="@+id/widget_tv_vehicles"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="🚌 1 veículo"
+        android:textSize="10sp"
+        android:textColor="#fbbf24"
+        android:textStyle="bold"
+        android:maxLines="1" />
+
+</LinearLayout>

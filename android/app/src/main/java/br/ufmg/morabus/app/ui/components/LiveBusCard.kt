@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import br.ufmg.morabus.app.R
+import br.ufmg.morabus.app.ui.theme.MorabusIcons
 import br.ufmg.morabus.app.ui.theme.StatusGreen
 
 data class ConditionItem(
@@ -34,8 +35,14 @@ fun LiveBusCard(
     isSharing: Boolean,
     sharingCount: Int,
     currentTripTime: String,
+    targetStopName: String?,
+    recentPassage: br.ufmg.morabus.app.data.PassageReport?,
+    waitingCount: Int,
+    isUserWaiting: Boolean,
     onStartSharing: () -> Unit,
     onStopSharing: () -> Unit,
+    onQuickPassageReport: () -> Unit,
+    onToggleWaiting: () -> Unit,
     onSendConditionReport: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -43,11 +50,11 @@ fun LiveBusCard(
 
     val conditions = remember {
         listOf(
-            ConditionItem("traffic", R.string.live_bus_condition_traffic, Icons.Default.Traffic),
-            ConditionItem("rain", R.string.live_bus_condition_rain, Icons.Default.WaterDrop),
+            ConditionItem("traffic", R.string.live_bus_condition_traffic, MorabusIcons.Traffic),
+            ConditionItem("rain", R.string.live_bus_condition_rain, MorabusIcons.WaterDrop),
             ConditionItem("defect", R.string.live_bus_condition_defect, Icons.Default.Build),
             ConditionItem("accident", R.string.live_bus_condition_accident, Icons.Default.Warning),
-            ConditionItem("crowded", R.string.live_bus_condition_crowded, Icons.Default.Groups)
+            ConditionItem("crowded", R.string.live_bus_condition_crowded, MorabusIcons.Groups)
         )
     }
 
@@ -94,11 +101,15 @@ fun LiveBusCard(
                                 .background(if (sharingCount > 0) StatusGreen else MaterialTheme.colorScheme.outline)
                         )
                         Text(
-                            text = pluralStringResource(
-                                R.plurals.collaborative_sharing_count,
-                                sharingCount,
-                                sharingCount
-                            ),
+                            text = if (sharingCount == 0) {
+                                "Ninguém compartilhando"
+                            } else {
+                                pluralStringResource(
+                                    R.plurals.collaborative_sharing_count,
+                                    sharingCount,
+                                    sharingCount
+                                )
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = if (sharingCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -108,6 +119,40 @@ fun LiveBusCard(
             }
 
             Spacer(modifier = Modifier.height(14.dp))
+
+            // BANNER DE PASSAGEM RECENTE (Relatado por outro estudante sem GPS)
+            if (recentPassage != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("⚡", style = MaterialTheme.typography.bodyLarge)
+                        Column {
+                            Text(
+                                text = recentPassage.formattedText,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = "Colaboração rápida de estudante (Zero consumo de bateria)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+            }
 
             // ESTADO 1: NÃO ESTÁ COMPARTILHANDO
             if (!isSharing) {
@@ -122,7 +167,7 @@ fun LiveBusCard(
                     )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.DirectionsBus,
+                        imageVector = MorabusIcons.DirectionsBus,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp)
                     )
@@ -214,7 +259,7 @@ fun LiveBusCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ScreenLockPortrait,
+                        imageVector = Icons.Default.Lock,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(14.dp)
@@ -227,7 +272,95 @@ fun LiveBusCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // AÇÕES RÁPIDAS COMUNITÁRIAS (Zero Bateria / Sem GPS contínuo)
+            Text(
+                text = "Colaboração Rápida (Zero Bateria)".uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 1. Ônibus passou aqui agora
+                OutlinedButton(
+                    onClick = {
+                        onQuickPassageReport()
+                        reportFeedbackMessage = "Relatado: ônibus acabou de passar!"
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                    ),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Text("⚡", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Column {
+                        Text(
+                            text = "Passou aqui",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = targetStopName ?: "1 toque",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                // 2. Estou no ponto (contador de espera / segurança coletiva)
+                val waitBtnBg = if (isUserWaiting) StatusGreen.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                val waitBorderColor = if (isUserWaiting) StatusGreen else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                OutlinedButton(
+                    onClick = onToggleWaiting,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = waitBtnBg
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, waitBorderColor),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        MorabusIcons.People,
+                        contentDescription = null,
+                        tint = if (isUserWaiting) StatusGreen else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Column {
+                        Text(
+                            text = if (isUserWaiting) "No ponto ✓" else "Estou no ponto",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isUserWaiting) StatusGreen else MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (waitingCount > 0) "$waitingCount esperando" else "Aguardando",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             // GRADE DE CONDIÇÕES (2 colunas ou FlowRow adaptativo, min height 48dp)
             Text(

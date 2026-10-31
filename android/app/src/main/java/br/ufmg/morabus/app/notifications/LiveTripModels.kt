@@ -19,5 +19,7 @@ data class LiveTripState(
     val delayMinutes: Int = 0,
     val nextStopName: String = "",
     val currentSegment: Int = 1,
-    val totalSegments: Int = 12
+    val totalSegments: Int = 12,
+    val departureAdvice: String? = null,
+    val walkingMinutes: Int? = null
 )

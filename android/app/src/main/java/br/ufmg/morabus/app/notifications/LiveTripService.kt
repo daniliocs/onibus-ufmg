@@ -1,54 +1,151 @@
 package br.ufmg.morabus.app.notifications
 
+import android.Manifest
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
+import br.ufmg.morabus.app.data.ScheduleEngine
 import com.google.android.gms.location.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import java.util.Calendar
 
 class LiveTripService : Service() {
 
     companion object {
-        const val EXTRA_ACTION = "extra_action"
         const val EXTRA_TARGET_STOP = "extra_target_stop"
         const val EXTRA_ETA_MINUTES = "extra_eta_minutes"
         const val EXTRA_SNOOZE_MINUTES = "extra_snooze_minutes"
+        const val EXTRA_DEPARTURE_ADVICE = "extra_departure_advice"
+        const val EXTRA_WALKING_MINUTES = "extra_walking_minutes"
+        const val EXTRA_IS_NEAREST_GPS = "extra_is_nearest_gps"
 
         const val ACTION_START = "action_start"
         const val ACTION_STOP = "action_stop"
         const val ACTION_MARK_ON_BOARD = "action_mark_on_board"
         const val ACTION_SNOOZE = "action_snooze"
 
-        fun start(context: Context, targetStop: String = "Moradias 2 e 3", etaMinutes: Int = 18) {
+        private val _isRunning = MutableStateFlow(false)
+        val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+
+        fun checkAndUpdateRunningState(context: Context): Boolean {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val hasNotification = notificationManager.activeNotifications?.any {
+                it.id == StandardLiveTripNotifier.NOTIFICATION_ID
+            } ?: false
+            _isRunning.value = hasNotification
+            return hasNotification
+        }
+
+        fun start(
+            context: Context,
+            targetStop: String?,
+            etaMinutes: Int = 18,
+            departureAdvice: String? = null,
+            walkingMinutes: Int? = null,
+            isNearestGps: Boolean = false
+        ) {
+            val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+            _isRunning.value = true
+            val resolvedTarget = if (!targetStop.isNullOrBlank()) targetStop else "Ponto mais próximo"
+
+            val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), resolvedTarget)
+            val isBusMoving = status.activeTrip != null
+            val initialPhase = when {
+                !isBusMoving -> TripPhase.DEPARTURE
+                etaMinutes <= 3 -> TripPhase.APPROACHING
+                else -> TripPhase.EN_ROUTE
+            }
+            val initialLocation = if (!isBusMoving) {
+                val nextTime = status.nextTrip?.time ?: "--"
+                val nextOrigin = status.nextTrip?.origin ?: "Terminal"
+                "No ponto final • Próxima saída às $nextTime ($nextOrigin)"
+            } else {
+                status.estimatedLocationText
+            }
+
+            if (!hasFine && !hasCoarse) {
+                val notifier = StandardLiveTripNotifier(context)
+                val targetTs = System.currentTimeMillis() + (etaMinutes * 60 * 1000L)
+                notifier.showOrUpdate(
+                    LiveTripState(
+                        phase = initialPhase,
+                        targetStop = resolvedTarget,
+                        currentLocationName = initialLocation,
+                        etaMinutes = etaMinutes,
+                        targetTimestampMs = targetTs,
+                        progressPercent = 45,
+                        delayMinutes = 0,
+                        nextStopName = resolvedTarget,
+                        departureAdvice = departureAdvice,
+                        walkingMinutes = walkingMinutes
+                    )
+                )
+                return
+            }
+
             val intent = Intent(context, LiveTripService::class.java).apply {
                 action = ACTION_START
-                putExtra(EXTRA_TARGET_STOP, targetStop)
+                putExtra(EXTRA_TARGET_STOP, resolvedTarget)
                 putExtra(EXTRA_ETA_MINUTES, etaMinutes)
+                putExtra(EXTRA_DEPARTURE_ADVICE, departureAdvice)
+                putExtra(EXTRA_WALKING_MINUTES, walkingMinutes ?: -1)
+                putExtra(EXTRA_IS_NEAREST_GPS, isNearestGps || targetStop.isNullOrBlank())
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (_: Exception) {
+                val notifier = StandardLiveTripNotifier(context)
+                notifier.showOrUpdate(
+                    LiveTripState(
+                        phase = if (etaMinutes <= 5) TripPhase.APPROACHING else TripPhase.EN_ROUTE,
+                        targetStop = resolvedTarget,
+                        currentLocationName = "A caminho da parada",
+                        etaMinutes = etaMinutes,
+                        targetTimestampMs = System.currentTimeMillis() + (etaMinutes * 60 * 1000L),
+                        progressPercent = 45,
+                        delayMinutes = 0,
+                        nextStopName = resolvedTarget,
+                        departureAdvice = departureAdvice,
+                        walkingMinutes = walkingMinutes
+                    )
+                )
             }
         }
 
         fun stop(context: Context) {
-            val intent = Intent(context, LiveTripService::class.java).apply {
-                action = ACTION_STOP
+            _isRunning.value = false
+            try {
+                context.stopService(Intent(context, LiveTripService::class.java))
+                StandardLiveTripNotifier(context).dismiss()
+            } catch (_: Exception) {
             }
-            context.startService(intent)
         }
 
         fun markOnBoard(context: Context) {
             val intent = Intent(context, LiveTripService::class.java).apply {
                 action = ACTION_MARK_ON_BOARD
             }
-            context.startService(intent)
+            try {
+                context.startService(intent)
+            } catch (_: Exception) {
+            }
         }
 
         fun snooze(context: Context, minutes: Int = 5) {
@@ -56,7 +153,10 @@ class LiveTripService : Service() {
                 action = ACTION_SNOOZE
                 putExtra(EXTRA_SNOOZE_MINUTES, minutes)
             }
-            context.startService(intent)
+            try {
+                context.startService(intent)
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -67,28 +167,48 @@ class LiveTripService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private var currentPhase = TripPhase.EN_ROUTE
-    private var targetStop = "Moradias 2 e 3"
+    private var targetStop = "Ponto mais próximo"
     private var remainingMinutes = 15
     private var targetTimestampMs = System.currentTimeMillis() + (15 * 60 * 1000)
+    private var departureAdvice: String? = null
+    private var walkingMinutes: Int? = null
+    private var isUsingNearestGpsStop = false
 
     override fun onCreate() {
         super.onCreate()
+        _isRunning.value = true
         notifier = StandardLiveTripNotifier(this)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        _isRunning.value = true
         when (intent?.action) {
             ACTION_START -> {
-                targetStop = intent.getStringExtra(EXTRA_TARGET_STOP) ?: "Moradias 2 e 3"
+                targetStop = intent.getStringExtra(EXTRA_TARGET_STOP) ?: "Ponto mais próximo"
                 remainingMinutes = intent.getIntExtra(EXTRA_ETA_MINUTES, 15)
                 targetTimestampMs = System.currentTimeMillis() + (remainingMinutes * 60 * 1000)
-                currentPhase = if (remainingMinutes <= 5) TripPhase.APPROACHING else TripPhase.EN_ROUTE
+                departureAdvice = intent.getStringExtra(EXTRA_DEPARTURE_ADVICE)
+                val walkExtra = intent.getIntExtra(EXTRA_WALKING_MINUTES, -1)
+                walkingMinutes = if (walkExtra > 0) walkExtra else null
+                isUsingNearestGpsStop = intent.getBooleanExtra(EXTRA_IS_NEAREST_GPS, false)
 
-                startForegroundWithState()
-                startLocationUpdates()
+                val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), targetStop)
+                val isBusMoving = status.activeTrip != null
+                currentPhase = when {
+                    !isBusMoving -> TripPhase.DEPARTURE
+                    remainingMinutes <= 3 -> TripPhase.APPROACHING
+                    else -> TripPhase.EN_ROUTE
+                }
+
+                if (startForegroundWithState()) {
+                    startLocationUpdates()
+                } else {
+                    stopSelf()
+                }
             }
             ACTION_STOP -> {
+                _isRunning.value = false
                 stopSelf()
             }
             ACTION_MARK_ON_BOARD -> {
@@ -105,46 +225,58 @@ class LiveTripService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun startForegroundWithState() {
+    private fun startForegroundWithState(): Boolean {
         val state = buildCurrentState()
-        // Inicializa o serviço em primeiro plano associado ao tipo location
+        val notification = notifier.buildNotification(state)
         val foregroundType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
         } else 0
 
-        ServiceCompat.startForeground(
-            this,
-            StandardLiveTripNotifier.NOTIFICATION_ID,
-            buildForegroundNotification(state),
-            foregroundType
-        )
-    }
-
-    private fun buildForegroundNotification(state: LiveTripState): android.app.Notification {
-        notifier.showOrUpdate(state)
-        // O notifier já posta no NotificationManager, mas retornamos um builder inicial para startForeground
-        val builder = androidx.core.app.NotificationCompat.Builder(this, StandardLiveTripNotifier.CHANNEL_LIVE)
-            .setSmallIcon(br.ufmg.morabus.app.R.drawable.ic_bus_tracker)
-            .setContentTitle("Morabus Ao Vivo")
-            .setContentText("Acompanhando viagem")
-            .setOngoing(true)
-            .setCategory(androidx.core.app.NotificationCompat.CATEGORY_PROGRESS)
-        return builder.build()
+        return try {
+            ServiceCompat.startForeground(
+                this,
+                StandardLiveTripNotifier.NOTIFICATION_ID,
+                notification,
+                foregroundType
+            )
+            true
+        } catch (_: Exception) {
+            notifier.showOrUpdate(state)
+            false
+        }
     }
 
     private fun startLocationUpdates() {
         val locationRequest = LocationRequest.Builder(
-            Priority.PRIORITY_BALANCED_POWER_ACCURACY, // Modo balanceado: economiza bateria e cumpre o requisito
-            8000 // Intervalo de 8 segundos
+            Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+            8000L
         ).apply {
-            setMinUpdateIntervalMillis(5000)
-            setMaxUpdateDelayMillis(12000)
+            setMinUpdateIntervalMillis(5000L)
+            setMaxUpdateDelayMillis(12000L)
         }.build()
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                // Atualização suave baseada na aproximação
-                if (locationResult.lastLocation == null) return
+                val loc = locationResult.lastLocation ?: return
+                if (isUsingNearestGpsStop) {
+                    val nearest = ScheduleEngine.findNearestStop(loc.latitude, loc.longitude)
+                    if (nearest != null) {
+                        targetStop = nearest.first.name
+                        val dist = nearest.second
+                        val walk = Math.max(1, Math.ceil(dist / 75.0).toInt())
+                        walkingMinutes = walk
+
+                        val cal = Calendar.getInstance()
+                        val curMin = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+                        val status = ScheduleEngine.calculateHomeStatus(cal, targetStop)
+                        val arrival = status.favoriteArrival
+                        if (arrival != null) {
+                            remainingMinutes = arrival.minutesUntilArrival
+                            targetTimestampMs = System.currentTimeMillis() + (remainingMinutes * 60 * 1000L)
+                            departureAdvice = ScheduleEngine.calculateDepartureAdvice(dist, remainingMinutes, curMin)
+                        }
+                    }
+                }
                 checkTripProgression()
             }
         }
@@ -153,8 +285,7 @@ class LiveTripService : Service() {
             locationCallback?.let {
                 fusedLocationClient.requestLocationUpdates(locationRequest, it, Looper.getMainLooper())
             }
-        } catch (e: SecurityException) {
-            // Permissão tratada pelo app
+        } catch (_: SecurityException) {
         }
     }
 
@@ -164,17 +295,14 @@ class LiveTripService : Service() {
 
         when {
             remainingMinutes == 0 && currentPhase == TripPhase.ON_BOARD -> {
-                // Fase 5: Desça na próxima
                 currentPhase = TripPhase.ALIGHT_NEXT
                 updateTripState()
-                // Auto-encerramento após 2 minutos do desembarque
                 serviceScope.launch {
                     delay(120000)
                     stopSelf()
                 }
             }
             remainingMinutes <= 3 && currentPhase == TripPhase.EN_ROUTE -> {
-                // Fase 3: Ônibus chegando
                 currentPhase = TripPhase.APPROACHING
                 updateTripState()
             }
@@ -193,28 +321,52 @@ class LiveTripService : Service() {
         val totalMin = 20
         val progress = Math.min(100, Math.max(5, ((totalMin - remainingMinutes) * 100) / totalMin))
 
+        val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), targetStop)
+        val isBusMoving = status.activeTrip != null
+
+        val locationText = when {
+            currentPhase == TripPhase.ON_BOARD -> "Em deslocamento pelo Campus"
+            currentPhase == TripPhase.ALIGHT_NEXT -> "Próxima parada: $targetStop"
+            currentPhase == TripPhase.COMPLETED -> "Viagem concluída"
+            isBusMoving -> {
+                if (remainingMinutes <= 3) "Aproximando-se da parada"
+                else status.estimatedLocationText
+            }
+            else -> {
+                val nextTime = status.nextTrip?.time ?: "--"
+                val nextOrigin = status.nextTrip?.origin ?: "Terminal"
+                "No ponto final • Saída às $nextTime ($nextOrigin)"
+            }
+        }
+
+        val effectivePhase = when {
+            currentPhase == TripPhase.ON_BOARD || currentPhase == TripPhase.ALIGHT_NEXT || currentPhase == TripPhase.COMPLETED -> currentPhase
+            !isBusMoving -> TripPhase.DEPARTURE
+            remainingMinutes <= 3 -> TripPhase.APPROACHING
+            else -> TripPhase.EN_ROUTE
+        }
+
         return LiveTripState(
-            phase = currentPhase,
+            phase = effectivePhase,
             targetStop = targetStop,
-            currentLocationName = when (currentPhase) {
-                TripPhase.DEPARTURE -> "A caminho do ponto de embarque"
-                TripPhase.EN_ROUTE -> "Passando na Av. Fleming"
-                TripPhase.APPROACHING -> "Aproximando-se da parada"
-                TripPhase.ON_BOARD -> "Em deslocamento pelo Campus"
-                TripPhase.ALIGHT_NEXT -> "Próxima parada: $targetStop"
-                TripPhase.COMPLETED -> "Viagem concluída"
-            },
+            currentLocationName = locationText,
             etaMinutes = remainingMinutes,
             targetTimestampMs = targetTimestampMs,
             progressPercent = progress,
             delayMinutes = 0,
-            nextStopName = if (currentPhase == TripPhase.ON_BOARD) "Educação Física" else targetStop
+            nextStopName = if (currentPhase == TripPhase.ON_BOARD) "Educação Física" else targetStop,
+            departureAdvice = departureAdvice,
+            walkingMinutes = walkingMinutes
         )
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
+        _isRunning.value = false
+        try {
+            locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
+        } catch (_: Exception) {
+        }
         notifier.dismiss()
         serviceScope.cancel()
     }
