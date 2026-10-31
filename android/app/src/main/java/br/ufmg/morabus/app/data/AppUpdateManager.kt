@@ -117,7 +117,7 @@ object AppUpdateManager {
                 pInfo.versionCode
             }
         } catch (e: Exception) {
-            10
+            11
         }
     }
 
@@ -247,7 +247,7 @@ object AppUpdateManager {
                 conn.instanceFollowRedirects = true
                 conn.connectTimeout = 15000
                 conn.readTimeout = 30000
-                conn.setRequestProperty("User-Agent", "MorabusUFMG-Updater/3.1.4")
+                conn.setRequestProperty("User-Agent", "MorabusUFMG-Updater/3.1.5")
                 conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
                 conn.setRequestProperty("Pragma", "no-cache")
                 val code = conn.responseCode

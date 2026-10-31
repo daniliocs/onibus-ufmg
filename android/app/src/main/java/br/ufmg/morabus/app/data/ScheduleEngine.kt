@@ -86,9 +86,13 @@ data class HomeStatus(
     val estimatedLocationText: String,
     val lastTripToday: ScheduleTrip?,
     val firstTripTomorrow: ScheduleTrip?,
+    val firstMoradiaTripTomorrow: ScheduleTrip? = null,
+    val firstCampusTripTomorrow: ScheduleTrip? = null,
     val nextServiceDayLabel: String = "Amanhã",
     val nextServiceFullText: String = "",
-    val nextServiceShortText: String = ""
+    val nextServiceShortText: String = "",
+    val nextMoradiaServiceShortText: String = "",
+    val nextCampusServiceShortText: String = ""
 )
 
 object ScheduleEngine {
@@ -572,6 +576,8 @@ object ScheduleEngine {
         }
 
         var firstTripNextOperatingDay: ScheduleTrip? = null
+        var firstMoradiaTripNextOperatingDay: ScheduleTrip? = null
+        var firstCampusTripNextOperatingDay: ScheduleTrip? = null
         var nextOperatingDayOffset = 1
         var nextOperatingCal: Calendar? = null
         val skippedHolidaysNotes = mutableListOf<String>()
@@ -581,6 +587,8 @@ object ScheduleEngine {
             val futureTrips = getTripsForDate(futureCal)
             if (futureTrips.isNotEmpty()) {
                 firstTripNextOperatingDay = futureTrips.first()
+                firstMoradiaTripNextOperatingDay = futureTrips.firstOrNull { it.origin.contains("Moradia") }
+                firstCampusTripNextOperatingDay = futureTrips.firstOrNull { it.origin.contains("Escola") }
                 nextOperatingDayOffset = i
                 nextOperatingCal = futureCal
                 break
@@ -621,17 +629,22 @@ object ScheduleEngine {
         }
 
         val nextTimeStr = firstTripNextOperatingDay?.time ?: "06:45"
+        val nextMoradiaTimeStr = firstMoradiaTripNextOperatingDay?.time ?: "06:45"
+        val nextCampusTimeStr = firstCampusTripNextOperatingDay?.time ?: "07:20"
+
         val skippedSuffix = if (skippedHolidaysNotes.isNotEmpty()) {
             " • 📅 ${skippedHolidaysNotes.joinToString(", ")}"
         } else ""
 
         val lastTripToday = todayTrips.lastOrNull()
         val nextServiceFullText = if (lastTripToday != null) {
-            "Última saída hoje: ${lastTripToday.time} • Próxima: $nextServiceDayLabel às $nextTimeStr$skippedSuffix"
+            "Última saída hoje: ${lastTripToday.time} • Próxima: $nextServiceDayLabel às $nextMoradiaTimeStr (Moradia) / $nextCampusTimeStr (Campus)$skippedSuffix"
         } else {
-            "Próxima saída: $nextServiceDayLabel às $nextTimeStr$skippedSuffix"
+            "Próxima saída: $nextServiceDayLabel às $nextMoradiaTimeStr (Moradia) / $nextCampusTimeStr (Campus)$skippedSuffix"
         }
         val nextServiceShortText = "Próxima: $nextServiceShortLabel às $nextTimeStr"
+        val nextMoradiaServiceShortText = "Próxima: $nextServiceShortLabel às $nextMoradiaTimeStr"
+        val nextCampusServiceShortText = "Próxima: $nextServiceShortLabel às $nextCampusTimeStr"
 
         val favoriteArrival = if (!favoriteStopName.isNullOrBlank()) {
             getUpcomingDepartureAtStop(favoriteStopName, todayTrips, currentMinutes)
@@ -680,9 +693,13 @@ object ScheduleEngine {
             estimatedLocationText = locationText,
             lastTripToday = lastTripToday,
             firstTripTomorrow = firstTripNextOperatingDay,
+            firstMoradiaTripTomorrow = firstMoradiaTripNextOperatingDay,
+            firstCampusTripTomorrow = firstCampusTripNextOperatingDay,
             nextServiceDayLabel = nextServiceDayLabel,
             nextServiceFullText = nextServiceFullText,
-            nextServiceShortText = nextServiceShortText
+            nextServiceShortText = nextServiceShortText,
+            nextMoradiaServiceShortText = nextMoradiaServiceShortText,
+            nextCampusServiceShortText = nextCampusServiceShortText
         )
     }
 

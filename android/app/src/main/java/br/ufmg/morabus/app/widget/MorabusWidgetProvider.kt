@@ -84,8 +84,8 @@ class MorabusWidgetProvider : AppWidgetProvider() {
                 val vCount = trip?.vehicles ?: 1
                 views.setTextViewText(R.id.widget_tv_vehicles, "🚌 ${vCount}x")
 
-                val moradiaTime = status.nextMoradiaTrip?.time ?: "--:--"
-                val campusTime = status.nextCampusTrip?.time ?: "--:--"
+                val moradiaTime = status.nextMoradiaTrip?.time ?: status.firstMoradiaTripTomorrow?.time ?: "--:--"
+                val campusTime = status.nextCampusTrip?.time ?: status.firstCampusTripTomorrow?.time ?: "--:--"
                 views.setTextViewText(
                     R.id.widget_tv_directions,
                     "🏠 $moradiaTime  •  🎓 $campusTime"
@@ -100,7 +100,9 @@ class MorabusWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_tv_countdown, "")
                 views.setTextViewText(R.id.widget_tv_origin, reason)
                 views.setTextViewText(R.id.widget_tv_vehicles, "💤")
-                views.setTextViewText(R.id.widget_tv_directions, status.nextServiceShortText)
+                val moradiaTime = status.firstMoradiaTripTomorrow?.time ?: "06:45"
+                val campusTime = status.firstCampusTripTomorrow?.time ?: "07:20"
+                views.setTextViewText(R.id.widget_tv_directions, "🏠 $moradiaTime  •  🎓 $campusTime")
             }
 
             // Ação ao tocar no card do widget: abre o app

@@ -858,7 +858,7 @@ fun HomeScreen(
                             val adjusted = Math.max(0, min + effectiveDelayMinutes)
                             val suffix = if (scheduleStatus.nextMoradiaTrip?.isPassagem == true) " (➔ UFMG)" else ""
                             "em ${ScheduleEngine.formatDurationMin(adjusted)}$suffix"
-                        } ?: scheduleStatus.nextServiceShortText
+                        } ?: scheduleStatus.nextMoradiaServiceShortText
                         Text(
                             text = moradiaSubText,
                             style = MaterialTheme.typography.bodySmall,
@@ -892,7 +892,7 @@ fun HomeScreen(
                         val campusSubText = scheduleStatus.nextCampusMinutes?.let { min ->
                             val adjusted = Math.max(0, min + effectiveDelayMinutes)
                             "em ${ScheduleEngine.formatDurationMin(adjusted)}"
-                        } ?: scheduleStatus.nextServiceShortText
+                        } ?: scheduleStatus.nextCampusServiceShortText
                         Text(
                             text = campusSubText,
                             style = MaterialTheme.typography.bodySmall,
@@ -1023,6 +1023,7 @@ fun HomeScreen(
 
                     val relevantTrip = if (userLocationIsCampus) scheduleStatus.nextCampusTrip else scheduleStatus.nextMoradiaTrip
                     val relevantMinutes = if (userLocationIsCampus) scheduleStatus.nextCampusMinutes else scheduleStatus.nextMoradiaMinutes
+                    val relevantNextServiceShort = if (userLocationIsCampus) scheduleStatus.nextCampusServiceShortText else scheduleStatus.nextMoradiaServiceShortText
 
                     if (relevantTrip != null && relevantMinutes != null) {
                         val adjustedRelMin = Math.max(0, relevantMinutes + effectiveDelayMinutes)
@@ -1033,7 +1034,7 @@ fun HomeScreen(
                         )
                     } else {
                         Text(
-                            text = "Encerrado hoje nesta direção • ${scheduleStatus.nextServiceShortText}",
+                            text = "Encerrado hoje nesta direção • $relevantNextServiceShort",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
