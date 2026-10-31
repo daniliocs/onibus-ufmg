@@ -390,7 +390,7 @@ fun HomeScreen(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
-                        } else if (downloadedFile != null && downloadedFile!!.exists()) {
+                        } else if (downloadedFile != null && downloadedFile!!.exists() && downloadedFile!!.name.contains(update.versionName)) {
                             Button(
                                 onClick = { br.ufmg.morabus.app.data.AppUpdateManager.promptInstall(context, downloadedFile) },
                                 modifier = Modifier.fillMaxWidth(),

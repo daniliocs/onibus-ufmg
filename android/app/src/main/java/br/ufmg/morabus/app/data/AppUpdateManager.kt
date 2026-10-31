@@ -1,9 +1,7 @@
 package br.ufmg.morabus.app.data
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -57,18 +55,28 @@ object AppUpdateManager {
     fun checkForUpdates(context: Context, onResult: ((Boolean, RemoteAppVersion?) -> Unit)? = null) {
         if (_isChecking.value) return
         _isChecking.value = true
+        _downloadError.value = null
         scope.launch {
             try {
                 val currentVersionCode = getInstalledVersionCode(context)
                 val remote = fetchRemoteVersion()
 
                 if (remote != null && remote.versionCode > currentVersionCode) {
+                    // Verifica se o arquivo baixado anteriormente em memória pertence realmente a esta versão
+                    val expectedFileName = getExpectedFileName(remote)
+                    val existingFile = _downloadedApkFile.value
+                    if (existingFile != null && existingFile.name != expectedFileName) {
+                        _downloadedApkFile.value = null
+                    }
+                    cleanOldCachedApks(context, expectedFileName)
+
                     _availableUpdate.value = remote
                     withContext(Dispatchers.Main) {
                         onResult?.invoke(true, remote)
                     }
                 } else {
                     _availableUpdate.value = null
+                    _downloadedApkFile.value = null
                     withContext(Dispatchers.Main) {
                         onResult?.invoke(false, null)
                     }
@@ -84,6 +92,21 @@ object AppUpdateManager {
         }
     }
 
+    private fun getExpectedFileName(update: RemoteAppVersion): String {
+        return "morabus_${update.versionName}_v${update.versionCode}.apk"
+    }
+
+    private fun cleanOldCachedApks(context: Context, keepFileName: String) {
+        try {
+            val destDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.cacheDir
+            destDir.listFiles()?.forEach { f ->
+                if (f.name.startsWith("morabus_") && f.name.endsWith(".apk") && f.name != keepFileName) {
+                    f.delete()
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
     private fun getInstalledVersionCode(context: Context): Int {
         return try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -94,13 +117,28 @@ object AppUpdateManager {
                 pInfo.versionCode
             }
         } catch (e: Exception) {
-            7 // Default da v3.1.0
+            10
+        }
+    }
+
+    private fun getArchiveVersionCode(context: Context, apkFile: File): Int {
+        return try {
+            val archiveInfo = context.packageManager.getPackageArchiveInfo(apkFile.absolutePath, 0) ?: return -1
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                archiveInfo.longVersionCode.toInt()
+            } else {
+                @Suppress("DEPRECATION")
+                archiveInfo.versionCode
+            }
+        } catch (e: Exception) {
+            -1
         }
     }
 
     private fun fetchRemoteVersion(): RemoteAppVersion? {
-        // Segurança: consulta exclusivamente o repositório oficial no GitHub (onde apenas o autor tem permissão de escrita)
-        val jsonStr = httpGet(GITHUB_VERSION_URL) ?: return null
+        // Anti-cache com timestamp para evitar resposta antiga da CDN
+        val cacheBustedUrl = "$GITHUB_VERSION_URL?t=${System.currentTimeMillis()}"
+        val jsonStr = httpGet(cacheBustedUrl) ?: return null
         return try {
             val obj = JSONObject(jsonStr)
             val code = obj.optInt("versionCode", 0)
@@ -113,7 +151,9 @@ object AppUpdateManager {
                     url.startsWith("https://github.com/daniliocs/onibus-ufmg/")
 
             if (code > 0 && url.isNotBlank() && isTrustedDomain) {
-                RemoteAppVersion(code, name, url, notes, force)
+                val cleanBaseUrl = url.substringBefore("?")
+                val versionedApkUrl = "$cleanBaseUrl?v=$code"
+                RemoteAppVersion(code, name, versionedApkUrl, notes, force)
             } else null
         } catch (e: Exception) {
             Log.e(TAG, "Erro parseando JSON de versão", e)
@@ -126,10 +166,13 @@ object AppUpdateManager {
         return try {
             val url = URL(urlString)
             conn = url.openConnection() as HttpURLConnection
+            conn.useCaches = false
             conn.connectTimeout = 8000
             conn.readTimeout = 8000
             conn.requestMethod = "GET"
             conn.setRequestProperty("Accept", "application/json")
+            conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+            conn.setRequestProperty("Pragma", "no-cache")
             if (conn.responseCode == 200) {
                 conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
             } else null
@@ -148,7 +191,26 @@ object AppUpdateManager {
 
         scope.launch {
             try {
-                val apkFile = downloadApk(context, update.apkUrl, update.versionName)
+                val apkFile = downloadApk(context, update)
+                val downloadedCode = getArchiveVersionCode(context, apkFile)
+
+                if (downloadedCode <= 0) {
+                    apkFile.delete()
+                    _downloadedApkFile.value = null
+                    _downloadError.value = "O arquivo baixado estava incompleto. Toque novamente para baixar."
+                    _isDownloading.value = false
+                    return@launch
+                }
+
+                if (downloadedCode < update.versionCode) {
+                    // A CDN do GitHub ainda entregou a versão anterior em cache (janela de até 5 min após publicação)
+                    apkFile.delete()
+                    _downloadedApkFile.value = null
+                    _downloadError.value = "O servidor do GitHub ainda está propagando o novo arquivo da v${update.versionName} (leva ~2 min). Aguarde 1 minuto e toque novamente."
+                    _isDownloading.value = false
+                    return@launch
+                }
+
                 _downloadedApkFile.value = apkFile
                 _downloadProgress.value = 100
                 _isDownloading.value = false
@@ -164,10 +226,10 @@ object AppUpdateManager {
         }
     }
 
-    private suspend fun downloadApk(context: Context, apkUrl: String, versionName: String): File = withContext(Dispatchers.IO) {
+    private suspend fun downloadApk(context: Context, update: RemoteAppVersion): File = withContext(Dispatchers.IO) {
         val destDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.cacheDir
         if (!destDir.exists()) destDir.mkdirs()
-        val destFile = File(destDir, "morabus_$versionName.apk")
+        val destFile = File(destDir, getExpectedFileName(update))
         if (destFile.exists()) destFile.delete()
 
         var conn: HttpURLConnection? = null
@@ -175,15 +237,19 @@ object AppUpdateManager {
         var outputStream: FileOutputStream? = null
 
         try {
-            var targetUrl = apkUrl
+            val baseApkUrl = update.apkUrl.substringBefore("?")
+            var targetUrl = "$baseApkUrl?v=${update.versionCode}&t=${System.currentTimeMillis()}"
             var redirects = 0
             while (redirects < 5) {
                 val url = URL(targetUrl)
                 conn = url.openConnection() as HttpURLConnection
+                conn.useCaches = false
                 conn.instanceFollowRedirects = true
                 conn.connectTimeout = 15000
                 conn.readTimeout = 30000
-                conn.setRequestProperty("User-Agent", "MorabusUFMG-Updater/3.1.1")
+                conn.setRequestProperty("User-Agent", "MorabusUFMG-Updater/3.1.4")
+                conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                conn.setRequestProperty("Pragma", "no-cache")
                 val code = conn.responseCode
                 if (code == HttpURLConnection.HTTP_MOVED_PERM || code == HttpURLConnection.HTTP_MOVED_TEMP || code == 307 || code == 308) {
                     val newLocation = conn.getHeaderField("Location") ?: break
@@ -218,6 +284,7 @@ object AppUpdateManager {
         }
     }
 
+    @Suppress("DEPRECATION")
     fun promptInstall(context: Context, file: File? = _downloadedApkFile.value) {
         val apkFile = file ?: return
         if (!apkFile.exists()) return
@@ -240,7 +307,9 @@ object AppUpdateManager {
 
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/vnd.android.package-archive")
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+                putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                putExtra(Intent.EXTRA_INSTALLER_PACKAGE_NAME, context.packageName)
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
             context.startActivity(intent)
         } catch (e: Exception) {
