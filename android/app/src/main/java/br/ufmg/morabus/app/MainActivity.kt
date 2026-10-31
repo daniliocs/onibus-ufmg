@@ -3,6 +3,7 @@ package br.ufmg.morabus.app
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.ufmg.morabus.app.ui.MorabusMainApp
 import br.ufmg.morabus.app.ui.theme.MorabusTheme
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.PrintWriter
 import java.io.StringWriter
 
@@ -30,6 +32,8 @@ class MainActivity : ComponentActivity() {
         private const val KEY_LAST_CRASH = "last_crash_trace"
     }
 
+    private val requestedRouteFlow = MutableStateFlow<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installCrashReporter()
         try {
@@ -39,29 +43,28 @@ class MainActivity : ComponentActivity() {
         }
         super.onCreate(savedInstanceState)
 
-        // Inicializa preferências locais e inicia o Radar de Comunicados UFMG / FUMP / Clima
+        // Inicializa preferências locais, horários dinâmicos e inicia o Radar de Comunicados UFMG / FUMP / Clima
         br.ufmg.morabus.app.data.UserPreferencesRepository.init(applicationContext)
+        br.ufmg.morabus.app.data.ScheduleEngine.initAndSyncDynamicSchedules(applicationContext)
         br.ufmg.morabus.app.data.FirebaseRealtimeRepository.init(applicationContext)
         br.ufmg.morabus.app.data.CampusRadarEngine.startPeriodicRadar(applicationContext)
         br.ufmg.morabus.app.data.CampusRadarEngine.triggerImmediateCheck(applicationContext)
         br.ufmg.morabus.app.data.AppUpdateManager.checkForUpdates(applicationContext)
 
-        val shortcutDest = intent?.getStringExtra("shortcut_destination")
-        val initialRoute = when (shortcutDest) {
-            "schedules" -> br.ufmg.morabus.app.ui.navigation.NavItem.Schedules.route
-            "notices" -> br.ufmg.morabus.app.ui.navigation.NavItem.Notices.route
-            "more" -> br.ufmg.morabus.app.ui.navigation.NavItem.More.route
-            "map" -> br.ufmg.morabus.app.ui.navigation.NavItem.Map.route
-            else -> br.ufmg.morabus.app.ui.navigation.NavItem.Home.route
-        }
+        val initialRoute = resolveNavigationIntent(intent) ?: br.ufmg.morabus.app.ui.navigation.NavItem.Home.route
 
         val prefs = getSharedPreferences(PREFS_DIAG, Context.MODE_PRIVATE)
         val savedCrash = prefs.getString(KEY_LAST_CRASH, null)
 
         setContent {
             var crashTrace by remember { mutableStateOf(savedCrash) }
+            val navOverride by requestedRouteFlow.collectAsState()
 
-            MorabusMainApp(initialRoute = initialRoute)
+            MorabusMainApp(
+                initialRoute = initialRoute,
+                externalRouteOverride = navOverride,
+                onExternalRouteConsumed = { requestedRouteFlow.value = null }
+            )
 
             if (!crashTrace.isNullOrBlank()) {
                 MorabusTheme(darkTheme = true) {
@@ -109,6 +112,35 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        resolveNavigationIntent(intent)?.let { targetRoute ->
+            requestedRouteFlow.value = targetRoute
+        }
+    }
+
+    private fun resolveNavigationIntent(intent: Intent?): String? {
+        if (intent == null) return null
+        val shortcutDest = intent.getStringExtra("shortcut_destination")
+        val extraNavTab = intent.getStringExtra("EXTRA_NAV_TAB")
+        return when (shortcutDest ?: extraNavTab) {
+            "moradia" -> {
+                br.ufmg.morabus.app.data.UserPreferencesRepository.setSchedulesFilter(applicationContext, "moradia")
+                br.ufmg.morabus.app.ui.navigation.NavItem.Schedules.route
+            }
+            "campus" -> {
+                br.ufmg.morabus.app.data.UserPreferencesRepository.setSchedulesFilter(applicationContext, "campus")
+                br.ufmg.morabus.app.ui.navigation.NavItem.Schedules.route
+            }
+            "schedules" -> br.ufmg.morabus.app.ui.navigation.NavItem.Schedules.route
+            "notices" -> br.ufmg.morabus.app.ui.navigation.NavItem.Notices.route
+            "more" -> br.ufmg.morabus.app.ui.navigation.NavItem.More.route
+            "map" -> br.ufmg.morabus.app.ui.navigation.NavItem.Map.route
+            else -> null
         }
     }
 

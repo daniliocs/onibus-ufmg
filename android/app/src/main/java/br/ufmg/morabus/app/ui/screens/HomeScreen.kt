@@ -70,8 +70,10 @@ fun HomeScreen(
         br.ufmg.morabus.app.data.CampusRadarEngine.startPeriodicRadar(context)
     }
 
-    // Ponto Favorito persistente
+    // Ponto Favorito persistente e Rotinas de Lembretes
     val favoriteStop by UserPreferencesRepository.favoriteStop.collectAsState()
+    val remindedTrips by UserPreferencesRepository.scheduledReminders.collectAsState()
+    val calendarBanner by ScheduleEngine.calendarBanner.collectAsState()
     var previousFavoriteStop by remember { mutableStateOf<String?>(null) }
     var isBottomSheetOpen by remember { mutableStateOf(false) }
 
@@ -182,9 +184,9 @@ fun HomeScreen(
         }
     }
 
-    // Conselho de caminhada ("Quando devo sair?") se soubermos a distância até a parada
-    val departureAdviceText = remember(nearestGpsResult, minutesToArrival, currentMinutes, effectiveTargetStop) {
-        if (nearestGpsResult != null && effectiveTargetStop == nearestGpsResult.first.name) {
+    // Conselho de caminhada ("Quando devo sair?") calculado inteligentemente para a parada mais próxima via GPS
+    val departureAdviceText = remember(nearestGpsResult, minutesToArrival, currentMinutes) {
+        if (nearestGpsResult != null) {
             ScheduleEngine.calculateDepartureAdvice(nearestGpsResult.second, Math.max(0, minutesToArrival), currentMinutes)
         } else null
     }
@@ -513,6 +515,36 @@ fun HomeScreen(
             }
 
             // 1. CARD "PRÓXIMO ÔNIBUS" (Com Ponto Favorito ou Ponto mais próximo inteligente)
+            // Contexto Acadêmico UFMG & Rotina Inteligente do Usuário
+            val activeRoutineCount = remindedTrips.size
+            val calendarNote = scheduleStatus.calendarAcademicNote ?: calendarBanner
+            Surface(
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (activeRoutineCount > 0) {
+                            "🎓 $calendarNote · 🔔 $activeRoutineCount na sua rotina"
+                        } else {
+                            "🎓 $calendarNote"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -778,13 +810,17 @@ fun HomeScreen(
                 }
             }
 
-            // 2. PAINEL DUPLO DE SENTIDOS (Saindo da Moradia e Saindo do Campus)
+            // 2. PAINEL DUPLO DE SENTIDOS (Saindo da Moradia e Saindo do Campus - Clicáveis para filtrar grade)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // Sentido Campus: Saindo da Moradia
                 OutlinedCard(
+                    onClick = {
+                        UserPreferencesRepository.setSchedulesFilter(context, "moradia")
+                        onNavigateToSchedules()
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(14.dp)
                 ) {
@@ -811,6 +847,10 @@ fun HomeScreen(
 
                 // Sentido Moradia: Saindo do Campus
                 OutlinedCard(
+                    onClick = {
+                        UserPreferencesRepository.setSchedulesFilter(context, "campus")
+                        onNavigateToSchedules()
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(14.dp)
                 ) {

@@ -1,5 +1,15 @@
 package br.ufmg.morabus.app.data
 
+import android.content.Context
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.Calendar
 
 data class BusStop(
@@ -14,6 +24,12 @@ data class RoutePoint(
     val timeMinutes: Int
 )
 
+enum class CrowdLevel(val label: String, val emoji: String) {
+    BAIXA("Tranquilo", "🟢"),
+    MEDIA("Moderado", "🟡"),
+    ALTA("Costuma lotar", "🔴")
+}
+
 data class ScheduleTrip(
     val time: String,          // "06:45"
     val origin: String,        // "Moradia", "Escola de Música", "Moradias"
@@ -27,7 +43,21 @@ data class ScheduleTrip(
     } else {
         "Moradias 2 e 3"
     }
+
+    val crowdLevel: CrowdLevel get() = when (time) {
+        "06:45", "07:20", "07:40", "11:50", "12:15", "17:50", "18:20", "19:00" -> CrowdLevel.ALTA
+        "10:00", "11:00", "13:10", "13:30", "17:00", "17:20", "21:00", "22:15" -> CrowdLevel.MEDIA
+        else -> CrowdLevel.BAIXA
+    }
 }
+
+data class SimulatedStopArrival(
+    val stopName: String,
+    val offsetMinutes: Int,
+    val arrivalTimeFormatted: String,
+    val minutesFromNow: Int?,
+    val isPassed: Boolean
+)
 
 data class StopArrivalInfo(
     val stopName: String,
@@ -43,6 +73,7 @@ data class HomeStatus(
     val isFinishedToday: Boolean,
     val isHolidayOrSunday: Boolean,
     val holidayOrSundayMessage: String?,
+    val calendarAcademicNote: String?,
     val nextTrip: ScheduleTrip?,
     val nextTripMinutes: Int?,
     val nextMoradiaTrip: ScheduleTrip?,
@@ -57,6 +88,13 @@ data class HomeStatus(
 )
 
 object ScheduleEngine {
+
+    private const val PREFS_SCHEDULES = "morabus_dynamic_schedules"
+    private const val KEY_CACHED_JSON = "cached_schedules_json"
+    private const val REMOTE_SCHEDULES_URL = "https://raw.githubusercontent.com/daniliocs/onibus-ufmg/main/schedules.json"
+
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var isSyncing = false
 
     val STOPS = listOf(
         BusStop("Moradia 1", -19.8706, -43.9862, false),
@@ -120,7 +158,7 @@ object ScheduleEngine {
         RoutePoint("Ponto final", 9)
     )
 
-    val HORARIOS_SEMANA = listOf(
+    private val DEFAULT_HORARIOS_SEMANA = listOf(
         ScheduleTrip("06:45", "Moradia", null, 3),
         ScheduleTrip("07:20", "Escola de Música", null, 3),
         ScheduleTrip("07:40", "Moradia", null, 3),
@@ -150,7 +188,7 @@ object ScheduleEngine {
         ScheduleTrip("23:10", "Moradias", "passagem", 1)
     )
 
-    val HORARIOS_SABADO = listOf(
+    private val DEFAULT_HORARIOS_SABADO = listOf(
         ScheduleTrip("07:40", "Moradia", null, 1),
         ScheduleTrip("10:00", "Escola de Música", null, 2),
         ScheduleTrip("11:00", "Moradia", null, 2),
@@ -159,10 +197,143 @@ object ScheduleEngine {
         ScheduleTrip("13:30", "Escola de Música", null, 2)
     )
 
-    private val FERIADOS_FIXOS = setOf(
-        "01/01", "21/04", "01/05", "15/08", "07/09",
-        "12/10", "02/11", "15/11", "20/11", "08/12", "25/12"
+    @Volatile
+    var HORARIOS_SEMANA: List<ScheduleTrip> = DEFAULT_HORARIOS_SEMANA
+        private set
+
+    @Volatile
+    var HORARIOS_SABADO: List<ScheduleTrip> = DEFAULT_HORARIOS_SABADO
+        private set
+
+    private val _calendarBanner = MutableStateFlow("Período Letivo Oficial UFMG • Grade Regular")
+    val calendarBanner: StateFlow<String> = _calendarBanner.asStateFlow()
+
+    private val dynamicExtraHolidays = mutableMapOf<String, String>()
+
+    // Feriados Nacionais, Estaduais (Minas Gerais), Municipais (Belo Horizonte) e Recessos Fixos do Calendário Acadêmico UFMG
+    private val FERIADOS_OFICIAIS = mapOf(
+        "01/01" to "Feriado Nacional: Confraternização Universal",
+        "21/04" to "Feriado Nacional/MG: Tiradentes e Data Magna de Minas",
+        "01/05" to "Feriado Nacional: Dia do Trabalhador",
+        "15/08" to "Feriado Municipal (BH): Assunção de Nossa Senhora",
+        "07/09" to "Feriado Nacional: Independência do Brasil",
+        "12/10" to "Feriado Nacional: Nossa Senhora Aparecida",
+        "28/10" to "Recesso Oficial UFMG: Dia do Servidor Público",
+        "02/11" to "Feriado Nacional: Finados",
+        "15/11" to "Feriado Nacional: Proclamação da República",
+        "20/11" to "Feriado Nacional: Dia da Consciência Negra",
+        "08/12" to "Feriado Municipal (BH): Imaculada Conceição",
+        "24/12" to "Recesso Oficial UFMG: Véspera de Natal",
+        "25/12" to "Feriado Nacional: Natal",
+        "31/12" to "Recesso Oficial UFMG: Véspera de Ano Novo"
     )
+
+    /**
+     * Inicializa os horários do cache local e dispara sincronização silenciosa com a nuvem (GitHub).
+     */
+    fun initAndSyncDynamicSchedules(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_SCHEDULES, Context.MODE_PRIVATE)
+        val cachedJson = prefs.getString(KEY_CACHED_JSON, null)
+        if (!cachedJson.isNullOrBlank()) {
+            applyDynamicSchedulesJson(cachedJson)
+        }
+
+        if (isSyncing) return
+        isSyncing = true
+        scope.launch {
+            try {
+                val remoteJson = fetchRemoteSchedulesJson()
+                if (!remoteJson.isNullOrBlank()) {
+                    if (applyDynamicSchedulesJson(remoteJson)) {
+                        prefs.edit().putString(KEY_CACHED_JSON, remoteJson).apply()
+                    }
+                }
+            } catch (_: Exception) {
+            } finally {
+                isSyncing = false
+            }
+        }
+    }
+
+    private fun fetchRemoteSchedulesJson(): String? {
+        val url = URL(REMOTE_SCHEDULES_URL)
+        val conn = url.openConnection() as HttpURLConnection
+        conn.requestMethod = "GET"
+        conn.connectTimeout = 7000
+        conn.readTimeout = 7000
+        conn.setRequestProperty("User-Agent", "MorabusUFMG-Schedules/3.1.2")
+        return try {
+            if (conn.responseCode in 200..299) {
+                BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
+            } else null
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    private fun applyDynamicSchedulesJson(jsonStr: String): Boolean {
+        return try {
+            val root = JSONObject(jsonStr)
+            val banner = root.optString("calendarBanner", "")
+            if (banner.isNotBlank()) {
+                _calendarBanner.value = banner
+            }
+
+            val extraArr = root.optJSONArray("extraHolidays")
+            if (extraArr != null) {
+                synchronized(dynamicExtraHolidays) {
+                    dynamicExtraHolidays.clear()
+                    for (i in 0 until extraArr.length()) {
+                        val obj = extraArr.optJSONObject(i) ?: continue
+                        val date = obj.optString("date", "")
+                        val name = obj.optString("name", "Recesso Acadêmico UFMG")
+                        if (date.isNotBlank()) {
+                            dynamicExtraHolidays[date] = name
+                        }
+                    }
+                }
+            }
+
+            val weekArr = root.optJSONArray("weekdayTrips")
+            if (weekArr != null && weekArr.length() > 0) {
+                val list = mutableListOf<ScheduleTrip>()
+                for (i in 0 until weekArr.length()) {
+                    val item = weekArr.optJSONObject(i) ?: continue
+                    val time = item.optString("time", "")
+                    val origin = item.optString("origin", "Moradia")
+                    val type = if (item.isNull("type")) null else item.optString("type").takeIf { it.isNotBlank() && it != "null" }
+                    val vehicles = item.optInt("vehicles", 1).coerceIn(1, 5)
+                    if (time.matches(Regex("^\\d{2}:\\d{2}$"))) {
+                        list.add(ScheduleTrip(time, origin, type, vehicles))
+                    }
+                }
+                if (list.isNotEmpty()) {
+                    HORARIOS_SEMANA = list
+                }
+            }
+
+            val satArr = root.optJSONArray("saturdayTrips")
+            if (satArr != null && satArr.length() > 0) {
+                val list = mutableListOf<ScheduleTrip>()
+                for (i in 0 until satArr.length()) {
+                    val item = satArr.optJSONObject(i) ?: continue
+                    val time = item.optString("time", "")
+                    val origin = item.optString("origin", "Moradia")
+                    val type = if (item.isNull("type")) null else item.optString("type").takeIf { it.isNotBlank() && it != "null" }
+                    val vehicles = item.optInt("vehicles", 1).coerceIn(1, 5)
+                    if (time.matches(Regex("^\\d{2}:\\d{2}$"))) {
+                        list.add(ScheduleTrip(time, origin, type, vehicles))
+                    }
+                }
+                if (list.isNotEmpty()) {
+                    HORARIOS_SABADO = list
+                }
+            }
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
 
     fun getRoute(origin: String, type: String?): List<RoutePoint> {
         return when {
@@ -177,17 +348,79 @@ object ScheduleEngine {
         return route.lastOrNull()?.timeMinutes ?: 20
     }
 
-    fun isHoliday(cal: Calendar): Boolean {
+    /**
+     * Simula a linha do tempo ponto a ponto de uma viagem específica.
+     */
+    fun simulateTripStops(trip: ScheduleTrip, currentMinutes: Int? = null): List<SimulatedStopArrival> {
+        val route = getRoute(trip.origin, trip.type)
+        return route.map { pt ->
+            val arrivalMin = trip.minutesFromMidnight + pt.timeMinutes
+            val diff = currentMinutes?.let { arrivalMin - it }
+            SimulatedStopArrival(
+                stopName = pt.stopName,
+                offsetMinutes = pt.timeMinutes,
+                arrivalTimeFormatted = minutesToHHMM(arrivalMin),
+                minutesFromNow = if (diff != null && diff >= 0) diff else null,
+                isPassed = diff != null && diff < 0
+            )
+        }
+    }
+
+    /**
+     * Retorna a descrição do Feriado Nacional, Estadual (MG), Municipal (BH) ou Recesso Acadêmico UFMG,
+     * ou null se for um dia normal de operação.
+     */
+    fun getHolidayName(cal: Calendar): String? {
         val dd = String.format("%02d", cal.get(Calendar.DAY_OF_MONTH))
         val mm = String.format("%02d", cal.get(Calendar.MONTH) + 1)
+        val yyyy = cal.get(Calendar.YEAR)
         val ddmm = "$dd/$mm"
-        if (FERIADOS_FIXOS.contains(ddmm)) return true
+        val yyyymmdd = "$yyyy-$mm-$dd"
 
-        val year = cal.get(Calendar.YEAR)
-        val easter = calculateEaster(year)
-        val diffDays = ((cal.timeInMillis - easter.timeInMillis) / 86400000L).toInt()
-        // Carnaval (-48, -47), Sexta-feira Santa (-2), Corpus Christi (60)
-        return diffDays in setOf(-48, -47, -2, 60)
+        synchronized(dynamicExtraHolidays) {
+            dynamicExtraHolidays[yyyymmdd]?.let { return it }
+            dynamicExtraHolidays[ddmm]?.let { return it }
+        }
+
+        FERIADOS_OFICIAIS[ddmm]?.let { return it }
+
+        val easter = calculateEaster(yyyy)
+        val calMidnight = (cal.clone() as Calendar).apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val diffDays = Math.round((calMidnight.timeInMillis - easter.timeInMillis) / 86400000.0).toInt()
+
+        return when (diffDays) {
+            -48 -> "Recesso Acadêmico UFMG / Segunda de Carnaval"
+            -47 -> "Feriado Nacional: Terça-feira de Carnaval"
+            -46 -> "Recesso Acadêmico UFMG: Quarta-feira de Cinzas"
+            -3 -> "Recesso Acadêmico UFMG: Quinta-feira Santa"
+            -2 -> "Feriado Nacional: Sexta-feira da Paixão"
+            -1 -> "Recesso Acadêmico UFMG: Sábado Santo"
+            60 -> "Feriado Municipal (BH): Corpus Christi"
+            else -> null
+        }
+    }
+
+    fun isHoliday(cal: Calendar): Boolean = getHolidayName(cal) != null
+
+    /**
+     * Informa o contexto do Calendário Acadêmico da UFMG para o dia atual.
+     */
+    fun getAcademicCalendarContext(cal: Calendar): String {
+        val holidayName = getHolidayName(cal)
+        if (holidayName != null) return "📅 $holidayName"
+
+        val month = cal.get(Calendar.MONTH) + 1
+        val day = cal.get(Calendar.DAY_OF_MONTH)
+        return when {
+            month == 1 || (month == 2 && day <= 20) -> "🏖️ Período de Férias de Verão UFMG • Confira se há grade especial"
+            month == 7 && day >= 15 -> "🏖️ Recesso Acadêmico de Inverno UFMG • Confira o mural de avisos"
+            else -> _calendarBanner.value
+        }
     }
 
     private fun calculateEaster(year: Int): Calendar {
@@ -250,18 +483,18 @@ object ScheduleEngine {
     ): HomeStatus {
         val currentMinutes = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
         val todayTrips = getTripsForDate(cal)
+        val holidayName = getHolidayName(cal)
         val isHolidayOrSunday = todayTrips.isEmpty()
-        val holidayOrSundayMessage = if (isHoliday(cal)) {
-            "Feriado (Sem ônibus hoje)"
-        } else if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
-            "Domingo (Sem ônibus hoje)"
-        } else null
+        val holidayOrSundayMessage = when {
+            holidayName != null -> "$holidayName (Sem ônibus hoje)"
+            cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY -> "Domingo (Sem ônibus hoje)"
+            else -> null
+        }
 
         var nextTrip: ScheduleTrip? = null
         var nextMoradiaTrip: ScheduleTrip? = null
         var nextCampusTrip: ScheduleTrip? = null
         var activeTrip: ScheduleTrip? = null
-        var lastPassedTrip: ScheduleTrip? = null
 
         for (trip in todayTrips) {
             val tripDuration = getRouteDuration(trip.origin, trip.type)
@@ -279,13 +512,9 @@ object ScheduleEngine {
                 if (nextCampusTrip == null && trip.origin.contains("Escola")) {
                     nextCampusTrip = trip
                 }
-            } else {
-                lastPassedTrip = trip
             }
         }
 
-        // Se acabaram as viagens de hoje, busca a primeira de amanhã/próximo dia útil
-        val tomorrowCal = (cal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }
         var firstTripTomorrow: ScheduleTrip? = null
         for (i in 1..7) {
             val futureCal = (cal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, i) }
@@ -300,7 +529,6 @@ object ScheduleEngine {
             getUpcomingDepartureAtStop(favoriteStopName, todayTrips, currentMinutes)
         } else null
 
-        // Determina a descrição estimada de localização
         val locationText = when {
             isHolidayOrSunday -> holidayOrSundayMessage ?: "Sem viagens programadas"
             activeTrip != null -> {
@@ -333,6 +561,7 @@ object ScheduleEngine {
             isFinishedToday = isFinishedToday,
             isHolidayOrSunday = isHolidayOrSunday,
             holidayOrSundayMessage = holidayOrSundayMessage,
+            calendarAcademicNote = getAcademicCalendarContext(cal),
             nextTrip = nextTrip,
             nextTripMinutes = nextTrip?.let { it.minutesFromMidnight - currentMinutes },
             nextMoradiaTrip = nextMoradiaTrip,
@@ -404,7 +633,7 @@ object ScheduleEngine {
 
         return when {
             etaMinutes < walkingMinutes -> {
-                "🏃 Passo apertado! Ônibus chega em ${formatDurationMin(etaMinutes)} e caminhada leva ~$walkingMinutes min."
+                "🏃 Passo apertado! Ônibus passa em ${formatDurationMin(etaMinutes)} e caminhada leva ~$walkingMinutes min."
             }
             timeUntilNeedToLeave <= 1 -> {
                 "🚶 Saia agora mesmo! Caminhada de ~$walkingMinutes min dá tempo certo."

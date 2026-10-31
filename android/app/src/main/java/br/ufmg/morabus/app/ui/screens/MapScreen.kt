@@ -45,11 +45,24 @@ fun MapScreen(modifier: Modifier = Modifier) {
         wv.evaluateJavascript("if (window.setMapTheme) { window.setMapTheme($isDark); }", null)
     }
 
+    fun escapeJsSingleQuoted(input: String?): String {
+        if (input == null) return ""
+        return input
+            .replace("\\", "\\\\")
+            .replace("'", "\\'")
+            .replace("\"", "\\\"")
+            .replace("\n", " ")
+            .replace("\r", "")
+            .replace("<", "")
+            .replace(">", "")
+            .take(80)
+    }
+
     LaunchedEffect(telemetry) {
         val wv = webViewRef ?: return@LaunchedEffect
         if (telemetry.isActive && telemetry.lat != null && telemetry.lon != null) {
-            val title = if (telemetry.tripTime != null) "Ônibus das ${telemetry.tripTime}" else "Ônibus ao vivo"
-            val subtitle = telemetry.streetName ?: "Localização em tempo real"
+            val title = escapeJsSingleQuoted(if (telemetry.tripTime != null) "Ônibus das ${telemetry.tripTime}" else "Ônibus ao vivo")
+            val subtitle = escapeJsSingleQuoted(telemetry.streetName ?: "Localização em tempo real")
             val js = "if (window.updateBusLocation) { window.updateBusLocation(${telemetry.lat}, ${telemetry.lon}, '$title', '$subtitle'); }"
             wv.evaluateJavascript(js, null)
         } else {
@@ -59,8 +72,8 @@ fun MapScreen(modifier: Modifier = Modifier) {
                 val isCampus = origin.contains("Escola")
                 val lat = if (isCampus) -19.8685 else -19.8706
                 val lon = if (isCampus) -43.9650 else -43.9800
-                val title = "Ônibus das ${status.activeTrip.time}"
-                val subtitle = status.estimatedLocationText
+                val title = escapeJsSingleQuoted("Ônibus das ${status.activeTrip.time}")
+                val subtitle = escapeJsSingleQuoted(status.estimatedLocationText)
                 val js = "if (window.updateBusLocation) { window.updateBusLocation($lat, $lon, '$title', '$subtitle'); }"
                 wv.evaluateJavascript(js, null)
             }
@@ -94,7 +107,8 @@ fun MapScreen(modifier: Modifier = Modifier) {
                         view?.evaluateJavascript("if (window.mapa) { window.mapa.invalidateSize(); }", null)
                         view?.evaluateJavascript("if (window.setMapTheme) { window.setMapTheme($isDark); }", null)
                         if (telemetry.isActive && telemetry.lat != null && telemetry.lon != null) {
-                            val js = "if (window.updateBusLocation) { window.updateBusLocation(${telemetry.lat}, ${telemetry.lon}, 'Ônibus ao vivo', '${telemetry.streetName ?: ""}'); }"
+                            val safeStreet = escapeJsSingleQuoted(telemetry.streetName ?: "")
+                            val js = "if (window.updateBusLocation) { window.updateBusLocation(${telemetry.lat}, ${telemetry.lon}, 'Ônibus ao vivo', '$safeStreet'); }"
                             view?.evaluateJavascript(js, null)
                         }
                     }
@@ -127,11 +141,13 @@ fun MapScreen(modifier: Modifier = Modifier) {
                     domStorageEnabled = true
                     databaseEnabled = true
                     allowFileAccess = true
-                    allowContentAccess = true
-                    allowFileAccessFromFileURLs = true
-                    allowUniversalAccessFromFileURLs = true
+                    allowContentAccess = false
+                    @Suppress("DEPRECATION")
+                    allowFileAccessFromFileURLs = false
+                    @Suppress("DEPRECATION")
+                    allowUniversalAccessFromFileURLs = false
                     setGeolocationEnabled(true)
-                    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                     // Cache automático para economia extrema de dados 4G e mapa offline
                     cacheMode = WebSettings.LOAD_DEFAULT
                     userAgentString = "MorabusUFMG/3.1 (https://github.com/daniliocs/onibus-ufmg; contato: morabus.ufmg@gmail.com)"

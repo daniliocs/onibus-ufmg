@@ -41,41 +41,67 @@ class MorabusWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         UserPreferencesRepository.init(context)
+        ScheduleEngine.initAndSyncDynamicSchedules(context)
         val favoriteStop = UserPreferencesRepository.favoriteStop.value
         val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), favoriteStop)
 
         for (appWidgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.widget_morabus)
 
-            // Configura textos
             if (!favoriteStop.isNullOrBlank()) {
                 views.setTextViewText(R.id.widget_label_target, "⭐ $favoriteStop")
             } else {
-                views.setTextViewText(R.id.widget_label_target, "Próximo ônibus")
+                views.setTextViewText(R.id.widget_label_target, "Próxima saída geral")
             }
 
-            if (status.isServiceActive && status.nextTrip != null) {
-                views.setTextViewText(R.id.widget_tv_time, status.nextTrip.time)
-                val minText = status.nextTripMinutes?.let { "em $it min" } ?: ""
-                views.setTextViewText(R.id.widget_tv_countdown, minText)
+            if (status.isServiceActive && (status.favoriteArrival != null || status.nextTrip != null)) {
+                val fav = status.favoriteArrival
+                val trip = status.nextTrip ?: status.activeTrip
 
-                val originDesc = when {
-                    status.nextTrip.isPassagem -> "Moradia ➔ Ponto final"
-                    status.nextTrip.origin.contains("Moradia") -> "Moradia ➔ Campus"
-                    else -> "Campus ➔ Moradia"
+                if (fav != null) {
+                    views.setTextViewText(R.id.widget_tv_time, fav.arrivalTime)
+                    views.setTextViewText(
+                        R.id.widget_tv_countdown,
+                        "em ${ScheduleEngine.formatDurationMin(fav.minutesUntilArrival)}"
+                    )
+                    views.setTextViewText(
+                        R.id.widget_tv_origin,
+                        "Saída ${fav.scheduledDepartureTime} (${fav.origin})"
+                    )
+                } else if (trip != null) {
+                    views.setTextViewText(R.id.widget_tv_time, trip.time)
+                    val minText = status.nextTripMinutes?.let { "em ${ScheduleEngine.formatDurationMin(it)}" } ?: "Em viagem"
+                    views.setTextViewText(R.id.widget_tv_countdown, minText)
+
+                    val originDesc = when {
+                        trip.isPassagem -> "Moradia ➔ Ponto final"
+                        trip.origin.contains("Moradia") -> "Moradia ➔ Campus"
+                        else -> "Campus ➔ Moradia"
+                    }
+                    views.setTextViewText(R.id.widget_tv_origin, originDesc)
                 }
-                views.setTextViewText(R.id.widget_tv_origin, originDesc)
 
-                val vCount = status.nextTrip.vehicles
+                val vCount = trip?.vehicles ?: 1
+                views.setTextViewText(R.id.widget_tv_vehicles, "🚌 ${vCount}x")
+
+                val moradiaTime = status.nextMoradiaTrip?.time ?: "--:--"
+                val campusTime = status.nextCampusTrip?.time ?: "--:--"
                 views.setTextViewText(
-                    R.id.widget_tv_vehicles,
-                    "🚌 $vCount veículo${if (vCount > 1) "s" else ""}"
+                    R.id.widget_tv_directions,
+                    "🏠 $moradiaTime  •  🎓 $campusTime"
                 )
             } else {
                 views.setTextViewText(R.id.widget_tv_time, "Encerrado")
-                views.setTextViewText(R.id.widget_tv_countdown, "Sem viagens hoje")
-                views.setTextViewText(R.id.widget_tv_origin, "Retorna às 06:45")
-                views.setTextViewText(R.id.widget_tv_vehicles, "💤 Garagem")
+                val reason = if (status.isHolidayOrSunday) {
+                    status.holidayOrSundayMessage ?: "Sem ônibus hoje"
+                } else {
+                    "Concluído hoje"
+                }
+                views.setTextViewText(R.id.widget_tv_countdown, "")
+                views.setTextViewText(R.id.widget_tv_origin, reason)
+                views.setTextViewText(R.id.widget_tv_vehicles, "💤")
+                val nextMorning = status.firstTripTomorrow?.time ?: "06:45"
+                views.setTextViewText(R.id.widget_tv_directions, "Próxima saída: $nextMorning")
             }
 
             // Ação ao tocar no card do widget: abre o app

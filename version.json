@@ -1,7 +1,7 @@
 {
-  "versionCode": 8,
-  "versionName": "3.1.1",
+  "versionCode": 9,
+  "versionName": "3.1.2",
   "apkUrl": "https://raw.githubusercontent.com/daniliocs/onibus-ufmg/main/morabus.apk",
-  "releaseNotes": "Versão 3.1.1: Contador comunitário de instalações reais ativo e melhorias de estabilidade.",
+  "releaseNotes": "Versão 3.1.2: Horários dinâmicos em nuvem, feriados MG/BH e calendário UFMG, simulador ponto a ponto nas viagens, widget aprimorado e reforço de segurança.",
   "forceUpdate": false
 }

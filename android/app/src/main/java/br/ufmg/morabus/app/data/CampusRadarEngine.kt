@@ -50,6 +50,7 @@ object CampusRadarEngine {
     val homeNotices: StateFlow<List<CampusNotice>> = _homeNotices.asStateFlow()
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var radarJob: Job? = null
     private val isChecking = java.util.concurrent.atomic.AtomicBoolean(false)
 
     private val FUMP_KEYWORDS = listOf(
@@ -65,9 +66,11 @@ object CampusRadarEngine {
     )
 
     fun startPeriodicRadar(context: Context) {
-        scope.launch {
+        if (radarJob?.isActive == true) return
+        val appCtx = context.applicationContext
+        radarJob = scope.launch {
             while (isActive) {
-                checkAndFetchAll(context)
+                checkAndFetchAll(appCtx)
                 delay(30 * 60 * 1000L) // Checa a cada 30 minutos em segundo plano
             }
         }
@@ -393,34 +396,43 @@ object CampusRadarEngine {
         }
     }
 
+    private fun monthNamePt(month: Int): String = when (month) {
+        Calendar.JANUARY -> "janeiro"
+        Calendar.FEBRUARY -> "fevereiro"
+        Calendar.MARCH -> "março"
+        Calendar.APRIL -> "abril"
+        Calendar.MAY -> "maio"
+        Calendar.JUNE -> "junho"
+        Calendar.JULY -> "julho"
+        Calendar.AUGUST -> "agosto"
+        Calendar.SEPTEMBER -> "setembro"
+        Calendar.OCTOBER -> "outubro"
+        Calendar.NOVEMBER -> "novembro"
+        Calendar.DECEMBER -> "dezembro"
+        else -> ""
+    }
+
     private fun isDateRelevantTodayOrFuture(title: String, content: String, dateRaw: String): Boolean {
         val text = (title + " " + content).lowercase()
         val cal = Calendar.getInstance()
-        val day = cal.get(Calendar.DAY_OF_MONTH)
-        val monthStr = when (cal.get(Calendar.MONTH)) {
-            Calendar.JANUARY -> "janeiro"
-            Calendar.FEBRUARY -> "fevereiro"
-            Calendar.MARCH -> "março"
-            Calendar.APRIL -> "abril"
-            Calendar.MAY -> "maio"
-            Calendar.JUNE -> "junho"
-            Calendar.JULY -> "julho"
-            Calendar.AUGUST -> "agosto"
-            Calendar.SEPTEMBER -> "setembro"
-            Calendar.OCTOBER -> "outubro"
-            Calendar.NOVEMBER -> "novembro"
-            Calendar.DECEMBER -> "dezembro"
-            else -> ""
+
+        // Verifica hoje e os próximos 3 dias dinamicamente (ex: "31 de outubro", "1 de novembro", "01/11")
+        for (offset in 0..3) {
+            val targetCal = (cal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, offset) }
+            val d = targetCal.get(Calendar.DAY_OF_MONTH)
+            val m = targetCal.get(Calendar.MONTH) + 1
+            val mName = monthNamePt(targetCal.get(Calendar.MONTH))
+            val ddmm = String.format("%02d/%02d", d, m)
+            if (text.contains("$d de $mName") || text.contains(ddmm)) {
+                return true
+            }
         }
 
-        // Se mencionar o dia de hoje, este mês ou "hoje"
-        if (text.contains("hoje") || text.contains("$day de $monthStr") || text.contains("30 de outubro") || text.contains("novembro")) {
-            return true
-        }
-
-        // Se a data do post for de hoje ou ontem e falar de recesso/alteração
+        // Se a notícia foi publicada nas últimas 48h e menciona recesso/suspensão/hoje
         val postTs = parseIsoTimestamp(dateRaw)
-        if (System.currentTimeMillis() - postTs < 48 * 3600 * 1000L && (text.contains("recesso") || text.contains("servidor"))) {
+        if (System.currentTimeMillis() - postTs < 48 * 3600 * 1000L &&
+            (text.contains("recesso") || text.contains("suspensão") || text.contains("ponto facultativo") || text.contains("hoje"))
+        ) {
             return true
         }
 

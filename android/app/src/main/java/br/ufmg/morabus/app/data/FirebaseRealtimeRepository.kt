@@ -111,16 +111,22 @@ object FirebaseRealtimeRepository {
                     val key = keys.next()
                     val item = obj.optJSONObject(key) ?: continue
                     val ts = item.optLong("timestamp", 0L)
-                    if (ts >= cutoffMs) {
-                        validEntries++
-                        if (ts > latestTs) {
-                            latestTs = ts
-                            bestLat = item.optDouble("lat", Double.NaN).takeIf { !it.isNaN() }
-                            bestLon = item.optDouble("lon", Double.NaN).takeIf { !it.isNaN() }
-                            bestSpeed = item.optDouble("velocidadeKmh", 0.0)
-                            bestStreet = item.optString("viaAtual").takeIf { it.isNotBlank() }
-                            bestTripTime = item.optString("horarioViagem").takeIf { it.isNotBlank() }
-                            bestDelay = item.optInt("atrasoMinutos", 0)
+                    if (ts in cutoffMs..(nowMs + 60_000L)) {
+                        val candidateLat = item.optDouble("lat", Double.NaN)
+                        val candidateLon = item.optDouble("lon", Double.NaN)
+                        val validCoords = !candidateLat.isNaN() && !candidateLon.isNaN() &&
+                                candidateLat in -20.10..-19.70 && candidateLon in -44.15..-43.80
+                        if (validCoords) {
+                            validEntries++
+                            if (ts > latestTs) {
+                                latestTs = ts
+                                bestLat = candidateLat
+                                bestLon = candidateLon
+                                bestSpeed = item.optDouble("velocidadeKmh", 0.0).coerceIn(0.0, 100.0)
+                                bestStreet = sanitizeText(item.optString("viaAtual")).takeIf { it.isNotBlank() }
+                                bestTripTime = sanitizeText(item.optString("horarioViagem")).take(5).takeIf { it.isNotBlank() }
+                                bestDelay = item.optInt("atrasoMinutos", 0).coerceIn(0, 60)
+                            }
                         }
                     }
                 }
@@ -158,9 +164,9 @@ object FirebaseRealtimeRepository {
                 if (!passagemJson.isNullOrBlank() && passagemJson != "null") {
                     val pObj = JSONObject(passagemJson)
                     val ts = pObj.optLong("timestamp", 0L)
-                    val stop = pObj.optString("ponto")
+                    val stop = sanitizeText(pObj.optString("ponto")).take(40)
                     val diffMs = nowMs - ts
-                    if (diffMs < 15 * 60 * 1000L && stop.isNotBlank()) {
+                    if (diffMs in 0L..(15 * 60 * 1000L) && stop.isNotBlank()) {
                         val minAgo = Math.max(0, (diffMs / 60000L).toInt())
                         val text = if (minAgo == 0) "acabou de passar" else "visto há $minAgo min"
                         _recentPassage.value = PassageReport(stop, ts, minAgo, "⚡ Ônibus $text em: $stop")
@@ -206,7 +212,7 @@ object FirebaseRealtimeRepository {
                 val ctx = appContext
                 if (ctx != null) {
                     val installId = UserPreferencesRepository.getInstallId(ctx)
-                    val pingJson = "{\"lastSeen\":$nowMs,\"version\":\"3.1.1\"}"
+                    val pingJson = "{\"lastSeen\":$nowMs,\"version\":\"3.1.2\"}"
                     httpPut("$FIREBASE_URL/installs/$installId.json", pingJson)
 
                     // Busca a contagem real de instalações registradas (soma de todas as versões)
@@ -225,8 +231,14 @@ object FirebaseRealtimeRepository {
         }
     }
 
+    private fun sanitizeText(raw: String?): String {
+        if (raw.isNullOrBlank()) return ""
+        return raw.replace(Regex("[\"'<>\\\\\\r\\n]"), "").trim().take(80)
+    }
+
     private fun formatAlertCode(code: String, hora: String): String {
-        val horaSuffix = if (hora.isNotBlank()) " às $hora" else ""
+        val cleanHora = sanitizeText(hora).take(5)
+        val horaSuffix = if (cleanHora.isNotBlank()) " às $cleanHora" else ""
         return when (code.lowercase()) {
             "transito", "traffic" -> "⚠️ Trânsito lento informado$horaSuffix"
             "chuva", "rain" -> "🌧️ Chuva forte/alagamento na rota$horaSuffix"

@@ -18,7 +18,11 @@ import br.ufmg.morabus.app.ui.screens.SchedulesScreen
 import br.ufmg.morabus.app.ui.theme.MorabusTheme
 
 @Composable
-fun MorabusMainApp(initialRoute: String = NavItem.Home.route) {
+fun MorabusMainApp(
+    initialRoute: String = NavItem.Home.route,
+    externalRouteOverride: String? = null,
+    onExternalRouteConsumed: () -> Unit = {}
+) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         UserPreferencesRepository.init(context)
@@ -28,6 +32,13 @@ fun MorabusMainApp(initialRoute: String = NavItem.Home.route) {
 
     MorabusTheme(themeMode = themeMode) {
         var currentRoute by remember(initialRoute) { mutableStateOf(initialRoute) }
+
+        LaunchedEffect(externalRouteOverride) {
+            if (!externalRouteOverride.isNullOrBlank()) {
+                currentRoute = externalRouteOverride
+                onExternalRouteConsumed()
+            }
+        }
 
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,

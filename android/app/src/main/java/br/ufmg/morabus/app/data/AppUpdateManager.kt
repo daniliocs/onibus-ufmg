@@ -32,7 +32,6 @@ data class RemoteAppVersion(
 object AppUpdateManager {
 
     private const val TAG = "MorabusUpdater"
-    private const val FIREBASE_VERSION_URL = "https://morabus-ufmg-default-rtdb.firebaseio.com/app_version.json"
     private const val GITHUB_VERSION_URL = "https://raw.githubusercontent.com/daniliocs/onibus-ufmg/main/version.json"
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -100,8 +99,8 @@ object AppUpdateManager {
     }
 
     private fun fetchRemoteVersion(): RemoteAppVersion? {
-        // Tenta primeiro o Firebase RTDB
-        val jsonStr = httpGet(FIREBASE_VERSION_URL) ?: httpGet(GITHUB_VERSION_URL) ?: return null
+        // Segurança: consulta exclusivamente o repositório oficial no GitHub (onde apenas o autor tem permissão de escrita)
+        val jsonStr = httpGet(GITHUB_VERSION_URL) ?: return null
         return try {
             val obj = JSONObject(jsonStr)
             val code = obj.optInt("versionCode", 0)
@@ -110,7 +109,10 @@ object AppUpdateManager {
             val notes = obj.optString("releaseNotes", "")
             val force = obj.optBoolean("forceUpdate", false)
 
-            if (code > 0 && url.isNotBlank()) {
+            val isTrustedDomain = url.startsWith("https://raw.githubusercontent.com/daniliocs/onibus-ufmg/") ||
+                    url.startsWith("https://github.com/daniliocs/onibus-ufmg/")
+
+            if (code > 0 && url.isNotBlank() && isTrustedDomain) {
                 RemoteAppVersion(code, name, url, notes, force)
             } else null
         } catch (e: Exception) {

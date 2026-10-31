@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-31",
+  "calendarMode": "letivo",
+  "calendarBanner": "Período Letivo Oficial UFMG • Grade Regular Ativa",
+  "extraHolidays": [
+    { "date": "28/10", "name": "Recesso UFMG: Dia do Servidor Público" },
+    { "date": "24/12", "name": "Recesso UFMG: Véspera de Natal" },
+    { "date": "31/12", "name": "Recesso UFMG: Véspera de Ano Novo" }
+  ],
+  "weekdayTrips": [
+    { "time": "06:45", "origin": "Moradia", "type": null, "vehicles": 3 },
+    { "time": "07:20", "origin": "Escola de Música", "type": null, "vehicles": 3 },
+    { "time": "07:40", "origin": "Moradia", "type": null, "vehicles": 3 },
+    { "time": "10:00", "origin": "Escola de Música", "type": null, "vehicles": 3 },
+    { "time": "11:00", "origin": "Moradia", "type": null, "vehicles": 3 },
+    { "time": "11:50", "origin": "Escola de Música", "type": null, "vehicles": 3 },
+    { "time": "12:15", "origin": "Moradia", "type": null, "vehicles": 3 },
+    { "time": "13:10", "origin": "Escola de Música", "type": null, "vehicles": 3 },
+    { "time": "13:30", "origin": "Moradia", "type": null, "vehicles": 3 },
+    { "time": "15:00", "origin": "Escola de Música", "type": null, "vehicles": 1 },
+    { "time": "15:20", "origin": "Moradia", "type": null, "vehicles": 1 },
+    { "time": "17:00", "origin": "Escola de Música", "type": null, "vehicles": 2 },
+    { "time": "17:20", "origin": "Moradia", "type": null, "vehicles": 2 },
+    { "time": "17:50", "origin": "Escola de Música", "type": null, "vehicles": 2 },
+    { "time": "18:20", "origin": "Moradia", "type": null, "vehicles": 2 },
+    { "time": "19:00", "origin": "Escola de Música", "type": null, "vehicles": 2 },
+    { "time": "19:20", "origin": "Moradias", "type": "passagem", "vehicles": 2 },
+    { "time": "19:40", "origin": "Escola de Música", "type": null, "vehicles": 2 },
+    { "time": "20:00", "origin": "Moradias", "type": "passagem", "vehicles": 2 },
+    { "time": "21:00", "origin": "Escola de Música", "type": null, "vehicles": 2 },
+    { "time": "21:20", "origin": "Moradias", "type": "passagem", "vehicles": 2 },
+    { "time": "21:35", "origin": "Escola de Música", "type": null, "vehicles": 1 },
+    { "time": "21:45", "origin": "Moradias", "type": "passagem", "vehicles": 1 },
+    { "time": "22:15", "origin": "Escola de Música", "type": null, "vehicles": 1 },
+    { "time": "22:35", "origin": "Moradias", "type": "passagem", "vehicles": 1 },
+    { "time": "22:50", "origin": "Escola de Música", "type": null, "vehicles": 1 },
+    { "time": "23:10", "origin": "Moradias", "type": "passagem", "vehicles": 1 }
+  ],
+  "saturdayTrips": [
+    { "time": "07:40", "origin": "Moradia", "type": null, "vehicles": 1 },
+    { "time": "10:00", "origin": "Escola de Música", "type": null, "vehicles": 2 },
+    { "time": "11:00", "origin": "Moradia", "type": null, "vehicles": 2 },
+    { "time": "12:00", "origin": "Escola de Música", "type": null, "vehicles": 2 },
+    { "time": "12:20", "origin": "Moradia", "type": null, "vehicles": 2 },
+    { "time": "13:30", "origin": "Escola de Música", "type": null, "vehicles": 2 }
+  ]
+}

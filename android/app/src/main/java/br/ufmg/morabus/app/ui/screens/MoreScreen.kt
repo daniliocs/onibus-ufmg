@@ -491,9 +491,9 @@ fun MoreScreen(modifier: Modifier = Modifier) {
                     Column {
                         val currentVersionName = remember {
                             try {
-                                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "3.1.1"
+                                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "3.1.2"
                             } catch (_: Exception) {
-                                "3.1.1"
+                                "3.1.2"
                             }
                         }
                         Text(
