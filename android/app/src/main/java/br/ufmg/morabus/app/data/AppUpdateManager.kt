@@ -131,7 +131,7 @@ object AppUpdateManager {
             conn.requestMethod = "GET"
             conn.setRequestProperty("Accept", "application/json")
             if (conn.responseCode == 200) {
-                conn.inputStream.bufferedReader().use { it.readText() }
+                conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
             } else null
         } catch (e: Exception) {
             null
