@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import br.ufmg.morabus.app.R
 import br.ufmg.morabus.app.data.CrowdLevel
+import br.ufmg.morabus.app.data.FirebaseRealtimeRepository
 import br.ufmg.morabus.app.data.ScheduleEngine
 import br.ufmg.morabus.app.data.ScheduleTrip
 import br.ufmg.morabus.app.data.UserPreferencesRepository
@@ -43,6 +44,8 @@ fun SchedulesScreen(modifier: Modifier = Modifier) {
 
     val remindedTrips by UserPreferencesRepository.scheduledReminders.collectAsState()
     val favoriteStop by UserPreferencesRepository.favoriteStop.collectAsState()
+    val telemetry by FirebaseRealtimeRepository.telemetry.collectAsState()
+    val recentPassage by FirebaseRealtimeRepository.recentPassage.collectAsState()
     var selectedTripForSimulation by remember { mutableStateOf<ScheduleTrip?>(null) }
 
     val currentCal = remember { Calendar.getInstance() }
@@ -77,7 +80,7 @@ fun SchedulesScreen(modifier: Modifier = Modifier) {
     val filteredList = remember(rawTrips, selectedFilter, hidePast, currentMinutes, isViewingTodaySchedule) {
         rawTrips.filter { trip ->
             val matchesFilter = when (selectedFilter) {
-                "moradia" -> trip.origin.contains("Moradia") && !trip.isPassagem
+                "moradia" -> trip.origin.contains("Moradia")
                 "campus" -> trip.origin.contains("Escola")
                 "passagem" -> trip.isPassagem
                 else -> true
@@ -275,7 +278,8 @@ fun SchedulesScreen(modifier: Modifier = Modifier) {
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 val originText = when {
-                                    trip.isPassagem -> "Passando na Moradia ➔ Ponto final"
+                                    trip.staysAtCampusOvernight -> "Passando na Moradia ➔ Volta à UFMG (fica no Ponto final)"
+                                    trip.isPassagem -> "Passando na Moradia ➔ Volta à UFMG (Ponto final)"
                                     trip.origin.contains("Moradia") -> "Saída Moradia ➔ Escola de Música"
                                     else -> "Saída Escola de Música ➔ Moradias"
                                 }
@@ -341,8 +345,20 @@ fun SchedulesScreen(modifier: Modifier = Modifier) {
         // MODAL DE SIMULAÇÃO PONTO A PONTO DA VIAGEM SELECIONADA
         if (selectedTripForSimulation != null) {
             val simTrip = selectedTripForSimulation!!
-            val simulatedStops = remember(simTrip, currentMinutes, isViewingTodaySchedule) {
-                ScheduleEngine.simulateTripStops(simTrip, if (isViewingTodaySchedule) currentMinutes else null)
+            val tripRealtimeDelay = remember(simTrip, isViewingTodaySchedule, telemetry, recentPassage, nextTripTime) {
+                if (!isViewingTodaySchedule) 0
+                else if (telemetry.isActive && (telemetry.tripTime == simTrip.time || simTrip.time == nextTripTime)) {
+                    telemetry.delayMinutes
+                } else if (recentPassage != null && (recentPassage!!.tripTime == simTrip.time || simTrip.time == nextTripTime)) {
+                    recentPassage!!.calculatedDelayMinutes
+                } else 0
+            }
+            val simulatedStops = remember(simTrip, currentMinutes, isViewingTodaySchedule, tripRealtimeDelay) {
+                ScheduleEngine.simulateTripStops(
+                    trip = simTrip,
+                    currentMinutes = if (isViewingTodaySchedule) currentMinutes else null,
+                    delayMinutes = tripRealtimeDelay
+                )
             }
             ModalBottomSheet(
                 onDismissRequest = { selectedTripForSimulation = null },
@@ -372,6 +388,43 @@ fun SchedulesScreen(modifier: Modifier = Modifier) {
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
                     )
+
+                    if (simTrip.isPassagem) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = if (simTrip.staysAtCampusOvernight) {
+                                    "ℹ️ Este ônibus passa nas Moradias permitindo voltar para a UFMG e, ao chegar ao Ponto final no campus, permanece lá até o próximo dia de funcionamento."
+                                } else {
+                                    "ℹ️ Este ônibus passa nas Moradias permitindo embarque de volta para o Campus UFMG (Unidade Adm. II, Rotatória e Ponto final)."
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                            )
+                        }
+                    }
+
+                    if (tripRealtimeDelay != 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            color = StatusAmber.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "📡 Horários abaixo ajustados em tempo real (${if (tripRealtimeDelay > 0) "+$tripRealtimeDelay min" else "$tripRealtimeDelay min"}) conforme relato/GPS na rota.",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = StatusAmber,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(14.dp))
                     HorizontalDivider()

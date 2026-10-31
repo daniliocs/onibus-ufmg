@@ -1,7 +1,7 @@
 {
-  "versionCode": 9,
-  "versionName": "3.1.2",
+  "versionCode": 10,
+  "versionName": "3.1.3",
   "apkUrl": "https://raw.githubusercontent.com/daniliocs/onibus-ufmg/main/morabus.apk",
-  "releaseNotes": "Versão 3.1.2: Horários dinâmicos em nuvem, feriados MG/BH e calendário UFMG, simulador ponto a ponto nas viagens, widget aprimorado e reforço de segurança.",
+  "releaseNotes": "Versão 3.1.3: Cálculo inteligente do próximo dia útil (feriados e domingos nos ônibus e RUs), retorno à UFMG nos ônibus noturnos de passagem e ajuste em tempo real via botão 'Passou aqui'.",
   "forceUpdate": false
 }

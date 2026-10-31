@@ -175,12 +175,21 @@ fun HomeScreen(
         ScheduleEngine.calculateHomeStatus(Calendar.getInstance(), effectiveTargetStop)
     }
 
-    // Previsão de minutos para a parada alvo ou saída geral
-    val minutesToArrival = remember(scheduleStatus, telemetry) {
+    // Atraso ou adiantamento em tempo real (via GPS contínuo ou via botão "Passou aqui")
+    val effectiveDelayMinutes = remember(telemetry, recentPassage) {
+        when {
+            telemetry.isActive -> telemetry.delayMinutes
+            recentPassage != null -> recentPassage!!.calculatedDelayMinutes
+            else -> 0
+        }
+    }
+
+    // Previsão de minutos para a parada alvo ou saída geral (ajustada em tempo real)
+    val minutesToArrival = remember(scheduleStatus, effectiveDelayMinutes) {
         if (scheduleStatus.favoriteArrival != null) {
-            scheduleStatus.favoriteArrival.minutesUntilArrival + telemetry.delayMinutes
+            Math.max(0, scheduleStatus.favoriteArrival.minutesUntilArrival + effectiveDelayMinutes)
         } else {
-            (scheduleStatus.nextTripMinutes ?: 0) + telemetry.delayMinutes
+            Math.max(0, (scheduleStatus.nextTripMinutes ?: 0) + effectiveDelayMinutes)
         }
     }
 
@@ -191,11 +200,13 @@ fun HomeScreen(
         } else null
     }
 
-    val isLiveTracked = telemetry.isActive
+    val isLiveTracked = telemetry.isActive || (recentPassage != null && !recentPassage!!.estimatedCurrentSegment.isNullOrBlank())
     val activeSharingContributors = telemetry.contributorsCount
-    val busCurrentLocation = remember(telemetry, scheduleStatus) {
+    val busCurrentLocation = remember(telemetry, recentPassage, scheduleStatus) {
         if (telemetry.isActive && !telemetry.streetName.isNullOrBlank()) {
             "Na ${telemetry.streetName}"
+        } else if (recentPassage != null && !recentPassage!!.estimatedCurrentSegment.isNullOrBlank()) {
+            recentPassage!!.estimatedCurrentSegment!!
         } else {
             scheduleStatus.estimatedLocationText
         }
@@ -471,9 +482,9 @@ fun HomeScreen(
                 }
             }
 
-            // ALERTA NOTURNO DE SEGURANÇA / ÚLTIMO ÔNIBUS (Dias úteis à noite)
-            if (isWeekday && currentMinutes >= 21 * 60) {
-                val isCritical = currentMinutes in (22 * 60 + 50)..(23 * 60 + 10)
+            // ALERTA NOTURNO DE SEGURANÇA / ÚLTIMO ÔNIBUS (Dias úteis normais à noite)
+            if (isWeekday && !scheduleStatus.isHolidayOrSunday && currentMinutes >= 21 * 60) {
+                val isCritical = currentMinutes in (22 * 60 + 35)..(23 * 60 + 15)
                 val alertBg = if (isCritical) StatusRed.copy(alpha = 0.18f) else MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f)
                 val alertBorder = if (isCritical) StatusRed else MaterialTheme.colorScheme.tertiary
                 Surface(
@@ -493,18 +504,18 @@ fun HomeScreen(
                         Text(if (isCritical) "🚨" else "🌙", style = MaterialTheme.typography.titleLarge)
                         Column {
                             Text(
-                                text = if (isCritical) "⚠️ ÚLTIMA VIAGEM: 23:10 DA ESCOLA DE MÚSICA!" else "🌙 Alerta Noturno de Retorno às Moradias",
+                                text = if (isCritical) "⚠️ ÚLTIMAS VIAGENS DA NOITE (22:50 E 23:10)!" else "🌙 Alerta Noturno de Fim de Expediente",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isCritical) StatusRed else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = if (isCritical) {
-                                    "Este é o último ônibus da noite para as Moradias. Dirija-se imediatamente ao ponto!"
-                                } else if (currentMinutes < 22 * 60 + 50) {
-                                    "Últimas saídas do campus: 22:50 e 23:10 (Escola de Música). Fique atento para não perder o último ônibus!"
+                                text = if (currentMinutes <= 22 * 60 + 50) {
+                                    "Última saída do Campus (Escola de Música) p/ Moradias às 22:50. Às 23:10 o ônibus passa nas Moradias permitindo voltar à UFMG (fica no Ponto final até o próximo dia)."
+                                } else if (currentMinutes <= 23 * 60 + 15) {
+                                    "Último ônibus às 23:10 passando nas Moradias c/ retorno à UFMG (encerra no Ponto final do campus até o próximo dia de funcionamento)."
                                 } else {
-                                    "Saídas noturnas de hoje concluídas. Retorno amanhã a partir das 06:45."
+                                    "Saídas noturnas de hoje concluídas. ${scheduleStatus.nextServiceShortText}."
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -725,17 +736,25 @@ fun HomeScreen(
                             }
                         }
 
-                        if (telemetry.delayMinutes > 0) {
+                        if (effectiveDelayMinutes > 0) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = stringResource(R.string.home_status_delayed, telemetry.delayMinutes),
+                                text = "⏱️ Atraso estimado (+${effectiveDelayMinutes} min) • Horário ajustado em tempo real",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = StatusAmber,
                                 fontWeight = FontWeight.Medium
                             )
+                        } else if (effectiveDelayMinutes < 0) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "⚡ Adiantado (${effectiveDelayMinutes} min) • Horário ajustado em tempo real",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = StatusGreen,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     } else {
-                        // ESTADO ENCERRADO / DOMINGO / FERIADO
+                        // ESTADO ENCERRADO / DOMINGO / FERIADO (Respeitando Calendário Nacional, MG, BH e UFMG)
                         Text(
                             text = if (scheduleStatus.isHolidayOrSunday) {
                                 scheduleStatus.holidayOrSundayMessage ?: stringResource(R.string.home_service_finished_title)
@@ -747,10 +766,8 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-                        val lastTrip = scheduleStatus.lastTripToday?.time ?: "23:10"
-                        val nextTripTomorrow = scheduleStatus.firstTripTomorrow?.time ?: "06:45"
                         Text(
-                            text = stringResource(R.string.home_service_finished_details, lastTrip, nextTripTomorrow),
+                            text = scheduleStatus.nextServiceFullText,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -837,8 +854,13 @@ fun HomeScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+                        val moradiaSubText = scheduleStatus.nextMoradiaMinutes?.let { min ->
+                            val adjusted = Math.max(0, min + effectiveDelayMinutes)
+                            val suffix = if (scheduleStatus.nextMoradiaTrip?.isPassagem == true) " (➔ UFMG)" else ""
+                            "em ${ScheduleEngine.formatDurationMin(adjusted)}$suffix"
+                        } ?: scheduleStatus.nextServiceShortText
                         Text(
-                            text = scheduleStatus.nextMoradiaMinutes?.let { "em ${ScheduleEngine.formatDurationMin(it)}" } ?: "Sem saídas hoje",
+                            text = moradiaSubText,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -867,8 +889,12 @@ fun HomeScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+                        val campusSubText = scheduleStatus.nextCampusMinutes?.let { min ->
+                            val adjusted = Math.max(0, min + effectiveDelayMinutes)
+                            "em ${ScheduleEngine.formatDurationMin(adjusted)}"
+                        } ?: scheduleStatus.nextServiceShortText
                         Text(
-                            text = scheduleStatus.nextCampusMinutes?.let { "em ${ScheduleEngine.formatDurationMin(it)}" } ?: "Sem saídas hoje",
+                            text = campusSubText,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -999,19 +1025,15 @@ fun HomeScreen(
                     val relevantMinutes = if (userLocationIsCampus) scheduleStatus.nextCampusMinutes else scheduleStatus.nextMoradiaMinutes
 
                     if (relevantTrip != null && relevantMinutes != null) {
+                        val adjustedRelMin = Math.max(0, relevantMinutes + effectiveDelayMinutes)
                         Text(
-                            text = stringResource(
-                                R.string.context_next_from_stop,
-                                relevantTrip.origin,
-                                relevantTrip.time,
-                                Math.max(0, relevantMinutes)
-                            ),
+                            text = "Próxima saída (${relevantTrip.origin}): ${relevantTrip.time} (em ${ScheduleEngine.formatDurationMin(adjustedRelMin)})",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
                         Text(
-                            text = "Sem saídas previstas nesta direção hoje.",
+                            text = "Encerrado hoje nesta direção • ${scheduleStatus.nextServiceShortText}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

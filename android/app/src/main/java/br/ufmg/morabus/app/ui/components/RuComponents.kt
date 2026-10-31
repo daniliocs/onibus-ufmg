@@ -205,7 +205,7 @@ fun RuAllUnitsModal(
             }
 
             Text(
-                text = "Horários oficiais de funcionamento FUMP / UFMG",
+                text = "Horários oficiais FUMP / UFMG • Fechados aos domingos, feriados e recessos acadêmicos",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

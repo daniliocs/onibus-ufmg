@@ -157,11 +157,11 @@ class BusSharingService : Service() {
         val nearestStopName = nearestPair?.first?.name ?: "Itinerário"
         val streetDesc = "Próximo a $nearestStopName"
 
-        // Cálculo de atraso estimado
+        // Cálculo de atraso estimado usando a rota real da viagem ativa
         val cal = Calendar.getInstance()
         val currentMinutes = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
         val tripStartMinutes = ScheduleEngine.timeToMinutes(activeTripTime)
-        val expectedMinutesAtStop = tripStartMinutes + getEstimatedStopOffset(nearestStopName)
+        val expectedMinutesAtStop = tripStartMinutes + ScheduleEngine.getEstimatedStopOffsetForTrip(nearestStopName, activeTripTime, cal)
         val delayMinutes = Math.max(0, currentMinutes - expectedMinutesAtStop)
 
         // Envia ao Firebase

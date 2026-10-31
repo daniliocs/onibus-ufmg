@@ -102,17 +102,63 @@ object RuEngine {
         )
     )
 
+    private fun findNextOpenDayText(unit: RuUnit, cal: Calendar): String {
+        for (i in 1..14) {
+            val futureCal = (cal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, i) }
+            val fDayOfWeek = futureCal.get(Calendar.DAY_OF_WEEK)
+            if (fDayOfWeek == Calendar.SUNDAY) continue
+            if (ScheduleEngine.isHoliday(futureCal)) continue
+            val futureMeals = if (fDayOfWeek == Calendar.SATURDAY) unit.saturdayMeals else unit.weekdayMeals
+            if (futureMeals.isNotEmpty()) {
+                val firstMeal = futureMeals.first()
+                val fdd = String.format("%02d", futureCal.get(Calendar.DAY_OF_MONTH))
+                val fmm = String.format("%02d", futureCal.get(Calendar.MONTH) + 1)
+                val dayLabel = if (i == 1) {
+                    "Amanhã"
+                } else {
+                    "${ScheduleEngine.getDayOfWeekName(futureCal)} ($fdd/$fmm)"
+                }
+                return "$dayLabel às ${formatMinutes(firstMeal.startMinutes)}"
+            }
+        }
+        return "no próximo dia útil"
+    }
+
     fun calculateUnitStatus(unit: RuUnit, cal: Calendar): RuStatus {
         val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
         val currentMinutes = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+        val holidayName = ScheduleEngine.getHolidayName(cal)
+
+        if (holidayName != null) {
+            val cleanHoliday = holidayName.substringAfter(": ").trim()
+            return RuStatus(
+                unit,
+                false,
+                "Fechado hoje ($cleanHoliday) • Reabre ${findNextOpenDayText(unit, cal)}",
+                null,
+                "closed"
+            )
+        }
 
         if (dayOfWeek == Calendar.SUNDAY) {
-            return RuStatus(unit, false, "Fechado aos Domingos", null, "closed")
+            return RuStatus(
+                unit,
+                false,
+                "Fechado aos Domingos • Reabre ${findNextOpenDayText(unit, cal)}",
+                null,
+                "closed"
+            )
         }
 
         val meals = if (dayOfWeek == Calendar.SATURDAY) unit.saturdayMeals else unit.weekdayMeals
         if (meals.isEmpty()) {
-            return RuStatus(unit, false, "Fechado aos Sábados", null, "closed")
+            return RuStatus(
+                unit,
+                false,
+                "Fechado aos Sábados • Reabre ${findNextOpenDayText(unit, cal)}",
+                null,
+                "closed"
+            )
         }
 
         // Verifica se alguma refeição está aberta agora
@@ -129,11 +175,17 @@ object RuEngine {
         val nextMeal = meals.firstOrNull { it.startMinutes > currentMinutes }
         if (nextMeal != null) {
             val waitMin = nextMeal.startMinutes - currentMinutes
-            val text = "Próximo: ${nextMeal.name} às ${formatMinutes(nextMeal.startMinutes)} (abre em ${waitMin} min)"
+            val text = "Próximo: ${nextMeal.name} às ${formatMinutes(nextMeal.startMinutes)} (abre em ${ScheduleEngine.formatDurationMin(waitMin)})"
             return RuStatus(unit, false, text, null, "closed")
         }
 
-        return RuStatus(unit, false, "Encerrado hoje", null, "closed")
+        return RuStatus(
+            unit,
+            false,
+            "Encerrado hoje • Reabre ${findNextOpenDayText(unit, cal)}",
+            null,
+            "closed"
+        )
     }
 
     /**
@@ -143,7 +195,7 @@ object RuEngine {
      */
     fun calculateMobilityRecommendation(cal: Calendar): RuMobilityRecommendation? {
         val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
-        if (dayOfWeek == Calendar.SUNDAY) return null
+        if (dayOfWeek == Calendar.SUNDAY || ScheduleEngine.isHoliday(cal)) return null
 
         val currentMinutes = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
 

@@ -100,8 +100,7 @@ class MorabusWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_tv_countdown, "")
                 views.setTextViewText(R.id.widget_tv_origin, reason)
                 views.setTextViewText(R.id.widget_tv_vehicles, "💤")
-                val nextMorning = status.firstTripTomorrow?.time ?: "06:45"
-                views.setTextViewText(R.id.widget_tv_directions, "Próxima saída: $nextMorning")
+                views.setTextViewText(R.id.widget_tv_directions, status.nextServiceShortText)
             }
 
             // Ação ao tocar no card do widget: abre o app

@@ -30,7 +30,10 @@ data class PassageReport(
     val stopName: String,
     val timestamp: Long,
     val timeAgoMinutes: Int,
-    val formattedText: String
+    val formattedText: String,
+    val tripTime: String? = null,
+    val calculatedDelayMinutes: Int = 0,
+    val estimatedCurrentSegment: String? = null
 )
 
 object FirebaseRealtimeRepository {
@@ -158,18 +161,82 @@ object FirebaseRealtimeRepository {
                 lastUpdateTimestamp = latestTs
             )
 
-            // 3. Relato rápido de passagem recente (1 toque sem GPS contínuo)
+            // 3. Relato rápido de passagem recente (1 toque sem GPS contínuo) + Cálculo inteligente de ajuste de horário
             try {
                 val passagemJson = httpGet("$FIREBASE_URL/passagens_recentes/ultimo.json")
                 if (!passagemJson.isNullOrBlank() && passagemJson != "null") {
                     val pObj = JSONObject(passagemJson)
                     val ts = pObj.optLong("timestamp", 0L)
                     val stop = sanitizeText(pObj.optString("ponto")).take(40)
+                    val rawTripTime = sanitizeText(pObj.optString("horarioViagem")).take(5).takeIf { it.isNotBlank() }
                     val diffMs = nowMs - ts
-                    if (diffMs in 0L..(15 * 60 * 1000L) && stop.isNotBlank()) {
+                    if (diffMs in 0L..(20 * 60 * 1000L) && stop.isNotBlank()) {
                         val minAgo = Math.max(0, (diffMs / 60000L).toInt())
                         val text = if (minAgo == 0) "acabou de passar" else "visto há $minAgo min"
-                        _recentPassage.value = PassageReport(stop, ts, minAgo, "⚡ Ônibus $text em: $stop")
+
+                        val reportCal = java.util.Calendar.getInstance().apply { timeInMillis = ts }
+                        val reportMinutes = reportCal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + reportCal.get(java.util.Calendar.MINUTE)
+                        val todayTrips = ScheduleEngine.getTripsForDate(reportCal)
+
+                        // Localiza a viagem correspondente ao ponto onde o ônibus passou
+                        var matchedTrip: ScheduleTrip? = null
+                        var matchedStopOffset = 0
+                        var bestTimeDiff = Int.MAX_VALUE
+
+                        for (candidate in todayTrips) {
+                            val route = ScheduleEngine.getRoute(candidate.origin, candidate.type)
+                            val pt = route.find { it.stopName == stop } ?: continue
+                            val expectedAtStop = candidate.minutesFromMidnight + pt.timeMinutes
+                            val diff = reportMinutes - expectedAtStop
+                            if (diff in -15..45) {
+                                val absDiff = Math.abs(diff)
+                                val isExplicitMatch = rawTripTime != null && candidate.time == rawTripTime
+                                if (isExplicitMatch || absDiff < bestTimeDiff) {
+                                    bestTimeDiff = absDiff
+                                    matchedTrip = candidate
+                                    matchedStopOffset = pt.timeMinutes
+                                    if (isExplicitMatch) break
+                                }
+                            }
+                        }
+
+                        var calcDelay = 0
+                        var estSegment: String? = null
+                        if (matchedTrip != null) {
+                            val expectedAtStop = matchedTrip.minutesFromMidnight + matchedStopOffset
+                            calcDelay = (reportMinutes - expectedAtStop).coerceIn(-5, 45)
+                            val route = ScheduleEngine.getRoute(matchedTrip.origin, matchedTrip.type)
+                            val currentOffsetOnRoute = matchedStopOffset + minAgo
+                            val lastOffset = route.lastOrNull()?.timeMinutes ?: 20
+                            if (currentOffsetOnRoute <= lastOffset + 3) {
+                                var currentStopEst = stop
+                                for (pt in route) {
+                                    if (pt.timeMinutes <= currentOffsetOnRoute) {
+                                        currentStopEst = pt.stopName
+                                    }
+                                }
+                                estSegment = if (minAgo == 0) {
+                                    "⚡ Passando agora em $stop (Ônibus das ${matchedTrip.time})"
+                                } else {
+                                    "⚡ Passou em $stop há $minAgo min · Estimado próximo a $currentStopEst"
+                                }
+                            }
+                        }
+
+                        val delayBadge = when {
+                            calcDelay > 1 -> " (+${calcDelay} min)"
+                            calcDelay < -1 -> " (${calcDelay} min adiantado)"
+                            else -> " (no horário)"
+                        }
+                        _recentPassage.value = PassageReport(
+                            stopName = stop,
+                            timestamp = ts,
+                            timeAgoMinutes = minAgo,
+                            formattedText = "⚡ Ônibus $text em: $stop$delayBadge",
+                            tripTime = matchedTrip?.time ?: rawTripTime,
+                            calculatedDelayMinutes = calcDelay,
+                            estimatedCurrentSegment = estSegment
+                        )
                     } else {
                         _recentPassage.value = null
                     }
@@ -212,7 +279,7 @@ object FirebaseRealtimeRepository {
                 val ctx = appContext
                 if (ctx != null) {
                     val installId = UserPreferencesRepository.getInstallId(ctx)
-                    val pingJson = "{\"lastSeen\":$nowMs,\"version\":\"3.1.2\"}"
+                    val pingJson = "{\"lastSeen\":$nowMs,\"version\":\"3.1.3\"}"
                     httpPut("$FIREBASE_URL/installs/$installId.json", pingJson)
 
                     // Busca a contagem real de instalações registradas (soma de todas as versões)

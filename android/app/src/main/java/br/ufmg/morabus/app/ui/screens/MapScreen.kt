@@ -24,6 +24,7 @@ import java.util.Calendar
 fun MapScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val telemetry by FirebaseRealtimeRepository.telemetry.collectAsState()
+    val recentPassage by FirebaseRealtimeRepository.recentPassage.collectAsState()
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
     val themeMode by br.ufmg.morabus.app.data.UserPreferencesRepository.themeMode.collectAsState()
@@ -58,13 +59,21 @@ fun MapScreen(modifier: Modifier = Modifier) {
             .take(80)
     }
 
-    LaunchedEffect(telemetry) {
+    LaunchedEffect(telemetry, recentPassage) {
         val wv = webViewRef ?: return@LaunchedEffect
         if (telemetry.isActive && telemetry.lat != null && telemetry.lon != null) {
             val title = escapeJsSingleQuoted(if (telemetry.tripTime != null) "Ônibus das ${telemetry.tripTime}" else "Ônibus ao vivo")
             val subtitle = escapeJsSingleQuoted(telemetry.streetName ?: "Localização em tempo real")
             val js = "if (window.updateBusLocation) { window.updateBusLocation(${telemetry.lat}, ${telemetry.lon}, '$title', '$subtitle'); }"
             wv.evaluateJavascript(js, null)
+        } else if (recentPassage != null) {
+            val stopCoord = ScheduleEngine.STOPS.find { it.name == recentPassage!!.stopName }
+            if (stopCoord?.lat != null && stopCoord.lon != null) {
+                val title = escapeJsSingleQuoted(if (recentPassage!!.tripTime != null) "Ônibus das ${recentPassage!!.tripTime}" else "Relato de passagem")
+                val subtitle = escapeJsSingleQuoted(recentPassage!!.estimatedCurrentSegment ?: recentPassage!!.formattedText)
+                val js = "if (window.updateBusLocation) { window.updateBusLocation(${stopCoord.lat}, ${stopCoord.lon}, '$title', '$subtitle'); }"
+                wv.evaluateJavascript(js, null)
+            }
         } else {
             val status = ScheduleEngine.calculateHomeStatus(Calendar.getInstance())
             if (status.activeTrip != null) {

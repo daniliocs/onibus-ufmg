@@ -38,8 +38,9 @@ data class ScheduleTrip(
     val minutesFromMidnight: Int = ScheduleEngine.timeToMinutes(time)
 ) {
     val isPassagem: Boolean get() = type == "passagem" && origin.contains("Moradia")
+    val staysAtCampusOvernight: Boolean get() = isPassagem && (time == "21:45" || time == "22:35" || time == "23:10")
     val destination: String get() = if (origin.contains("Moradia")) {
-        if (isPassagem) "Ponto final" else "Escola de Música"
+        if (isPassagem) "Campus UFMG (Ponto final)" else "Escola de Música"
     } else {
         "Moradias 2 e 3"
     }
@@ -84,7 +85,10 @@ data class HomeStatus(
     val favoriteArrival: StopArrivalInfo?,
     val estimatedLocationText: String,
     val lastTripToday: ScheduleTrip?,
-    val firstTripTomorrow: ScheduleTrip?
+    val firstTripTomorrow: ScheduleTrip?,
+    val nextServiceDayLabel: String = "Amanhã",
+    val nextServiceFullText: String = "",
+    val nextServiceShortText: String = ""
 )
 
 object ScheduleEngine {
@@ -343,18 +347,44 @@ object ScheduleEngine {
         }
     }
 
+    fun getRouteForTripTime(tripTime: String, cal: Calendar = Calendar.getInstance()): List<RoutePoint> {
+        val trips = getTripsForDate(cal).ifEmpty { HORARIOS_SEMANA }
+        val matched = trips.find { it.time == tripTime }
+            ?: HORARIOS_SEMANA.find { it.time == tripTime }
+            ?: HORARIOS_SABADO.find { it.time == tripTime }
+        return if (matched != null) {
+            getRoute(matched.origin, matched.type)
+        } else {
+            ROTA_CAMPUS
+        }
+    }
+
+    fun getEstimatedStopOffsetForTrip(stopName: String, tripTime: String, cal: Calendar = Calendar.getInstance()): Int {
+        val route = getRouteForTripTime(tripTime, cal)
+        route.firstOrNull { it.stopName == stopName }?.let { return it.timeMinutes }
+        ROTA_MORADIA.firstOrNull { it.stopName == stopName }?.let { return it.timeMinutes }
+        ROTA_CAMPUS.firstOrNull { it.stopName == stopName }?.let { return it.timeMinutes }
+        ROTA_PASSAGEM.firstOrNull { it.stopName == stopName }?.let { return it.timeMinutes }
+        return 5
+    }
+
     fun getRouteDuration(origin: String, type: String?): Int {
         val route = getRoute(origin, type)
         return route.lastOrNull()?.timeMinutes ?: 20
     }
 
     /**
-     * Simula a linha do tempo ponto a ponto de uma viagem específica.
+     * Simula a linha do tempo ponto a ponto de uma viagem específica,
+     * aplicando ajuste em tempo real (delayMinutes) quando houver GPS ou relato "Passou aqui".
      */
-    fun simulateTripStops(trip: ScheduleTrip, currentMinutes: Int? = null): List<SimulatedStopArrival> {
+    fun simulateTripStops(
+        trip: ScheduleTrip,
+        currentMinutes: Int? = null,
+        delayMinutes: Int = 0
+    ): List<SimulatedStopArrival> {
         val route = getRoute(trip.origin, trip.type)
         return route.map { pt ->
-            val arrivalMin = trip.minutesFromMidnight + pt.timeMinutes
+            val arrivalMin = trip.minutesFromMidnight + pt.timeMinutes + delayMinutes
             val diff = currentMinutes?.let { arrivalMin - it }
             SimulatedStopArrival(
                 stopName = pt.stopName,
@@ -477,6 +507,32 @@ object ScheduleEngine {
         return null
     }
 
+    fun getDayOfWeekName(cal: Calendar): String {
+        return when (cal.get(Calendar.DAY_OF_WEEK)) {
+            Calendar.SUNDAY -> "Domingo"
+            Calendar.MONDAY -> "Segunda-feira"
+            Calendar.TUESDAY -> "Terça-feira"
+            Calendar.WEDNESDAY -> "Quarta-feira"
+            Calendar.THURSDAY -> "Quinta-feira"
+            Calendar.FRIDAY -> "Sexta-feira"
+            Calendar.SATURDAY -> "Sábado"
+            else -> ""
+        }
+    }
+
+    fun getDayOfWeekShortName(cal: Calendar): String {
+        return when (cal.get(Calendar.DAY_OF_WEEK)) {
+            Calendar.SUNDAY -> "Dom"
+            Calendar.MONDAY -> "Seg"
+            Calendar.TUESDAY -> "Ter"
+            Calendar.WEDNESDAY -> "Qua"
+            Calendar.THURSDAY -> "Qui"
+            Calendar.FRIDAY -> "Sex"
+            Calendar.SATURDAY -> "Sáb"
+            else -> ""
+        }
+    }
+
     fun calculateHomeStatus(
         cal: Calendar = Calendar.getInstance(),
         favoriteStopName: String? = null
@@ -506,7 +562,7 @@ object ScheduleEngine {
 
             if (trip.minutesFromMidnight > currentMinutes) {
                 if (nextTrip == null) nextTrip = trip
-                if (nextMoradiaTrip == null && trip.origin.contains("Moradia") && !trip.isPassagem) {
+                if (nextMoradiaTrip == null && trip.origin.contains("Moradia")) {
                     nextMoradiaTrip = trip
                 }
                 if (nextCampusTrip == null && trip.origin.contains("Escola")) {
@@ -515,15 +571,67 @@ object ScheduleEngine {
             }
         }
 
-        var firstTripTomorrow: ScheduleTrip? = null
-        for (i in 1..7) {
+        var firstTripNextOperatingDay: ScheduleTrip? = null
+        var nextOperatingDayOffset = 1
+        var nextOperatingCal: Calendar? = null
+        val skippedHolidaysNotes = mutableListOf<String>()
+
+        for (i in 1..14) {
             val futureCal = (cal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, i) }
             val futureTrips = getTripsForDate(futureCal)
             if (futureTrips.isNotEmpty()) {
-                firstTripTomorrow = futureTrips.first()
+                firstTripNextOperatingDay = futureTrips.first()
+                nextOperatingDayOffset = i
+                nextOperatingCal = futureCal
                 break
+            } else {
+                val futureHoliday = getHolidayName(futureCal)
+                if (futureHoliday != null) {
+                    val fdd = String.format("%02d", futureCal.get(Calendar.DAY_OF_MONTH))
+                    val fmm = String.format("%02d", futureCal.get(Calendar.MONTH) + 1)
+                    val shortDay = getDayOfWeekShortName(futureCal)
+                    val cleanHoliday = futureHoliday.substringAfter(": ").trim()
+                    skippedHolidaysNotes.add("$shortDay $fdd/$fmm é Feriado ($cleanHoliday)")
+                }
             }
         }
+
+        val nextServiceDayLabel = if (nextOperatingCal != null) {
+            val fdd = String.format("%02d", nextOperatingCal.get(Calendar.DAY_OF_MONTH))
+            val fmm = String.format("%02d", nextOperatingCal.get(Calendar.MONTH) + 1)
+            if (nextOperatingDayOffset == 1) {
+                "Amanhã (${getDayOfWeekShortName(nextOperatingCal)}, $fdd/$fmm)"
+            } else {
+                "${getDayOfWeekName(nextOperatingCal)} ($fdd/$fmm)"
+            }
+        } else {
+            "Amanhã"
+        }
+
+        val nextServiceShortLabel = if (nextOperatingCal != null) {
+            val fdd = String.format("%02d", nextOperatingCal.get(Calendar.DAY_OF_MONTH))
+            val fmm = String.format("%02d", nextOperatingCal.get(Calendar.MONTH) + 1)
+            if (nextOperatingDayOffset == 1) {
+                "Amanhã"
+            } else {
+                "${getDayOfWeekShortName(nextOperatingCal)} ($fdd/$fmm)"
+            }
+        } else {
+            "Amanhã"
+        }
+
+        val nextTimeStr = firstTripNextOperatingDay?.time ?: "06:45"
+        val skippedSuffix = if (skippedHolidaysNotes.isNotEmpty()) {
+            " • 📅 ${skippedHolidaysNotes.joinToString(", ")}"
+        } else ""
+
+        val lastTripToday = todayTrips.lastOrNull()
+        val nextServiceFullText = if (lastTripToday != null) {
+            "Última saída hoje: ${lastTripToday.time} • Próxima: $nextServiceDayLabel às $nextTimeStr$skippedSuffix"
+        } else {
+            "Próxima saída: $nextServiceDayLabel às $nextTimeStr$skippedSuffix"
+        }
+        val nextServiceShortText = "Próxima: $nextServiceShortLabel às $nextTimeStr"
 
         val favoriteArrival = if (!favoriteStopName.isNullOrBlank()) {
             getUpcomingDepartureAtStop(favoriteStopName, todayTrips, currentMinutes)
@@ -545,12 +653,11 @@ object ScheduleEngine {
             }
             nextTrip != null -> {
                 val waitMin = nextTrip.minutesFromMidnight - currentMinutes
-                val originDesc = if (nextTrip.isPassagem) "Passando na Moradia" else "Saída ${nextTrip.origin}"
+                val originDesc = if (nextTrip.isPassagem) "Passando na Moradia ➔ UFMG" else "Saída ${nextTrip.origin}"
                 "Próxima saída às ${nextTrip.time} ($originDesc) em ${formatDurationMin(waitMin)}"
             }
             else -> {
-                val nextDesc = firstTripTomorrow?.let { "Próxima saída: ${it.time} (${it.origin})" } ?: ""
-                "Viagens encerradas por hoje. $nextDesc"
+                "Viagens encerradas por hoje. $nextServiceShortText"
             }
         }
 
@@ -571,8 +678,11 @@ object ScheduleEngine {
             activeTrip = activeTrip,
             favoriteArrival = favoriteArrival,
             estimatedLocationText = locationText,
-            lastTripToday = todayTrips.lastOrNull(),
-            firstTripTomorrow = firstTripTomorrow
+            lastTripToday = lastTripToday,
+            firstTripTomorrow = firstTripNextOperatingDay,
+            nextServiceDayLabel = nextServiceDayLabel,
+            nextServiceFullText = nextServiceFullText,
+            nextServiceShortText = nextServiceShortText
         )
     }
 
